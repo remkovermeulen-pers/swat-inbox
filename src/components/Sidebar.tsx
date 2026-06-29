@@ -51,8 +51,6 @@ export function Sidebar({
   const location = useLocation()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
 
-  const totalUnread = messages.reduce((a, m) => a + (m.unread ? 1 : 0), 0)
-
   return (
     <aside
       style={{
@@ -211,7 +209,9 @@ export function Sidebar({
                           { f: 'assigned_others' as InboxFilter, icon: <Users size={13} />, label: 'Assigned to others', count: filterCounts.assigned_others },
                           { f: 'archive' as InboxFilter, icon: <Archive size={13} />, label: 'Archive', count: filterCounts.archive },
                         ] as const
-                      ).map(({ f, icon, label, count, dot }) => (
+                      ).map(({ f, icon, label, count, ...rest }) => {
+                        const dot = 'dot' in rest ? rest.dot : false
+                        return (
                         <button
                           key={f}
                           onClick={() => onFilterChange(f)}
@@ -251,7 +251,7 @@ export function Sidebar({
                             </span>
                           )}
                         </button>
-                      ))}
+                      )})}
                     </div>
                   )}
                 </div>

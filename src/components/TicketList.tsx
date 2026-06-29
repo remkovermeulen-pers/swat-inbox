@@ -4,7 +4,6 @@ import { format } from 'date-fns'
 import { messages, customers, brands, channels } from '../data/mockData'
 import type { Message, InboxFilter } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
-import { StatusBadge } from './StatusBadge'
 import {
   Search,
   Download,
@@ -230,7 +229,6 @@ function TicketRow({
   onClick: () => void
 }) {
   const customer = customers.find((c) => c.id === msg.customerId)
-  const brand = brands.find((b) => b.id === msg.brandId)
   const timeStr = format(new Date(msg.timestamp), 'HH:mm')
 
   return (

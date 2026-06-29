@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { format, formatDistanceToNow } from 'date-fns'
-import { messages, customers, brands } from '../data/mockData'
+import { messages, customers } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
 import { StatusBadge } from './StatusBadge'
 import { SentimentBadge } from './SentimentBadge'
