@@ -13,15 +13,13 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  Users,
-  ChevronRight,
   MoreHorizontal,
-  Reply,
-  MessageSquare,
   AlertCircle,
   CheckCircle2,
   Clock,
   Pencil,
+  ChevronRight,
+  MessageSquareText,
 } from 'lucide-react'
 
 function formatReach(n: number) {
@@ -45,11 +43,19 @@ export function MessageDetail() {
   const msg = messages.find((m) => m.id === messageId)
   if (!msg) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#f8f9fb]">
-        <div className="text-center">
-          <div className="text-5xl mb-4">💬</div>
-          <p className="text-sm font-medium text-[#475467]">Select a message to view</p>
-        </div>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f8fafc',
+          flexDirection: 'column',
+          gap: 12,
+        }}
+      >
+        <MessageSquareText size={40} style={{ color: '#cbd5e1' }} />
+        <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>Select a conversation</p>
       </div>
     )
   }
@@ -60,162 +66,336 @@ export function MessageDetail() {
   const aiEvent = msg.timeline.find((t) => t.type === 'ai_suggestion')
 
   return (
-    <div className="flex flex-1 h-full overflow-hidden">
+    <div style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden' }}>
       {/* Timeline column */}
-      <div className="flex flex-col flex-1 h-full overflow-hidden bg-[#f8f9fb]">
-        {/* Header */}
-        <div className="bg-white border-b border-[#e4e7ec] px-6 py-4">
-          <div className="flex items-start gap-3">
-            <div className="relative flex-shrink-0">
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          height: '100%',
+          overflow: 'hidden',
+          background: '#f8fafc',
+        }}
+      >
+        {/* Conversation header */}
+        <div
+          style={{
+            background: '#fff',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '12px 20px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ position: 'relative', flexShrink: 0 }}>
               <img
                 src={customer.avatar}
-                alt={customer.name}
-                className="w-10 h-10 rounded-full object-cover"
+                style={{ width: 38, height: 38, borderRadius: '50%', objectFit: 'cover' }}
               />
-              <span className="absolute -bottom-0.5 -right-0.5">
-                <PlatformIcon platform={msg.platform} size={16} />
+              <span style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                <PlatformIcon platform={msg.platform} size={15} />
               </span>
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <h2 className="text-sm font-semibold text-[#101828]">{msg.subject}</h2>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-[#98a2b3]">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h2
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: '#0f172a',
+                  margin: '0 0 3px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {msg.subject}
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, color: '#64748b' }}>
                   {customer.name} · {brand.logo} {brand.name}
                 </span>
                 <StatusBadge status={msg.status} size="sm" />
               </div>
             </div>
-            <button className="p-1.5 rounded-lg hover:bg-[#f0f2f5] text-[#98a2b3] transition-colors">
-              <MoreHorizontal size={16} />
+            <button
+              style={{
+                padding: '5px 6px',
+                borderRadius: 6,
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                color: '#64748b',
+                cursor: 'pointer',
+              }}
+            >
+              <MoreHorizontal size={15} />
             </button>
           </div>
         </div>
 
         {/* Timeline */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {msg.timeline.map((event, idx) => {
+            /* Status change */
             if (event.type === 'status_change') {
               return (
-                <div key={event.id} className="flex items-center gap-3 py-1">
-                  <div className="flex-1 h-px bg-[#e4e7ec]" />
-                  <span className="text-[11px] text-[#98a2b3] whitespace-nowrap flex items-center gap-1">
-                    <Clock size={11} />
-                    {event.content}
+                <div key={event.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+                  <span style={{ fontSize: 11, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+                    <Clock size={11} /> {event.content}
                   </span>
-                  <div className="flex-1 h-px bg-[#e4e7ec]" />
+                  <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
                 </div>
               )
             }
 
+            /* AI suggestion */
             if (event.type === 'ai_suggestion') {
               if (approvedAI || rejectedAI) return null
               return (
-                <div key={event.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
-                      <Sparkles size={13} className="text-white" />
+                <div
+                  key={event.id}
+                  style={{
+                    background: '#fffbeb',
+                    border: '1px solid #fde68a',
+                    borderRadius: 12,
+                    padding: 16,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <div
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: '#f59e0b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Sparkles size={13} color="#fff" />
                     </div>
-                    <span className="text-xs font-semibold text-amber-800">AI Draft — Pending Approval</span>
-                    <span className="ml-auto text-[10px] text-amber-600">
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#92400e' }}>
+                      AI Draft — Pending Approval
+                    </span>
+                    <span style={{ marginLeft: 'auto', fontSize: 11, color: '#b45309' }}>
                       {format(new Date(event.timestamp), 'HH:mm')}
                     </span>
                   </div>
-                  <p className="text-sm text-amber-900 leading-relaxed mb-4 bg-white/60 rounded-lg px-3 py-2.5">
+                  <p
+                    style={{
+                      fontSize: 13,
+                      color: '#78350f',
+                      lineHeight: 1.6,
+                      background: 'rgba(255,255,255,0.6)',
+                      borderRadius: 8,
+                      padding: '10px 14px',
+                      margin: '0 0 14px',
+                    }}
+                  >
                     {event.aiSuggestion}
                   </p>
-                  <div className="flex gap-2">
+                  <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       onClick={() => setApprovedAI(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition-colors"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        background: '#16a34a',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
                     >
-                      <Check size={13} />
-                      Approve & Send
+                      <Check size={13} /> Approve & Send
                     </button>
                     <button
                       onClick={() => { setRejectedAI(true); setReplyText(event.aiSuggestion || '') }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#475467] text-xs font-medium rounded-lg border border-[#e4e7ec] hover:bg-[#f0f2f5] transition-colors"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        background: '#fff',
+                        color: '#475569',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                      }}
                     >
-                      <Pencil size={13} />
-                      Edit before sending
+                      <Pencil size={13} /> Edit first
                     </button>
                     <button
                       onClick={() => setRejectedAI(true)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 text-xs font-medium rounded-lg hover:bg-red-50 transition-colors"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 12px',
+                        background: 'transparent',
+                        color: '#dc2626',
+                        border: 'none',
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                      }}
                     >
-                      <X size={13} />
-                      Reject
+                      <X size={13} /> Reject
                     </button>
                   </div>
                 </div>
               )
             }
 
+            /* Internal note */
             if (event.type === 'note') {
               return (
-                <div key={event.id} className="flex gap-2.5">
-                  <div className="flex flex-col items-center">
-                    <div className="w-7 h-7 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
-                      <MessageSquare size={13} className="text-yellow-700" />
+                <div key={event.id} style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        background: '#fef3c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span style={{ fontSize: 13 }}>📝</span>
                     </div>
                     {idx < msg.timeline.length - 1 && (
-                      <div className="w-px flex-1 bg-[#e4e7ec] mt-2" />
+                      <div style={{ width: 1, flex: 1, background: '#e2e8f0', marginTop: 6 }} />
                     )}
                   </div>
-                  <div className="flex-1 pb-4">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-semibold text-[#344054]">{event.author}</span>
-                      <span className="text-[10px] text-[#98a2b3]">Internal note</span>
-                      <span className="ml-auto text-[10px] text-[#98a2b3]">
+                  <div style={{ flex: 1, paddingBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{event.author}</span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          padding: '1px 7px',
+                          borderRadius: 99,
+                          fontWeight: 500,
+                        }}
+                      >
+                        Internal note
+                      </span>
+                      <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>
                         {format(new Date(event.timestamp), 'MMM d, HH:mm')}
                       </span>
                     </div>
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3.5 py-2.5">
-                      <p className="text-xs text-yellow-800 leading-relaxed">{event.content}</p>
+                    <div
+                      style={{
+                        background: '#fefce8',
+                        border: '1px solid #fde68a',
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                      }}
+                    >
+                      <p style={{ fontSize: 12, color: '#78350f', lineHeight: 1.6, margin: 0 }}>
+                        {event.content}
+                      </p>
                     </div>
                   </div>
                 </div>
               )
             }
 
+            /* Customer / agent message */
             const isCustomer = event.isCustomer
             return (
-              <div key={event.id} className={`flex gap-2.5 ${isCustomer ? '' : 'flex-row-reverse'}`}>
-                <div className="flex flex-col items-center">
-                  <div className="relative flex-shrink-0">
-                    {isCustomer ? (
-                      <img
-                        src={event.authorAvatar || customer.avatar}
-                        alt={event.author}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
-                        <span className="text-white text-xs font-bold">S</span>
-                      </div>
-                    )}
-                  </div>
+              <div
+                key={event.id}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  flexDirection: isCustomer ? 'row' : 'row-reverse',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  {isCustomer ? (
+                    <img
+                      src={event.authorAvatar || customer.avatar}
+                      style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        background: '#1a7bc4',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>R</span>
+                    </div>
+                  )}
                   {idx < msg.timeline.length - 1 && (
-                    <div className="w-px flex-1 bg-[#e4e7ec] mt-2" />
+                    <div style={{ width: 1, flex: 1, background: '#e2e8f0', marginTop: 6 }} />
                   )}
                 </div>
-                <div className={`flex-1 pb-4 ${isCustomer ? '' : 'flex flex-col items-end'}`}>
-                  <div className={`flex items-center gap-2 mb-1.5 ${isCustomer ? '' : 'flex-row-reverse'}`}>
-                    <span className="text-xs font-semibold text-[#344054]">{event.author}</span>
+                <div
+                  style={{
+                    flex: 1,
+                    paddingBottom: 8,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: isCustomer ? 'flex-start' : 'flex-end',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginBottom: 6,
+                      flexDirection: isCustomer ? 'row' : 'row-reverse',
+                    }}
+                  >
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#334155' }}>{event.author}</span>
                     {event.platform && <PlatformIcon platform={event.platform} size={13} />}
-                    <span className="text-[10px] text-[#98a2b3]">
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>
                       {format(new Date(event.timestamp), 'MMM d, HH:mm')}
                     </span>
                   </div>
                   <div
-                    className={`rounded-2xl px-4 py-2.5 max-w-md ${
-                      isCustomer
-                        ? 'bg-white border border-[#e4e7ec] text-[#101828] rounded-tl-sm'
-                        : 'bg-orange-500 text-white rounded-tr-sm'
-                    }`}
+                    style={{
+                      maxWidth: 480,
+                      borderRadius: 12,
+                      padding: '10px 14px',
+                      background: isCustomer ? '#fff' : '#1a7bc4',
+                      border: isCustomer ? '1px solid #e2e8f0' : 'none',
+                      borderTopLeftRadius: isCustomer ? 2 : 12,
+                      borderTopRightRadius: isCustomer ? 12 : 2,
+                    }}
                   >
-                    <p className="text-sm leading-relaxed">{event.content}</p>
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: isCustomer ? '#0f172a' : '#fff',
+                        lineHeight: 1.6,
+                        margin: 0,
+                      }}
+                    >
+                      {event.content}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -223,37 +403,79 @@ export function MessageDetail() {
           })}
 
           {approvedAI && (
-            <div className="flex items-center gap-2 py-2 justify-center">
-              <CheckCircle2 size={14} className="text-green-500" />
-              <span className="text-xs text-green-700 font-medium">AI reply approved and sent</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <CheckCircle2 size={14} style={{ color: '#16a34a' }} />
+              <span style={{ fontSize: 12, color: '#16a34a', fontWeight: 500 }}>
+                AI reply approved and sent
+              </span>
             </div>
           )}
         </div>
 
-        {/* Reply box */}
-        <div className="bg-white border-t border-[#e4e7ec] px-4 py-3">
+        {/* Reply composer */}
+        <div
+          style={{
+            background: '#fff',
+            borderTop: '1px solid #e2e8f0',
+            padding: '12px 16px',
+          }}
+        >
           {msg.status === 'ai_pending' && !approvedAI && !rejectedAI && (
-            <div className="flex items-center gap-1.5 mb-2">
-              <AlertCircle size={12} className="text-amber-500" />
-              <span className="text-xs text-amber-700">An AI draft is waiting for your review above</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+              <AlertCircle size={12} style={{ color: '#d97706' }} />
+              <span style={{ fontSize: 11, color: '#b45309' }}>An AI draft is waiting for your review above</span>
             </div>
           )}
-          <div className="flex gap-2">
+          <div style={{ display: 'flex', gap: 8 }}>
             <textarea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write a reply..."
               rows={2}
-              className="flex-1 resize-none text-sm border border-[#e4e7ec] rounded-xl px-3 py-2 text-[#101828] placeholder:text-[#98a2b3] focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 transition-all"
+              style={{
+                flex: 1,
+                resize: 'none',
+                fontSize: 13,
+                border: '1px solid #e2e8f0',
+                borderRadius: 8,
+                padding: '8px 12px',
+                color: '#0f172a',
+                outline: 'none',
+                fontFamily: 'inherit',
+                lineHeight: 1.5,
+              }}
             />
-            <div className="flex flex-col gap-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               <button
                 disabled={!replyText.trim()}
-                className="p-2.5 rounded-xl bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: replyText.trim() ? '#1a7bc4' : '#e2e8f0',
+                  color: replyText.trim() ? '#fff' : '#94a3b8',
+                  cursor: replyText.trim() ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 <Send size={15} />
               </button>
-              <button className="p-2.5 rounded-xl bg-[#f0f2f5] text-[#475467] hover:bg-[#e4e7ec] transition-colors">
+              <button
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                title="Generate AI draft"
+              >
                 <Sparkles size={15} />
               </button>
             </div>
@@ -261,42 +483,51 @@ export function MessageDetail() {
         </div>
       </div>
 
-      {/* Customer sidebar */}
-      <div className="w-72 flex-shrink-0 bg-white border-l border-[#e4e7ec] overflow-y-auto">
-        {/* Customer header */}
-        <div className="px-4 py-5 border-b border-[#e4e7ec]">
-          <div className="flex items-center gap-3 mb-3">
+      {/* Customer profile sidebar */}
+      <div
+        style={{
+          width: 268,
+          flexShrink: 0,
+          background: '#fff',
+          borderLeft: '1px solid #e2e8f0',
+          overflowY: 'auto',
+        }}
+      >
+        {/* Customer */}
+        <div style={{ padding: '16px', borderBottom: '1px solid #f1f5f9' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
             <img
               src={customer.avatar}
-              alt={customer.name}
-              className="w-11 h-11 rounded-full object-cover"
+              style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}
             />
             <div>
-              <p className="text-sm font-semibold text-[#101828]">{customer.name}</p>
-              <p className="text-xs text-[#98a2b3]">{customer.email}</p>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', margin: 0 }}>{customer.name}</p>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{customer.email}</p>
             </div>
           </div>
           <SentimentBadge sentiment={customer.sentiment} />
         </div>
 
-        {/* Key metrics */}
-        <div className="px-4 py-4 border-b border-[#e4e7ec]">
-          <p className="text-[10px] font-semibold text-[#98a2b3] uppercase tracking-wider mb-3">Account</p>
-          <div className="space-y-3">
+        {/* Account metrics */}
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
+          <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px' }}>
+            Account
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <MetricRow
-              icon={<DollarSign size={14} className="text-green-600" />}
+              icon={<DollarSign size={13} style={{ color: '#16a34a' }} />}
               label="MRR"
               value={`$${customer.mrr.toLocaleString()}`}
-              valueClass="text-green-700 font-semibold"
+              valueStyle={{ color: '#16a34a', fontWeight: 700 }}
             />
             <MetricRow
-              icon={<Calendar size={14} className={days <= 60 ? 'text-red-500' : 'text-[#475467]'} />}
+              icon={<Calendar size={13} style={{ color: days <= 60 ? '#dc2626' : '#64748b' }} />}
               label="Renewal"
-              value={`${days}d (${format(new Date(customer.renewalDate), 'MMM d')})`}
-              valueClass={days <= 60 ? 'text-red-600 font-semibold' : ''}
+              value={`${days}d · ${format(new Date(customer.renewalDate), 'MMM d')}`}
+              valueStyle={days <= 60 ? { color: '#dc2626', fontWeight: 600 } : {}}
             />
             <MetricRow
-              icon={<TrendingUp size={14} className="text-blue-500" />}
+              icon={<TrendingUp size={13} style={{ color: '#1a7bc4' }} />}
               label="Social reach"
               value={formatReach(customer.totalReach)}
             />
@@ -304,14 +535,16 @@ export function MessageDetail() {
         </div>
 
         {/* Social profiles */}
-        <div className="px-4 py-4 border-b border-[#e4e7ec]">
-          <p className="text-[10px] font-semibold text-[#98a2b3] uppercase tracking-wider mb-3">Social profiles</p>
-          <div className="space-y-2">
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
+          <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px' }}>
+            Social profiles
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
             {customer.socialProfiles.map((profile) => (
-              <div key={profile.platform} className="flex items-center gap-2">
+              <div key={profile.platform} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <PlatformIcon platform={profile.platform} size={20} />
-                <span className="text-xs text-[#475467] flex-1">{profile.handle}</span>
-                <span className="text-xs font-medium text-[#344054]">
+                <span style={{ fontSize: 12, color: '#475569', flex: 1 }}>{profile.handle}</span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: '#334155' }}>
                   {formatReach(profile.followers)}
                 </span>
               </div>
@@ -319,22 +552,35 @@ export function MessageDetail() {
           </div>
         </div>
 
-        {/* Brand settings preview */}
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] font-semibold text-[#98a2b3] uppercase tracking-wider">Brand tone</p>
+        {/* Brand tone */}
+        <div style={{ padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>
+              Brand tone
+            </p>
             <a
-              href={`/inbox/settings?brand=${brand.id}`}
-              className="text-[10px] text-orange-500 hover:text-orange-600 flex items-center gap-0.5"
+              href={`/inbox/settings`}
+              style={{ fontSize: 11, color: '#1a7bc4', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2 }}
             >
-              Edit <ChevronRight size={10} />
+              Edit <ChevronRight size={11} />
             </a>
           </div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-base">{brand.logo}</span>
-            <span className="text-xs font-medium text-[#344054]">{brand.name}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <span style={{ fontSize: 16 }}>{brand.logo}</span>
+            <span style={{ fontSize: 12, fontWeight: 500, color: '#334155' }}>{brand.name}</span>
           </div>
-          <p className="text-[11px] text-[#475467] leading-relaxed line-clamp-3">
+          <p
+            style={{
+              fontSize: 11,
+              color: '#64748b',
+              lineHeight: 1.6,
+              margin: 0,
+              display: '-webkit-box',
+              WebkitLineClamp: 4,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
             {brand.settings.toneOfVoice}
           </p>
         </div>
@@ -347,20 +593,31 @@ function MetricRow({
   icon,
   label,
   value,
-  valueClass = '',
+  valueStyle = {},
 }: {
   icon: React.ReactNode
   label: string
   value: string
-  valueClass?: string
+  valueStyle?: React.CSSProperties
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="w-6 h-6 rounded-md bg-[#f8f9fb] flex items-center justify-center flex-shrink-0">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: 6,
+          background: '#f8fafc',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
         {icon}
       </div>
-      <span className="text-xs text-[#475467] flex-1">{label}</span>
-      <span className={`text-xs text-[#344054] ${valueClass}`}>{value}</span>
+      <span style={{ fontSize: 12, color: '#64748b', flex: 1 }}>{label}</span>
+      <span style={{ fontSize: 12, color: '#334155', ...valueStyle }}>{value}</span>
     </div>
   )
 }

@@ -1,20 +1,23 @@
 import type { MessageStatus } from '../data/mockData'
 
-const config: Record<MessageStatus, { label: string; className: string; dot: string }> = {
+const config: Record<MessageStatus, { label: string; bg: string; text: string; dot: string }> = {
   unanswered: {
     label: 'Not answered',
-    className: 'bg-red-50 text-red-700 border border-red-200',
-    dot: 'bg-red-500',
+    bg: '#fef2f2',
+    text: '#dc2626',
+    dot: '#dc2626',
   },
   answered: {
     label: 'Answered',
-    className: 'bg-green-50 text-green-700 border border-green-200',
-    dot: 'bg-green-500',
+    bg: '#f0fdf4',
+    text: '#16a34a',
+    dot: '#16a34a',
   },
   ai_pending: {
     label: 'AI draft pending',
-    className: 'bg-amber-50 text-amber-700 border border-amber-200',
-    dot: 'bg-amber-500',
+    bg: '#fffbeb',
+    text: '#d97706',
+    dot: '#d97706',
   },
 }
 
@@ -24,14 +27,30 @@ interface Props {
 }
 
 export function StatusBadge({ status, size = 'md' }: Props) {
-  const { label, className, dot } = config[status]
+  const { label, bg, text, dot } = config[status]
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full font-medium ${className} ${
-        size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-xs'
-      }`}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        background: bg,
+        color: text,
+        borderRadius: 99,
+        fontWeight: 500,
+        fontSize: size === 'sm' ? 11 : 12,
+        padding: size === 'sm' ? '2px 8px' : '3px 10px',
+      }}
     >
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dot}`} />
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: dot,
+          flexShrink: 0,
+        }}
+      />
       {label}
     </span>
   )

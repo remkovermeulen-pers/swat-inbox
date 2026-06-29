@@ -1,12 +1,11 @@
 import { NavLink } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { messages, brands, customers } from '../data/mockData'
-import type { Message } from '../data/mockData'
+import type { Message, MessageStatus } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
 import { StatusBadge } from './StatusBadge'
-import { Filter } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
-import type { MessageStatus } from '../data/mockData'
 
 interface Props {
   brandId?: string
@@ -22,115 +21,207 @@ export function MessageList({ brandId }: Props) {
     .filter((m) => statusFilter === 'all' || m.status === statusFilter)
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
+  const filterLabels: { value: MessageStatus | 'all'; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'unanswered', label: 'Unanswered' },
+    { value: 'ai_pending', label: 'AI pending' },
+    { value: 'answered', label: 'Answered' },
+  ]
+
   return (
-    <div className="flex flex-col h-full bg-white border-r border-[#e4e7ec]" style={{ width: 340, flexShrink: 0 }}>
+    <div
+      className="flex flex-col h-full"
+      style={{ width: 320, flexShrink: 0, background: '#fff', borderRight: '1px solid #e2e8f0' }}
+    >
       {/* Header */}
-      <div className="px-4 py-4 border-b border-[#e4e7ec]">
+      <div style={{ padding: '14px 16px 10px', borderBottom: '1px solid #e2e8f0' }}>
         <div className="flex items-center gap-2 mb-3">
           {brand ? (
             <>
-              <span className="text-xl">{brand.logo}</span>
-              <div>
-                <h2 className="text-sm font-semibold text-[#101828] leading-tight">{brand.name}</h2>
-                <p className="text-xs text-[#98a2b3]">
+              <span style={{ fontSize: 18 }}>{brand.logo}</span>
+              <div className="flex-1">
+                <h2 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>
+                  {brand.name}
+                </h2>
+                <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
                   {filtered.length} message{filtered.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </>
           ) : (
-            <div>
-              <h2 className="text-sm font-semibold text-[#101828]">All Brands</h2>
-              <p className="text-xs text-[#98a2b3]">{filtered.length} messages</p>
+            <div className="flex-1">
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>
+                All inboxes
+              </h2>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>
+                {filtered.length} messages
+              </p>
             </div>
           )}
-          <button className="ml-auto p-1.5 rounded-lg hover:bg-[#f0f2f5] text-[#98a2b3] hover:text-[#475467] transition-colors">
-            <Filter size={14} />
+          <button
+            style={{
+              padding: '4px 6px',
+              borderRadius: 6,
+              border: '1px solid #e2e8f0',
+              background: '#fff',
+              color: '#64748b',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <SlidersHorizontal size={13} />
           </button>
         </div>
 
-        {/* Status filter pills */}
-        <div className="flex gap-1.5 flex-wrap">
-          {(['all', 'unanswered', 'ai_pending', 'answered'] as const).map((f) => (
+        {/* Filter tabs */}
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {filterLabels.map(({ value, label }) => (
             <button
-              key={f}
-              onClick={() => setStatusFilter(f)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                statusFilter === f
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-[#f0f2f5] text-[#475467] hover:bg-[#e4e7ec]'
-              }`}
+              key={value}
+              onClick={() => setStatusFilter(value)}
+              style={{
+                padding: '3px 10px',
+                borderRadius: 99,
+                fontSize: 11,
+                fontWeight: 500,
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.1s',
+                background: statusFilter === value ? '#1a7bc4' : '#f1f5f9',
+                color: statusFilter === value ? '#fff' : '#475569',
+              }}
             >
-              {f === 'all' ? 'All' : f === 'ai_pending' ? 'AI pending' : f === 'unanswered' ? 'Unanswered' : 'Answered'}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Message list */}
-      <div className="flex-1 overflow-y-auto">
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <div className="text-4xl mb-3">📭</div>
-            <p className="text-sm font-medium text-[#475467]">No messages</p>
-            <p className="text-xs text-[#98a2b3] mt-1">All caught up!</p>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 36 }}>📭</span>
+            <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>All caught up!</p>
           </div>
         ) : (
-          filtered.map((msg) => <MessageRow key={msg.id} msg={msg} brandId={brandId} />)
+          filtered.map((msg) => <MessageRow key={msg.id} msg={msg} showBrand={!brandId} />)
         )}
       </div>
     </div>
   )
 }
 
-function MessageRow({ msg, brandId }: { msg: Message; brandId?: string }) {
+function MessageRow({ msg, showBrand }: { msg: Message; showBrand: boolean }) {
   const customer = customers.find((c) => c.id === msg.customerId)
   const brand = brands.find((b) => b.id === msg.brandId)
-  const linkTo = brandId
-    ? `/inbox/${msg.brandId}/${msg.id}`
-    : `/inbox/${msg.brandId}/${msg.id}`
 
   return (
     <NavLink
-      to={linkTo}
-      className={({ isActive }) =>
-        `block px-4 py-3 border-b border-[#f0f2f5] transition-colors cursor-pointer ${
-          isActive ? 'bg-orange-50 border-l-2 border-l-orange-500' : 'hover:bg-[#f8f9fb]'
-        }`
-      }
+      to={`/inbox/${msg.brandId}/${msg.id}`}
+      style={({ isActive }) => ({
+        display: 'block',
+        padding: '12px 16px',
+        borderBottom: '1px solid #f1f5f9',
+        textDecoration: 'none',
+        background: isActive ? '#eff6ff' : '#fff',
+        borderLeft: isActive ? '2px solid #1a7bc4' : '2px solid transparent',
+        transition: 'background 0.1s',
+      })}
     >
-      <div className="flex items-start gap-2.5">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
         {/* Avatar */}
-        <div className="relative flex-shrink-0">
+        <div style={{ position: 'relative', flexShrink: 0 }}>
           <img
             src={customer?.avatar}
             alt={customer?.name}
-            className="w-9 h-9 rounded-full object-cover"
+            style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }}
           />
-          <span className="absolute -bottom-0.5 -right-0.5">
+          <span style={{ position: 'absolute', bottom: -2, right: -2 }}>
             <PlatformIcon platform={msg.platform} size={14} />
           </span>
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-xs font-semibold text-[#101828] truncate">{customer?.name}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#0f172a',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {customer?.name}
+            </span>
             {msg.unread && (
-              <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" />
+              <span
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: '#1a7bc4',
+                  flexShrink: 0,
+                }}
+              />
             )}
-            <span className="ml-auto text-[10px] text-[#98a2b3] flex-shrink-0">
+            <span
+              style={{
+                marginLeft: 'auto',
+                fontSize: 10,
+                color: '#94a3b8',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
               {formatDistanceToNow(new Date(msg.timestamp), { addSuffix: true })}
             </span>
           </div>
 
-          {!brandId && brand && (
-            <div className="flex items-center gap-1 mb-1">
-              <span className="text-[10px]">{brand.logo}</span>
-              <span className="text-[10px] text-[#98a2b3]">{brand.name}</span>
+          {showBrand && brand && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+              <span style={{ fontSize: 11 }}>{brand.logo}</span>
+              <span style={{ fontSize: 10, color: '#94a3b8' }}>{brand.name}</span>
             </div>
           )}
 
-          <p className="text-xs font-medium text-[#344054] truncate mb-1.5">{msg.subject}</p>
-          <p className="text-[11px] text-[#98a2b3] truncate mb-2">{msg.preview}</p>
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 500,
+              color: '#334155',
+              margin: '0 0 2px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {msg.subject}
+          </p>
+          <p
+            style={{
+              fontSize: 11,
+              color: '#94a3b8',
+              margin: '0 0 8px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {msg.preview}
+          </p>
 
           <StatusBadge status={msg.status} size="sm" />
         </div>

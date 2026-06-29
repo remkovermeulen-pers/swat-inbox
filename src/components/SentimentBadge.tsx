@@ -1,15 +1,27 @@
 import type { Sentiment } from '../data/mockData'
 
-const config: Record<Sentiment, { label: string; emoji: string; className: string }> = {
-  positive: { label: 'Positive', emoji: '😊', className: 'bg-green-50 text-green-700' },
-  neutral: { label: 'Neutral', emoji: '😐', className: 'bg-gray-50 text-gray-600' },
-  negative: { label: 'Negative', emoji: '😞', className: 'bg-red-50 text-red-700' },
+const config: Record<Sentiment, { label: string; emoji: string; bg: string; color: string }> = {
+  positive: { label: 'Positive', emoji: '😊', bg: '#f0fdf4', color: '#16a34a' },
+  neutral: { label: 'Neutral', emoji: '😐', bg: '#f8fafc', color: '#64748b' },
+  negative: { label: 'Negative', emoji: '😞', bg: '#fef2f2', color: '#dc2626' },
 }
 
 export function SentimentBadge({ sentiment }: { sentiment: Sentiment }) {
-  const { label, emoji, className } = config[sentiment]
+  const { label, emoji, bg, color } = config[sentiment]
   return (
-    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${className}`}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        borderRadius: 6,
+        padding: '3px 8px',
+        fontSize: 11,
+        fontWeight: 500,
+        background: bg,
+        color,
+      }}
+    >
       {emoji} {label}
     </span>
   )
