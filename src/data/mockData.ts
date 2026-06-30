@@ -112,7 +112,7 @@ export const customers: Customer[] = [
     mrr: 4200,
     sentiment: 'positive',
     renewalDate: '2026-09-15',
-    totalReach: 128400,
+    totalReach: 1240,
     socialProfiles: [
       { platform: 'twitter', handle: '@sarahchen', followers: 42300 },
       { platform: 'instagram', handle: '@sarahchen.co', followers: 86100 },
@@ -126,7 +126,7 @@ export const customers: Customer[] = [
     mrr: 890,
     sentiment: 'negative',
     renewalDate: '2026-07-22',
-    totalReach: 31200,
+    totalReach: 312,
     socialProfiles: [
       { platform: 'twitter', handle: '@marcuswebb', followers: 18900 },
       { platform: 'linkedin', handle: 'marcuswebb', followers: 12300 },
@@ -140,7 +140,7 @@ export const customers: Customer[] = [
     mrr: 2100,
     sentiment: 'neutral',
     renewalDate: '2026-11-03',
-    totalReach: 67800,
+    totalReach: 478,
     socialProfiles: [
       { platform: 'instagram', handle: '@priyanair', followers: 54200 },
       { platform: 'tiktok', handle: '@priya.nair', followers: 13600 },
@@ -154,7 +154,7 @@ export const customers: Customer[] = [
     mrr: 6800,
     sentiment: 'positive',
     renewalDate: '2026-12-01',
-    totalReach: 412000,
+    totalReach: 8900,
     socialProfiles: [
       { platform: 'twitter', handle: '@jamesholloway', followers: 89400 },
       { platform: 'instagram', handle: '@james.holloway', followers: 221000 },
@@ -169,7 +169,7 @@ export const customers: Customer[] = [
     mrr: 1450,
     sentiment: 'negative',
     renewalDate: '2026-07-08',
-    totalReach: 22100,
+    totalReach: 890,
     socialProfiles: [
       { platform: 'instagram', handle: '@lenamueller', followers: 22100 },
     ],
@@ -193,7 +193,7 @@ export const customers: Customer[] = [
     mrr: 3200,
     sentiment: 'positive',
     renewalDate: '2026-10-18',
-    totalReach: 94500,
+    totalReach: 3400,
     socialProfiles: [
       { platform: 'instagram', handle: '@tomeriksson', followers: 61200 },
       { platform: 'tiktok', handle: '@tom.eriksson', followers: 33300 },
@@ -207,7 +207,7 @@ export const customers: Customer[] = [
     mrr: 1190,
     sentiment: 'neutral',
     renewalDate: '2026-08-30',
-    totalReach: 18700,
+    totalReach: 187,
     socialProfiles: [
       { platform: 'twitter', handle: '@yasminrashid', followers: 9400 },
       { platform: 'facebook', handle: 'yasmin.alrashid', followers: 9300 },
@@ -221,7 +221,7 @@ export const customers: Customer[] = [
     mrr: 560,
     sentiment: 'negative',
     renewalDate: '2026-07-14',
-    totalReach: 7800,
+    totalReach: 143,
     socialProfiles: [
       { platform: 'facebook', handle: 'felix.gruber.de', followers: 7800 },
     ],
@@ -234,7 +234,7 @@ export const customers: Customer[] = [
     mrr: 2750,
     sentiment: 'positive',
     renewalDate: '2026-11-22',
-    totalReach: 52300,
+    totalReach: 621,
     socialProfiles: [
       { platform: 'instagram', handle: '@isabellefontaine', followers: 38100 },
       { platform: 'linkedin', handle: 'isabelle-fontaine', followers: 14200 },
@@ -248,7 +248,7 @@ export const customers: Customer[] = [
     mrr: 1870,
     sentiment: 'neutral',
     renewalDate: '2026-09-05',
-    totalReach: 41200,
+    totalReach: 2100,
     socialProfiles: [
       { platform: 'twitter', handle: '@daanvdberg', followers: 24600 },
       { platform: 'instagram', handle: '@daan.vdberg', followers: 16600 },
@@ -262,7 +262,7 @@ export const customers: Customer[] = [
     mrr: 0,
     sentiment: 'positive',
     renewalDate: '2027-01-01',
-    totalReach: 189000,
+    totalReach: 12400,
     socialProfiles: [
       { platform: 'tiktok', handle: '@aikotanaka', followers: 142000 },
       { platform: 'instagram', handle: '@aiko.tanaka', followers: 47000 },
