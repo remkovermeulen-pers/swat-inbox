@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
 import { Sidebar } from './components/Sidebar'
 import { TicketList } from './components/TicketList'
 import { MessageDetail } from './components/MessageDetail'
@@ -81,7 +81,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <HashRouter>
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <Sidebar
           activeFilter={activeFilter}
@@ -99,6 +99,6 @@ export default function App() {
           />
         </main>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
