@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { brands as initialBrands } from '../data/mockData'
 import type { Brand, AutomationAction } from '../data/mockData'
-import { Save, Plus, X, Sparkles, Shield, ArrowLeft, Bot, Smile, AlertTriangle } from 'lucide-react'
+import { Save, Plus, X, Sparkles, Shield, ArrowLeft, Bot, Smile, AlertTriangle, TrendingUp } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export function BrandSettings() {
@@ -31,6 +31,14 @@ export function BrandSettings() {
     updateBrand({
       sentimentRules: { ...brand.settings.sentimentRules, [sentiment]: action },
     })
+  }
+
+  function setHighReachThreshold(value: number) {
+    updateBrand({ highReachRule: { ...brand.settings.highReachRule, threshold: value } })
+  }
+
+  function setHighReachAction(action: AutomationAction) {
+    updateBrand({ highReachRule: { ...brand.settings.highReachRule, action } })
   }
 
   function addKeyword() {
@@ -165,6 +173,53 @@ export function BrandSettings() {
                   />
                 </div>
               ))}
+            </div>
+          </SettingsSection>
+
+          {/* ── High Reach Routing ───────────────────────────────────── */}
+          <SettingsSection
+            icon={<TrendingUp size={16} style={{ color: '#0891b2' }} />}
+            title="High Reach Routing"
+            description="Apply a different routing rule when the sender's total social media reach exceeds the threshold. This overrides category and sentiment rules."
+          >
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, overflow: 'hidden', background: '#fff' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ fontSize: 16, width: 24, textAlign: 'center', flexShrink: 0 }}>📣</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, color: '#334155', fontWeight: 500, margin: '0 0 2px' }}>Reach threshold</p>
+                  <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Total followers across all connected social platforms</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 12, color: '#64748b' }}>More than</span>
+                  <input
+                    type="number"
+                    value={brand.settings.highReachRule.threshold}
+                    min={0}
+                    step={1000}
+                    onChange={(e) => setHighReachThreshold(Number(e.target.value))}
+                    style={{
+                      width: 100, padding: '5px 10px', borderRadius: 7,
+                      border: '1px solid #e2e8f0', fontSize: 13, fontWeight: 600,
+                      color: '#0f172a', fontFamily: 'inherit', outline: 'none',
+                      textAlign: 'right',
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = '#0891b2')}
+                    onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
+                  />
+                  <span style={{ fontSize: 12, color: '#64748b' }}>followers</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px' }}>
+                <span style={{ fontSize: 16, width: 24, textAlign: 'center', flexShrink: 0 }}>⚡</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, color: '#334155', fontWeight: 500, margin: '0 0 2px' }}>Routing action</p>
+                  <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>How to handle messages from high-reach senders</p>
+                </div>
+                <ActionPicker
+                  value={brand.settings.highReachRule.action}
+                  onChange={setHighReachAction}
+                />
+              </div>
             </div>
           </SettingsSection>
 

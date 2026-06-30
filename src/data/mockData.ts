@@ -81,6 +81,10 @@ export interface BrandSettings {
     neutral: AutomationAction
     negative: AutomationAction
   }
+  highReachRule: {
+    threshold: number
+    action: AutomationAction
+  }
 }
 
 export interface Brand {
@@ -312,6 +316,7 @@ export const brands: Brand[] = [
         neutral: 'approve',
         negative: 'approve',
       },
+      highReachRule: { threshold: 10000, action: 'escalate' },
     },
   },
   {
@@ -346,6 +351,7 @@ export const brands: Brand[] = [
         neutral: 'approve',
         negative: 'escalate',
       },
+      highReachRule: { threshold: 10000, action: 'approve' },
     },
   },
   {
@@ -379,6 +385,7 @@ export const brands: Brand[] = [
         neutral: 'approve',
         negative: 'escalate',
       },
+      highReachRule: { threshold: 10000, action: 'escalate' },
     },
   },
 ]
