@@ -81,7 +81,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <Sidebar
           activeFilter={activeFilter}
