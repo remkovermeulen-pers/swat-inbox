@@ -266,14 +266,8 @@ export function MessageDetail() {
                 <Sparkles size={14} style={{ color: '#7c3aed', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed' }}>AI Draft</span>
-                  <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 6 }}>Generated based on brand tone of voice</span>
+                  <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 6 }}>Generated based on brand tone of voice — edit directly or approve as-is</span>
                 </div>
-                <button
-                  onClick={() => setIsAiDraft(false)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', fontSize: 12, fontWeight: 500, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}
-                >
-                  Edit
-                </button>
               </div>
             )}
 
@@ -292,56 +286,50 @@ export function MessageDetail() {
 
             <textarea
               value={replyText}
-              readOnly={isAiDraft}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write a reply..."
-              rows={isAiDraft ? 4 : 5}
+              rows={5}
               style={{
                 width: '100%', resize: 'none',
                 border: `1px solid ${isAiDraft ? '#c4b5fd' : '#e5e7eb'}`,
                 borderRadius: 8,
                 padding: '10px 14px', fontSize: 13, lineHeight: 1.6,
-                color: isAiDraft ? '#374151' : '#111827',
+                color: '#111827',
                 fontFamily: 'inherit', outline: 'none',
                 boxSizing: 'border-box',
                 background: isAiDraft ? '#fdfbff' : '#fff',
-                cursor: isAiDraft ? 'default' : 'text',
               }}
-              onFocus={(e) => { if (!isAiDraft) e.target.style.borderColor = '#3b82f6' }}
-              onBlur={(e) => { if (!isAiDraft) e.target.style.borderColor = '#e5e7eb' }}
+              onFocus={(e) => { e.target.style.borderColor = isAiDraft ? '#7c3aed' : '#3b82f6' }}
+              onBlur={(e) => { e.target.style.borderColor = isAiDraft ? '#c4b5fd' : '#e5e7eb' }}
             />
 
             {/* Toolbar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-              {!isAiDraft && (
-                <>
-                  <div style={{ position: 'relative' }}>
-                    <button
-                      onMouseEnter={() => setShowAiTooltip(true)}
-                      onMouseLeave={() => setShowAiTooltip(false)}
-                      onClick={enhanceWithAI}
-                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 7, border: '1px solid #c4b5fd', background: '#faf5ff', fontSize: 13, fontWeight: 600, color: '#7c3aed', cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      <Sparkles size={14} />
-                      <span style={{ fontWeight: 700, fontStyle: 'italic' }}>AB</span>Enhance
-                    </button>
-                    {showAiTooltip && (
-                      <div style={{ position: 'absolute', bottom: '110%', left: 0, background: '#22c55e', color: '#fff', fontSize: 12, fontWeight: 500, padding: '8px 12px', borderRadius: 8, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-                        Let AI help you with the perfect reply 🤖
-                      </div>
-                    )}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onMouseEnter={() => setShowAiTooltip(true)}
+                  onMouseLeave={() => setShowAiTooltip(false)}
+                  onClick={enhanceWithAI}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 7, border: '1px solid #c4b5fd', background: '#faf5ff', fontSize: 13, fontWeight: 600, color: '#7c3aed', cursor: 'pointer', fontFamily: 'inherit' }}
+                >
+                  <Sparkles size={14} />
+                  <span style={{ fontWeight: 700, fontStyle: 'italic' }}>AB</span>Enhance
+                </button>
+                {showAiTooltip && (
+                  <div style={{ position: 'absolute', bottom: '110%', left: 0, background: '#22c55e', color: '#fff', fontSize: 12, fontWeight: 500, padding: '8px 12px', borderRadius: 8, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                    Let AI help you with the perfect reply 🤖
                   </div>
-                  <button style={iconBtn}><Smile size={16} style={{ color: '#6b7280' }} /></button>
-                  <button style={{ ...iconBtn, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: 7 }}>
-                    <BookOpen size={14} style={{ color: '#6b7280' }} />
-                    <span style={{ fontSize: 12, color: '#374151' }}>Add preset</span>
-                  </button>
-                  <button style={{ ...iconBtn, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: 7 }}>
-                    <Link2 size={14} style={{ color: '#6b7280' }} />
-                    <span style={{ fontSize: 12, color: '#374151' }}>Shorten Links</span>
-                  </button>
-                </>
-              )}
+                )}
+              </div>
+              <button style={iconBtn}><Smile size={16} style={{ color: '#6b7280' }} /></button>
+              <button style={{ ...iconBtn, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: 7 }}>
+                <BookOpen size={14} style={{ color: '#6b7280' }} />
+                <span style={{ fontSize: 12, color: '#374151' }}>Add preset</span>
+              </button>
+              <button style={{ ...iconBtn, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: 7 }}>
+                <Link2 size={14} style={{ color: '#6b7280' }} />
+                <span style={{ fontSize: 12, color: '#374151' }}>Shorten Links</span>
+              </button>
 
               <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto' }}>{replyText.length}</span>
 
@@ -349,9 +337,9 @@ export function MessageDetail() {
                 <>
                   <button
                     onClick={() => setIsAiDraft(false)}
-                    style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #c4b5fd', background: '#faf5ff', fontSize: 13, fontWeight: 600, color: '#7c3aed', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
+                    style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}
                   >
-                    Edit draft
+                    Reply & Archive
                   </button>
                   <button
                     onClick={() => setAiDraftSent(true)}
