@@ -262,7 +262,20 @@ export function Sidebar({
         </div>
 
         <NavItem icon={<MessageSquare size={16} />} label="Comments" active={false} onClick={() => {}} />
-        <NavItem icon={<Calendar size={16} />} label="Publisher" active={false} onClick={() => {}} />
+        <NavLink
+          to="/publisher"
+          style={({ isActive }) => ({
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 10px', borderRadius: 6,
+            fontSize: 14, fontWeight: isActive ? 600 : 400,
+            color: isActive ? '#15803d' : '#374151',
+            background: isActive ? '#f0fdf4' : 'transparent',
+            textDecoration: 'none',
+          })}
+        >
+          <span style={{ color: '#6b7280' }}><Calendar size={16} /></span>
+          Publisher
+        </NavLink>
         <NavItem icon={<BarChart2 size={16} />} label="Analytics" active={false} onClick={() => {}} />
         <NavItem icon={<FileBarChart size={16} />} label="Reports" active={false} onClick={() => {}} />
 

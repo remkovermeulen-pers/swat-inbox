@@ -17,8 +17,6 @@ import {
   ChevronDown,
   X,
   Smile,
-  BookOpen,
-  Link2,
   Sparkles,
   Send,
   CheckCheck,
@@ -60,8 +58,8 @@ export function MessageDetail() {
   const msg = messages.find((m) => m.id === messageId)
 
   const [replyText, setReplyText] = useState(msg?.aiDraft || '')
-  const [isAiDraft, setIsAiDraft] = useState(Boolean(msg?.aiDraft))
   const [aiDraftSent, setAiDraftSent] = useState(false)
+  const isAiDraft = Boolean(msg?.aiDraft) && !aiDraftSent
   const [noteText, setNoteText] = useState('')
   const [starred, setStarred] = useState(false)
   const [showAiTooltip, setShowAiTooltip] = useState(false)

@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar'
 import { TicketList } from './components/TicketList'
 import { MessageDetail } from './components/MessageDetail'
 import { BrandSettings } from './pages/BrandSettings'
+import { Publisher } from './pages/Publisher'
 import type { InboxFilter } from './data/mockData'
 
 const SPLIT_KEY = 'inbox-split-pct'
@@ -106,6 +107,7 @@ function InboxRoutes({
     <Routes>
       <Route path="/" element={<Navigate to="/inbox" replace />} />
       <Route path="/inbox/settings" element={<BrandSettings />} />
+      <Route path="/publisher" element={<Publisher />} />
       <Route path="/inbox" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
       <Route path="/inbox/:brandId" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
       <Route path="/inbox/:brandId/:messageId" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
