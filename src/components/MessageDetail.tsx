@@ -322,44 +322,23 @@ export function MessageDetail() {
                 )}
               </div>
               <button style={iconBtn}><Smile size={16} style={{ color: '#6b7280' }} /></button>
-              <button style={{ ...iconBtn, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: 7 }}>
-                <BookOpen size={14} style={{ color: '#6b7280' }} />
-                <span style={{ fontSize: 12, color: '#374151' }}>Add preset</span>
-              </button>
-              <button style={{ ...iconBtn, display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', border: '1px solid #e5e7eb', borderRadius: 7 }}>
-                <Link2 size={14} style={{ color: '#6b7280' }} />
-                <span style={{ fontSize: 12, color: '#374151' }}>Shorten Links</span>
-              </button>
 
               <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 'auto' }}>{replyText.length}</span>
 
               {isAiDraft ? (
-                <>
-                  <button
-                    onClick={() => setIsAiDraft(false)}
-                    style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}
-                  >
-                    Reply & Archive
-                  </button>
-                  <button
-                    onClick={() => setAiDraftSent(true)}
-                    style={{ padding: '7px 20px', borderRadius: 7, border: 'none', background: '#7c3aed', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
-                  >
-                    <CheckCheck size={14} /> Approve & Send
-                  </button>
-                </>
+                <button
+                  onClick={() => setAiDraftSent(true)}
+                  style={{ padding: '7px 20px', borderRadius: 7, border: 'none', background: '#7c3aed', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <CheckCheck size={14} /> Approve & Send
+                </button>
               ) : (
-                <>
-                  <button style={{ padding: '7px 16px', borderRadius: 7, border: '1px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 600, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>
-                    Reply & Archive
-                  </button>
-                  <button
-                    disabled={!replyText.trim()}
-                    style={{ padding: '7px 20px', borderRadius: 7, border: 'none', background: replyText.trim() ? '#2563eb' : '#93c5fd', fontSize: 13, fontWeight: 600, color: '#fff', cursor: replyText.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}
-                  >
-                    Reply
-                  </button>
-                </>
+                <button
+                  disabled={!replyText.trim()}
+                  style={{ padding: '7px 20px', borderRadius: 7, border: 'none', background: replyText.trim() ? '#2563eb' : '#93c5fd', fontSize: 13, fontWeight: 600, color: '#fff', cursor: replyText.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}
+                >
+                  Reply
+                </button>
               )}
             </div>
 
