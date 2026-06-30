@@ -65,6 +65,7 @@ export function MessageDetail() {
   const [noteText, setNoteText] = useState('')
   const [starred, setStarred] = useState(false)
   const [showAiTooltip, setShowAiTooltip] = useState(false)
+  const [upsellDismissed, setUpsellDismissed] = useState(false)
   const [activities, setActivities] = useState<Activity[]>([
     { id: 'a1', author: 'Remko Vermeulen', action: 'wrote an internal note:', detail: 'Checked order — delayed in transit.', time: '2 minutes ago' },
   ])
@@ -251,6 +252,36 @@ export function MessageDetail() {
               )
             })}
           </div>
+
+          {/* ── Upsell banner ── */}
+          {!isAiDraft && !aiDraftSent && !upsellDismissed && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 16px',
+              background: 'linear-gradient(90deg, #fffbeb 0%, #fef3c7 100%)',
+              borderTop: '1px solid #fde68a',
+              flexShrink: 0,
+            }}>
+              <Sparkles size={14} style={{ color: '#d97706', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: '#92400e', flex: 1 }}>
+                <span style={{ fontWeight: 600 }}>Automate replies like this one.</span>
+                {' '}Upgrade to AI Auto-Reply for just{' '}
+                <span style={{ fontWeight: 600 }}>€40/month</span>
+                {' '}— available on your Large plan.
+              </span>
+              <button style={{
+                padding: '4px 12px', borderRadius: 6,
+                border: '1px solid #d97706', background: '#fff',
+                fontSize: 12, fontWeight: 600, color: '#d97706',
+                cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0,
+              }}>
+                Upgrade
+              </button>
+              <button onClick={() => setUpsellDismissed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d97706', display: 'flex', padding: 0, flexShrink: 0 }}>
+                <X size={14} />
+              </button>
+            </div>
+          )}
 
           {/* ── Reply composer ── */}
           <div style={{ background: '#fff', borderTop: '1px solid #e5e7eb', padding: '16px 20px', flexShrink: 0 }}>
