@@ -59,6 +59,7 @@ export interface Message {
   replyCount: number
   newReplies: number
   tags: Tag[]
+  aiDraft?: string
 }
 
 export interface BrandSettings {
@@ -337,6 +338,7 @@ export const messages: Message[] = [
     replyCount: 3,
     newReplies: 1,
     tags: [{ label: 'shipping', color: '#f97316' }, { label: 'urgent', color: '#dc2626' }],
+    aiDraft: "Hey Sarah 👟 Your dedication to the race inspires us! We've flagged your order for priority handling — our logistics team is on it right now. We're arranging an express replacement from your nearest Nike store, arriving by Friday. You'll get a confirmation email within the hour. Race day is yours. Keep moving. 💪",
     timeline: [
       {
         id: 't1',
@@ -403,6 +405,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'returns', color: '#7c3aed' }],
+    aiDraft: "Hey Marcus, getting the wrong size twice is completely unacceptable and we're sorry for putting you through this. Here's what we're doing right now: a EU 44 replacement is being expedited with express shipping, and a prepaid return label for both pairs will be in your inbox within the hour. No store visit needed — we're handling everything from our end. Keep pushing. 💪",
     timeline: [
       {
         id: 't2a',
@@ -474,6 +477,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'defect', color: '#dc2626' }, { label: 'warranty', color: '#7c3aed' }],
+    aiDraft: "Felix, a sole detaching after 3 runs is absolutely a manufacturing defect — this should never happen, especially at this price point. We're sending a replacement pair right away with express shipping; a prepaid return label for the defective pair will be included in the box. Your order #NK-3091445 is fully covered under our 2-year product guarantee. No further steps needed from your side. We're sorry for the hassle. Keep going. 💪",
     timeline: [
       {
         id: 't8a',
@@ -555,6 +559,7 @@ export const messages: Message[] = [
     replyCount: 1,
     newReplies: 1,
     tags: [{ label: 'app', color: '#0891b2' }, { label: 'bug', color: '#dc2626' }],
+    aiDraft: "Hey Daan! Losing training data mid-marathon prep is genuinely stressful and we hear you. Our team is aware of the Apple Watch sync issue introduced in v3.14 and a fix is shipping this week. In the meantime: go to Settings → Connected Apps → Apple Health → Sync Now to trigger a manual sync. If it still shows no data, toggling Bluetooth off and back on before opening NRC usually does the trick. Rotterdam is going to be amazing — keep moving! 🏃",
     timeline: [
       {
         id: 't10a',
@@ -637,6 +642,7 @@ export const messages: Message[] = [
     replyCount: 1,
     newReplies: 1,
     tags: [{ label: 'billing', color: '#16a34a' }],
+    aiDraft: "Hey Priya! That's a sour note — here's what we can do: we've confirmed the duplicate charge and initiated a full refund of €9.99. It'll land back in your account within 3–5 business days. Your Premium is fully active and uninterrupted. Thanks for flagging this! 🎵",
     timeline: [
       {
         id: 't4a',
@@ -677,6 +683,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'bug', color: '#dc2626' }],
+    aiDraft: "Lena, we completely understand how devastating this feels — years of curated playlists are irreplaceable. The good news: your library is almost certainly still on our servers. Try opening Spotify on desktop at spotify.com and check if your playlists appear there. If yes, a fresh reinstall of the app (clear cache first in Settings → Storage) should restore everything. If they're still missing after that, DM us your account email and our team will recover them manually within 24 hours. 🎵",
     timeline: [
       {
         id: 't5a',
@@ -708,6 +715,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'billing', color: '#16a34a' }, { label: 'account', color: '#0891b2' }],
+    aiDraft: "Hey Yasmin! Here's what we can do: go to your Account page → Manage your plan → Premium Family, and click 'Remove' next to the unknown member. If the button is greyed out, the invite is still pending — cancel it there and re-send to the correct email. If you're stuck at any point, reply here with your account email and we'll fix it on our end within 2 hours. 🎵",
     timeline: [
       {
         id: 't12a',
@@ -789,6 +797,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'bug', color: '#dc2626' }, { label: 'mobile', color: '#f97316' }],
+    aiDraft: "Isabelle, this is a known iOS 17.5 issue affecting overnight downloads — we're working on a fix. In the meantime: go to Settings → Storage and toggle 'Remove unplayed episodes' OFF, and make sure Low Power Mode is disabled (it can interrupt background downloads). That should keep your episodes intact. If it still happens after trying this, DM us your account email and we'll escalate directly to our iOS team. 🎵",
     timeline: [
       {
         id: 't14a',
@@ -820,6 +829,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'account', color: '#0891b2' }, { label: 'urgent', color: '#dc2626' }],
+    aiDraft: "Tom, we're really sorry — 7 years of listening history and playlists deserve better than this. Our account team is reviewing your case right now. To speed things up, could you DM us the email address on the account? Suspensions like this are often triggered by unusual login activity (new device, VPN, etc.) and are typically resolved within a few hours. We'll get your music back on. 🎵",
     timeline: [
       {
         id: 't15a',
@@ -853,6 +863,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'urgent', color: '#dc2626' }, { label: 'safety', color: '#7c3aed' }],
+    aiDraft: "James, we are so sorry — being left without accommodation with your family is completely unacceptable and we're treating this as our highest priority. Our team is finding you an equivalent or better listing nearby right now at zero extra cost to you. If you need a hotel immediately, please call our 24/7 Priority Line: +1-844-234-2500 and reference booking #AIR-7731892 — we'll cover the cost. We will not stop until your family has a place to stay tonight.",
     timeline: [
       {
         id: 't6a',
@@ -884,6 +895,7 @@ export const messages: Message[] = [
     replyCount: 1,
     newReplies: 1,
     tags: [{ label: 'listing', color: '#f97316' }, { label: 'refund', color: '#dc2626' }],
+    aiDraft: "Isabelle, we are truly sorry — a listing that so severely misrepresents the property is completely unacceptable, and you were right to leave. We've opened case CS-2026-044821 and a Trust & Safety specialist will contact you within the hour. Under our Guest Refund Policy, this situation is fully covered and you will receive a complete refund. Please attach your photos to the case thread — they'll help us take action against this host immediately. You shouldn't have had to experience this.",
     timeline: [
       {
         id: 't16a',
@@ -924,6 +936,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'review', color: '#0891b2' }, { label: 'host', color: '#16a34a' }],
+    aiDraft: "Tom, we understand how damaging a false review feels, especially when you have the evidence to prove otherwise. Here's what to do: go to airbnb.com/help → Report a Review, and attach your message screenshots — our Content team reviews disputes within 72 hours, and reviews with false claims are eligible for removal under our Review Policy. For the property damage, submit a claim through AirCover for Hosts within 14 days of checkout. We'll be with you every step of the way.",
     timeline: [
       {
         id: 't17a',
@@ -1005,6 +1018,7 @@ export const messages: Message[] = [
     replyCount: 0,
     newReplies: 0,
     tags: [{ label: 'safety', color: '#7c3aed' }, { label: 'urgent', color: '#dc2626' }],
+    aiDraft: "Priya, your safety is our only priority right now. Please do not touch or move the device — this is critical for any investigation. If you feel unsafe, leave the property immediately and call local emergency services (112 in Portugal). Our Trust & Safety emergency team has been alerted and will call you within 15 minutes. Booking #AIR-8924117 is suspended and the host has been removed from our platform pending investigation. We will cover your accommodation tonight — you are not alone in this.",
     timeline: [
       {
         id: 't19a',

@@ -38,7 +38,7 @@ function InboxShell({
       {/* Detail panel */}
       {hasMessage && (
         <div style={{ flex: 1, height: '100%', overflow: 'hidden', display: 'flex' }}>
-          <MessageDetail />
+          <MessageDetail key={messageId} />
         </div>
       )}
     </div>
