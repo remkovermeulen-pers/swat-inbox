@@ -62,11 +62,25 @@ export interface Message {
   aiDraft?: string
 }
 
+export type AutomationAction = 'auto_send' | 'approve' | 'escalate'
+
+export interface AutomationRule {
+  category: string
+  icon: string
+  action: AutomationAction
+}
+
 export interface BrandSettings {
   toneOfVoice: string
   instructions: string
   autoRespond: boolean
   escalationKeywords: string[]
+  automationRules: AutomationRule[]
+  sentimentRules: {
+    positive: AutomationAction
+    neutral: AutomationAction
+    negative: AutomationAction
+  }
 }
 
 export interface Brand {
@@ -281,6 +295,23 @@ export const brands: Brand[] = [
 - Escalate to human agent if order value > €200 or if customer mentions legal action`,
       autoRespond: true,
       escalationKeywords: ['lawyer', 'sue', 'refund escalation', 'manager'],
+      automationRules: [
+        { category: 'Compliments & praise', icon: '🙌', action: 'auto_send' },
+        { category: 'General questions', icon: '💬', action: 'auto_send' },
+        { category: 'Shipping & delivery', icon: '📦', action: 'approve' },
+        { category: 'Returns & refunds', icon: '↩️', action: 'approve' },
+        { category: 'Billing & payments', icon: '💳', action: 'approve' },
+        { category: 'Technical issues', icon: '🔧', action: 'approve' },
+        { category: 'Partnership inquiries', icon: '🤝', action: 'escalate' },
+        { category: 'Complaints', icon: '😤', action: 'approve' },
+        { category: 'Safety concerns', icon: '🚨', action: 'escalate' },
+        { category: 'Legal / media', icon: '⚖️', action: 'escalate' },
+      ],
+      sentimentRules: {
+        positive: 'auto_send',
+        neutral: 'approve',
+        negative: 'approve',
+      },
     },
   },
   {
@@ -298,6 +329,23 @@ export const brands: Brand[] = [
 - Never say "Unfortunately" — instead say "Here's what we can do:"`,
       autoRespond: false,
       escalationKeywords: ['fraud', 'hacked', 'unauthorized charge'],
+      automationRules: [
+        { category: 'Compliments & praise', icon: '🙌', action: 'auto_send' },
+        { category: 'General questions', icon: '💬', action: 'auto_send' },
+        { category: 'Playlist & library issues', icon: '🎵', action: 'approve' },
+        { category: 'Billing & payments', icon: '💳', action: 'approve' },
+        { category: 'Account access', icon: '🔑', action: 'approve' },
+        { category: 'Technical issues', icon: '🔧', action: 'approve' },
+        { category: 'Content & copyright', icon: '©️', action: 'escalate' },
+        { category: 'Complaints', icon: '😤', action: 'approve' },
+        { category: 'Safety concerns', icon: '🚨', action: 'escalate' },
+        { category: 'Legal / media', icon: '⚖️', action: 'escalate' },
+      ],
+      sentimentRules: {
+        positive: 'auto_send',
+        neutral: 'approve',
+        negative: 'escalate',
+      },
     },
   },
   {
@@ -314,6 +362,23 @@ export const brands: Brand[] = [
 - Frame policies as protections, not restrictions`,
       autoRespond: true,
       escalationKeywords: ['unsafe', 'emergency', 'police', 'assault', 'robbery'],
+      automationRules: [
+        { category: 'Compliments & praise', icon: '🙌', action: 'auto_send' },
+        { category: 'General questions', icon: '💬', action: 'auto_send' },
+        { category: 'Booking questions', icon: '🗓️', action: 'approve' },
+        { category: 'Refund requests', icon: '↩️', action: 'approve' },
+        { category: 'Listing disputes', icon: '🏠', action: 'approve' },
+        { category: 'Guest issues', icon: '👤', action: 'approve' },
+        { category: 'Host disputes', icon: '🤝', action: 'escalate' },
+        { category: 'Complaints', icon: '😤', action: 'approve' },
+        { category: 'Safety concerns', icon: '🚨', action: 'escalate' },
+        { category: 'Legal / media', icon: '⚖️', action: 'escalate' },
+      ],
+      sentimentRules: {
+        positive: 'auto_send',
+        neutral: 'approve',
+        negative: 'escalate',
+      },
     },
   },
 ]
