@@ -10,6 +10,7 @@ import {
   ChevronDown,
   RefreshCw,
   Star,
+  TrendingUp,
 } from 'lucide-react'
 
 interface Props {
@@ -365,6 +366,22 @@ function TicketRow({
           >
             {msg.newReplies}
           </span>
+        )}
+      </div>
+
+      {/* Reach */}
+      <div style={{ width: 70, flexShrink: 0, textAlign: 'right' }}>
+        {customer?.totalReach ? (
+          <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+            <TrendingUp size={11} style={{ color: customer.totalReach >= 10000 ? '#f59e0b' : '#d1d5db' }} />
+            {customer.totalReach >= 1_000_000
+              ? `${(customer.totalReach / 1_000_000).toFixed(1)}M`
+              : customer.totalReach >= 1_000
+              ? `${(customer.totalReach / 1_000).toFixed(1)}K`
+              : customer.totalReach}
+          </span>
+        ) : (
+          <span style={{ fontSize: 12, color: '#e5e7eb' }}>—</span>
         )}
       </div>
 
