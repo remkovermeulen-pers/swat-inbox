@@ -57,10 +57,10 @@ function InboxRoutes({
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/inbox" replace />} />
+      <Route path="/inbox/settings" element={<BrandSettings />} />
       <Route path="/inbox" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
       <Route path="/inbox/:brandId" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
       <Route path="/inbox/:brandId/:messageId" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
-      <Route path="/inbox/settings" element={<BrandSettings />} />
     </Routes>
   )
 }

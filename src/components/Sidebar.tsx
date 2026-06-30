@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { brands, channels, messages } from '../data/mockData'
 import type { InboxFilter } from '../data/mockData'
 import {
@@ -49,6 +49,7 @@ export function Sidebar({
   const [inboxOpen, setInboxOpen] = useState(true)
   const [channelsOpen, setChannelsOpen] = useState(true)
   const location = useLocation()
+  const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
 
   return (
@@ -125,7 +126,7 @@ export function Sidebar({
         {/* Inbox */}
         <div>
           <button
-            onClick={() => setInboxOpen(!inboxOpen)}
+            onClick={() => { navigate('/inbox'); setInboxOpen(true) }}
             style={{
               width: '100%',
               display: 'flex',
