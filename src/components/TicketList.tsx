@@ -8,10 +8,14 @@ import {
   Search,
   Download,
   ChevronDown,
+  ChevronUp,
   RefreshCw,
   Star,
   TrendingUp,
 } from 'lucide-react'
+
+type SortCol = 'name' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
+type SortDir = 'asc' | 'desc'
 
 interface Props {
   brandId: string | null
@@ -24,6 +28,13 @@ export function TicketList({ brandId, channelId, filter }: Props) {
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [sortFilter, setSortFilter] = useState<'All' | 'Unanswered' | 'AI pending' | 'Answered'>('All')
+  const [sortCol, setSortCol] = useState<SortCol>('time')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  function handleSort(col: SortCol) {
+    if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setSortCol(col); setSortDir('desc') }
+  }
 
   const channel = channelId ? channels.find((c) => c.id === channelId) : null
 
@@ -44,7 +55,18 @@ export function TicketList({ brandId, channelId, filter }: Props) {
       if (sortFilter === 'Answered') return m.status === 'answered'
       return true
     })
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .sort((a, b) => {
+      const custA = customers.find((c) => c.id === a.customerId)
+      const custB = customers.find((c) => c.id === b.customerId)
+      let cmp = 0
+      if (sortCol === 'time') cmp = new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      else if (sortCol === 'name') cmp = (custA?.name ?? '').localeCompare(custB?.name ?? '')
+      else if (sortCol === 'ticket') cmp = a.ticketNumber.localeCompare(b.ticketNumber)
+      else if (sortCol === 'replies') cmp = a.replyCount - b.replyCount
+      else if (sortCol === 'reach') cmp = (custA?.totalReach ?? 0) - (custB?.totalReach ?? 0)
+      else if (sortCol === 'channel') cmp = a.channel.localeCompare(b.channel)
+      return sortDir === 'asc' ? cmp : -cmp
+    })
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -140,7 +162,9 @@ export function TicketList({ brandId, channelId, filter }: Props) {
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
           <Search size={18} style={{ color: '#9ca3af', cursor: 'pointer' }} />
           <Download size={18} style={{ color: '#9ca3af', cursor: 'pointer' }} />
-          <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>Sort by: Newest</span>
+          <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>
+            Sort by: {sortCol === 'time' ? 'Time' : sortCol === 'name' ? 'Name' : sortCol === 'ticket' ? 'Ticket #' : sortCol === 'replies' ? 'Replies' : sortCol === 'reach' ? 'Reach' : 'Channel'} {sortDir === 'asc' ? '↑' : '↓'}
+          </span>
         </div>
       </div>
 
@@ -165,6 +189,43 @@ export function TicketList({ brandId, channelId, filter }: Props) {
           {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
         </span>
         <RefreshCw size={14} style={{ color: '#9ca3af', cursor: 'pointer' }} />
+      </div>
+
+      {/* Column headers */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '6px 20px',
+          borderBottom: '1px solid #e5e7eb',
+          background: '#f9fafb',
+          gap: 12,
+          userSelect: 'none',
+        }}
+      >
+        {/* match checkbox + star + platform icons widths */}
+        <div style={{ width: 15, flexShrink: 0 }} />
+        <div style={{ width: 15, flexShrink: 0 }} />
+        <div style={{ width: 39, flexShrink: 0 }} />
+
+        {/* Name */}
+        <ColHeader label="Name" col="name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={140} />
+
+        {/* Preview — not sortable, flex spacer */}
+        <div style={{ flex: 1 }} />
+
+        {/* Ticket # */}
+        <ColHeader label="Ticket #" col="ticket" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={80} />
+        {/* Replies */}
+        <ColHeader label="Replies" col="replies" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={60} />
+        {/* Reach */}
+        <ColHeader label="Reach" col="reach" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={70} />
+        {/* Channel */}
+        <ColHeader label="Channel" col="channel" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={130} />
+        {/* Assignee spacer */}
+        <div style={{ width: 28, flexShrink: 0 }} />
+        {/* Time */}
+        <ColHeader label="Time" col="time" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={44} />
       </div>
 
       {/* Ticket rows */}
@@ -213,6 +274,40 @@ export function TicketList({ brandId, channelId, filter }: Props) {
         )}
       </div>
     </div>
+  )
+}
+
+function ColHeader({
+  label, col, sortCol, sortDir, onSort, width,
+}: {
+  label: string; col: SortCol; sortCol: SortCol; sortDir: SortDir
+  onSort: (col: SortCol) => void; width: number
+}) {
+  const active = sortCol === col
+  return (
+    <button
+      onClick={() => onSort(col)}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 3,
+        width,
+        flexShrink: 0,
+        background: 'none',
+        border: 'none',
+        padding: '2px 0',
+        cursor: 'pointer',
+        fontSize: 11,
+        fontWeight: active ? 700 : 500,
+        color: active ? '#111827' : '#9ca3af',
+        fontFamily: 'inherit',
+        textTransform: 'uppercase',
+        letterSpacing: '0.04em',
+      }}
+    >
+      {label}
+      {active ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : null}
+    </button>
   )
 }
 
