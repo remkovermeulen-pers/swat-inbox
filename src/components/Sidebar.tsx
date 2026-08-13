@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { brands, channels, messages, customers } from '../data/mockData'
+import { channels, messages, customers } from '../data/mockData'
 import type { InboxFilter } from '../data/mockData'
 import { messageMatchesView, type CustomView } from '../lib/inboxScale'
 import { CreateViewModal } from './CreateViewModal'
 import {
-  LayoutDashboard,
+  Home,
   Inbox,
   MessageSquare,
   Calendar,
   BarChart2,
-  FileBarChart,
+  Folder,
   Settings,
   GraduationCap,
   ChevronDown,
@@ -22,6 +22,12 @@ import {
   Bell,
   Plus,
   X,
+  Pin,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Trash2,
+  CheckCheck,
 } from 'lucide-react'
 
 const filterCounts: Record<InboxFilter, number> = {
@@ -33,11 +39,15 @@ const filterCounts: Record<InboxFilter, number> = {
   archive: 999,
 }
 
+const commentCounts = {
+  unread: messages.filter((m) => m.unread).length,
+  pinned: messages.filter((m) => m.starred).length,
+  actionRequired: messages.filter((m) => m.status === 'ai_pending').length,
+}
+
 interface Props {
   activeFilter: InboxFilter
   onFilterChange: (f: InboxFilter) => void
-  activeBrandId: string | null
-  onBrandChange: (id: string | null) => void
   activeChannelId: string | null
   onChannelChange: (id: string | null) => void
   customViews: CustomView[]
@@ -50,8 +60,6 @@ interface Props {
 export function Sidebar({
   activeFilter,
   onFilterChange,
-  activeBrandId,
-  onBrandChange,
   activeChannelId,
   onChannelChange,
   customViews,
@@ -61,8 +69,8 @@ export function Sidebar({
   onDeleteView,
 }: Props) {
   const [inboxOpen, setInboxOpen] = useState(true)
+  const [commentsOpen, setCommentsOpen] = useState(false)
   const [channelsOpen, setChannelsOpen] = useState(true)
-  const [viewsOpen, setViewsOpen] = useState(true)
   const [showCreateView, setShowCreateView] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
@@ -131,10 +139,10 @@ export function Sidebar({
 
       {/* Main nav */}
       <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
-        {/* Dashboard */}
+        {/* Home */}
         <NavItem
-          icon={<LayoutDashboard size={16} />}
-          label="Dashboard"
+          icon={<Home size={16} />}
+          label="Home"
           active={false}
           onClick={() => {}}
         />
@@ -174,149 +182,69 @@ export function Sidebar({
 
           {inboxOpen && (
             <div style={{ marginLeft: 8, marginTop: 2 }}>
-              {/* Brand sub-items */}
-              {brands.map((brand) => (
-                <div key={brand.id}>
-                  <button
-                    onClick={() => onBrandChange(activeBrandId === brand.id ? null : brand.id)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 7,
-                      padding: '5px 10px',
-                      borderRadius: 6,
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: activeBrandId === brand.id ? '#f0fdf4' : 'transparent',
-                      color: activeBrandId === brand.id ? '#15803d' : '#374151',
-                      fontFamily: 'inherit',
-                      fontSize: 13,
-                      fontWeight: 500,
-                      textAlign: 'left',
-                    }}
-                  >
-                    <span style={{ fontSize: 14 }}>{brand.logo}</span>
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {brand.name}
-                    </span>
-                    {brand.unreadCount > 0 && (
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: '#6b7280',
-                          minWidth: 18,
-                          textAlign: 'right',
-                        }}
-                      >
-                        {brand.unreadCount}
-                      </span>
-                    )}
-                  </button>
-
-                  {/* Filter sub-items under brand */}
-                  {activeBrandId === brand.id && (
-                    <div style={{ marginLeft: 12 }}>
-                      {(
-                        [
-                          { f: 'new' as InboxFilter, icon: <Sparkles size={13} />, label: 'New', count: filterCounts.new },
-                          { f: 'starred' as InboxFilter, icon: <Star size={13} />, label: 'Starred', count: filterCounts.starred },
-                          { f: 'assigned_me' as InboxFilter, icon: <UserCheck size={13} />, label: 'Assigned to me', count: filterCounts.assigned_me, dot: true },
-                          { f: 'assigned_others' as InboxFilter, icon: <Users size={13} />, label: 'Assigned to others', count: filterCounts.assigned_others },
-                          { f: 'archive' as InboxFilter, icon: <Archive size={13} />, label: 'Archive', count: filterCounts.archive },
-                        ] as const
-                      ).map(({ f, icon, label, count, ...rest }) => {
-                        const dot = 'dot' in rest ? rest.dot : false
-                        return (
-                        <button
-                          key={f}
-                          onClick={() => onFilterChange(f)}
-                          style={{
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 7,
-                            padding: '5px 10px',
-                            borderRadius: 6,
-                            border: 'none',
-                            cursor: 'pointer',
-                            background: activeFilter === f ? '#f0fdf4' : 'transparent',
-                            color: activeFilter === f ? '#15803d' : '#6b7280',
-                            fontFamily: 'inherit',
-                            fontSize: 12,
-                            fontWeight: 500,
-                            textAlign: 'left',
-                          }}
-                        >
-                          {icon}
-                          <span style={{ flex: 1 }}>{label}</span>
-                          {dot && (
-                            <span
-                              style={{
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                background: '#22c55e',
-                                flexShrink: 0,
-                              }}
-                            />
-                          )}
-                          {count > 0 && !dot && (
-                            <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
-                              {count > 999 ? '999+' : count}
-                            </span>
-                          )}
-                        </button>
-                      )})}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Custom Views */}
-        <div style={{ marginTop: 12 }}>
-          <button
-            onClick={() => setViewsOpen(!viewsOpen)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '5px 10px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: 11,
-              fontWeight: 600,
-              color: '#6b7280',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              textAlign: 'left',
-            }}
-          >
-            <ChevronDown
-              size={12}
-              style={{
-                transform: viewsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                transition: 'transform 0.15s',
-              }}
-            />
-            Smart Views
-          </button>
-
-          {viewsOpen && (
-            <div style={{ marginTop: 2 }}>
-              {customViews.map((view) => {
-                const active = activeViewId === view.id
-                const count = messages.filter((m) => messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
+              {(
+                [
+                  { f: 'new' as InboxFilter, icon: <Sparkles size={13} />, label: 'New', count: filterCounts.new },
+                  { f: 'starred' as InboxFilter, icon: <Star size={13} />, label: 'Starred', count: filterCounts.starred },
+                  { f: 'assigned_me' as InboxFilter, icon: <UserCheck size={13} />, label: 'Assigned to me', count: filterCounts.assigned_me, dot: true },
+                  { f: 'assigned_others' as InboxFilter, icon: <Users size={13} />, label: 'Assigned to others', count: filterCounts.assigned_others },
+                  { f: 'archive' as InboxFilter, icon: <Archive size={13} />, label: 'Archive', count: filterCounts.archive },
+                ] as const
+              ).map(({ f, icon, label, count, ...rest }) => {
+                const dot = 'dot' in rest ? rest.dot : false
                 return (
-                  <div key={view.id} style={{ position: 'relative' }}>
+                <button
+                  key={f}
+                  onClick={() => onFilterChange(f)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: activeFilter === f ? '#f0fdf4' : 'transparent',
+                    color: activeFilter === f ? '#15803d' : '#374151',
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    textAlign: 'left',
+                  }}
+                >
+                  {icon}
+                  <span style={{ flex: 1 }}>{label}</span>
+                  {dot && (
+                    <span
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        background: '#22c55e',
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  {count > 0 && !dot && (
+                    <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
+                      {count > 999 ? '999+' : count}
+                    </span>
+                  )}
+                </button>
+              )})}
+
+              {/* Smart Views — nested under Inbox */}
+              <div style={{ marginTop: 8 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px', padding: '0 10px' }}>
+                  Smart Views
+                </p>
+                {customViews.map((view) => {
+                  const active = activeViewId === view.id
+                  const count = messages.filter((m) => messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
+                  return (
                     <button
+                      key={view.id}
                       onClick={() => onViewChange(active ? null : view.id)}
                       style={{
                         width: '100%',
@@ -349,36 +277,112 @@ export function Sidebar({
                         <X size={12} />
                       </span>
                     </button>
-                  </div>
-                )
-              })}
+                  )
+                })}
 
-              <button
-                onClick={() => setShowCreateView(true)}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 7,
-                  padding: '5px 10px',
-                  borderRadius: 6,
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                  fontSize: 12,
-                  color: '#9ca3af',
-                  textAlign: 'left',
-                }}
-              >
-                <Plus size={13} />
-                New view
-              </button>
+                <button
+                  onClick={() => setShowCreateView(true)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                    fontSize: 12,
+                    color: '#9ca3af',
+                    textAlign: 'left',
+                  }}
+                >
+                  <Plus size={13} />
+                  New view
+                </button>
+              </div>
             </div>
           )}
         </div>
 
-        <NavItem icon={<MessageSquare size={16} />} label="Comments" active={false} onClick={() => {}} />
+        {/* Comments */}
+        <div>
+          <button
+            onClick={() => setCommentsOpen(!commentsOpen)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '7px 10px',
+              borderRadius: 6,
+              border: 'none',
+              cursor: 'pointer',
+              background: 'transparent',
+              color: '#111827',
+              fontFamily: 'inherit',
+              fontSize: 14,
+              fontWeight: 500,
+              textAlign: 'left',
+            }}
+          >
+            <MessageSquare size={16} style={{ color: '#6b7280' }} />
+            <span style={{ flex: 1 }}>Comments</span>
+            <ChevronDown
+              size={13}
+              style={{
+                color: '#9ca3af',
+                transform: commentsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                transition: 'transform 0.15s',
+              }}
+            />
+          </button>
+
+          {commentsOpen && (
+            <div style={{ marginLeft: 8, marginTop: 2 }}>
+              {(
+                [
+                  { icon: <UserCheck size={13} />, label: 'Unread', count: commentCounts.unread },
+                  { icon: <Pin size={13} />, label: 'Pinned', count: commentCounts.pinned },
+                  { icon: <AlertCircle size={13} />, label: 'Action required', count: commentCounts.actionRequired },
+                  { icon: <Eye size={13} />, label: 'Visible', count: 0 },
+                  { icon: <EyeOff size={13} />, label: 'Hidden', count: 0 },
+                  { icon: <Trash2 size={13} />, label: 'Deleted', count: 0 },
+                  { icon: <CheckCheck size={13} />, label: 'Read', count: 0 },
+                ] as const
+              ).map(({ icon, label, count }) => (
+                <button
+                  key={label}
+                  onClick={() => {}}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 7,
+                    padding: '5px 10px',
+                    borderRadius: 6,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: 'transparent',
+                    color: '#374151',
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    textAlign: 'left',
+                  }}
+                >
+                  {icon}
+                  <span style={{ flex: 1 }}>{label}</span>
+                  {count > 0 && (
+                    <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>{count}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <NavLink
           to="/publisher"
           style={({ isActive }) => ({
@@ -393,8 +397,14 @@ export function Sidebar({
           <span style={{ color: '#6b7280' }}><Calendar size={16} /></span>
           Publisher
         </NavLink>
-        <NavItem icon={<BarChart2 size={16} />} label="Analytics" active={false} onClick={() => {}} />
-        <NavItem icon={<FileBarChart size={16} />} label="Reports" active={false} onClick={() => {}} />
+        <NavItem icon={<BarChart2 size={16} />} label="Insights" active={false} onClick={() => {}} />
+        <NavItem
+          icon={<Folder size={16} />}
+          label="Library"
+          badge="BETA"
+          active={false}
+          onClick={() => {}}
+        />
 
         {/* Channels */}
         <div style={{ marginTop: 12 }}>
@@ -554,11 +564,13 @@ function NavItem({
   label,
   active,
   onClick,
+  badge,
 }: {
   icon: React.ReactNode
   label: string
   active: boolean
   onClick: () => void
+  badge?: string
 }) {
   return (
     <button
@@ -581,7 +593,12 @@ function NavItem({
       }}
     >
       <span style={{ color: '#6b7280' }}>{icon}</span>
-      {label}
+      <span style={{ flex: 1 }}>{label}</span>
+      {badge && (
+        <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#faf5ff', padding: '1px 6px', borderRadius: 99 }}>
+          {badge}
+        </span>
+      )}
     </button>
   )
 }

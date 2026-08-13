@@ -146,12 +146,6 @@ export default function App() {
 
   useEffect(() => { saveCustomViews(customViews) }, [customViews])
 
-  function handleBrandChange(id: string | null) {
-    setActiveBrandId(id)
-    setActiveChannelId(null)
-    setActiveViewId(null)
-  }
-
   function handleChannelChange(id: string | null) {
     setActiveChannelId(id)
     setActiveBrandId(null)
@@ -186,8 +180,6 @@ export default function App() {
         <Sidebar
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
-          activeBrandId={activeBrandId}
-          onBrandChange={handleBrandChange}
           activeChannelId={activeChannelId}
           onChannelChange={handleChannelChange}
           customViews={customViews}
