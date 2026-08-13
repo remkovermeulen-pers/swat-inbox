@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { brands, channels, messages } from '../data/mockData'
+import { brands, channels, messages, customers } from '../data/mockData'
 import type { InboxFilter } from '../data/mockData'
+import { messageMatchesView, type CustomView } from '../lib/inboxScale'
+import { CreateViewModal } from './CreateViewModal'
 import {
   LayoutDashboard,
   Inbox,
@@ -18,6 +20,8 @@ import {
   Archive,
   Sparkles,
   Bell,
+  Plus,
+  X,
 } from 'lucide-react'
 
 const filterCounts: Record<InboxFilter, number> = {
@@ -36,6 +40,11 @@ interface Props {
   onBrandChange: (id: string | null) => void
   activeChannelId: string | null
   onChannelChange: (id: string | null) => void
+  customViews: CustomView[]
+  activeViewId: string | null
+  onViewChange: (id: string | null) => void
+  onAddView: (view: CustomView) => void
+  onDeleteView: (id: string) => void
 }
 
 export function Sidebar({
@@ -45,9 +54,16 @@ export function Sidebar({
   onBrandChange,
   activeChannelId,
   onChannelChange,
+  customViews,
+  activeViewId,
+  onViewChange,
+  onAddView,
+  onDeleteView,
 }: Props) {
   const [inboxOpen, setInboxOpen] = useState(true)
   const [channelsOpen, setChannelsOpen] = useState(true)
+  const [viewsOpen, setViewsOpen] = useState(true)
+  const [showCreateView, setShowCreateView] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
@@ -261,6 +277,107 @@ export function Sidebar({
           )}
         </div>
 
+        {/* Custom Views */}
+        <div style={{ marginTop: 12 }}>
+          <button
+            onClick={() => setViewsOpen(!viewsOpen)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '5px 10px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#6b7280',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              textAlign: 'left',
+            }}
+          >
+            <ChevronDown
+              size={12}
+              style={{
+                transform: viewsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                transition: 'transform 0.15s',
+              }}
+            />
+            Smart Views
+          </button>
+
+          {viewsOpen && (
+            <div style={{ marginTop: 2 }}>
+              {customViews.map((view) => {
+                const active = activeViewId === view.id
+                const count = messages.filter((m) => messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
+                return (
+                  <div key={view.id} style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => onViewChange(active ? null : view.id)}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 7,
+                        padding: '5px 10px',
+                        borderRadius: 6,
+                        border: 'none',
+                        cursor: 'pointer',
+                        background: active ? '#eef2ff' : 'transparent',
+                        color: active ? '#4338ca' : '#374151',
+                        fontFamily: 'inherit',
+                        fontSize: 13,
+                        fontWeight: active ? 600 : 500,
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span style={{ fontSize: 13 }}>{view.icon}</span>
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {view.name}
+                      </span>
+                      <span style={{ fontSize: 11, color: active ? '#4338ca' : '#9ca3af', fontWeight: 600 }}>
+                        {count}
+                      </span>
+                      <span
+                        onClick={(e) => { e.stopPropagation(); onDeleteView(view.id) }}
+                        style={{ display: 'flex', color: '#d1d5db', cursor: 'pointer' }}
+                      >
+                        <X size={12} />
+                      </span>
+                    </button>
+                  </div>
+                )
+              })}
+
+              <button
+                onClick={() => setShowCreateView(true)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  padding: '5px 10px',
+                  borderRadius: 6,
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  fontSize: 12,
+                  color: '#9ca3af',
+                  textAlign: 'left',
+                }}
+              >
+                <Plus size={13} />
+                New view
+              </button>
+            </div>
+          )}
+        </div>
+
         <NavItem icon={<MessageSquare size={16} />} label="Comments" active={false} onClick={() => {}} />
         <NavLink
           to="/publisher"
@@ -421,6 +538,13 @@ export function Sidebar({
           </button>
         </div>
       </div>
+
+      {showCreateView && (
+        <CreateViewModal
+          onClose={() => setShowCreateView(false)}
+          onCreate={(view) => { onAddView(view); setShowCreateView(false) }}
+        />
+      )}
     </aside>
   )
 }

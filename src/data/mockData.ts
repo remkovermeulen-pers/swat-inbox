@@ -60,6 +60,7 @@ export interface Message {
   newReplies: number
   tags: Tag[]
   aiDraft?: string
+  archived?: boolean
 }
 
 export type AutomationAction = 'auto_send' | 'approve' | 'escalate'

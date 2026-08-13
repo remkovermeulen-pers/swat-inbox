@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { messages, customers, brands, channels } from '../data/mockData'
-import type { Message, InboxFilter } from '../data/mockData'
+import type { Message, InboxFilter, Tag } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
+import { AGENTS, getPriorityScore, messageMatchesView, priorityTier, type CustomView, type SortCol, type SortDir } from '../lib/inboxScale'
 import {
   Search,
   Download,
@@ -12,24 +13,93 @@ import {
   RefreshCw,
   Star,
   TrendingUp,
+  Tag as TagIcon,
+  CheckCheck,
+  Archive,
+  BookmarkPlus,
+  Columns3,
 } from 'lucide-react'
-
-type SortCol = 'name' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
-type SortDir = 'asc' | 'desc'
 
 interface Props {
   brandId: string | null
   channelId: string | null
   filter: InboxFilter
+  customViews: CustomView[]
+  activeViewId: string | null
+  onAddView: (view: CustomView) => void
 }
 
-export function TicketList({ brandId, channelId, filter }: Props) {
+const STATUS_TO_LABEL: Record<string, 'Unanswered' | 'AI pending' | 'Answered'> = {
+  unanswered: 'Unanswered',
+  ai_pending: 'AI pending',
+  answered: 'Answered',
+}
+
+type ColKey = 'priority' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
+
+const TOGGLEABLE_COLUMNS: { key: ColKey; label: string; width: number }[] = [
+  { key: 'priority', label: 'Priority', width: 72 },
+  { key: 'ticket', label: 'Ticket #', width: 80 },
+  { key: 'replies', label: 'Replies', width: 60 },
+  { key: 'reach', label: 'Reach', width: 70 },
+  { key: 'channel', label: 'Channel', width: 130 },
+  { key: 'time', label: 'Time', width: 44 },
+]
+
+const VISIBLE_COLS_KEY = 'inbox-visible-columns'
+
+function loadVisibleCols(): Set<ColKey> {
+  try {
+    const raw = localStorage.getItem(VISIBLE_COLS_KEY)
+    if (!raw) return new Set(TOGGLEABLE_COLUMNS.map((c) => c.key))
+    const parsed = JSON.parse(raw) as ColKey[]
+    return new Set(parsed)
+  } catch {
+    return new Set(TOGGLEABLE_COLUMNS.map((c) => c.key))
+  }
+}
+
+export function TicketList({ brandId, channelId, filter, customViews, activeViewId, onAddView }: Props) {
   const navigate = useNavigate()
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [sortFilter, setSortFilter] = useState<'All' | 'Unanswered' | 'AI pending' | 'Answered'>('All')
   const [sortCol, setSortCol] = useState<SortCol>('time')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [overrides, setOverrides] = useState<Record<string, Partial<Message>>>({})
+  const [toast, setToast] = useState<string | null>(null)
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => loadVisibleCols())
+  const [showColumnMenu, setShowColumnMenu] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem(VISIBLE_COLS_KEY, JSON.stringify(Array.from(visibleCols)))
+  }, [visibleCols])
+
+  function toggleColumn(key: ColKey) {
+    setVisibleCols((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+
+  const activeView = customViews.find((v) => v.id === activeViewId) ?? null
+  const viewChannel = activeView?.channelId ? channels.find((c) => c.id === activeView.channelId) : null
+
+  useEffect(() => {
+    if (!activeViewId) return
+    const v = customViews.find((view) => view.id === activeViewId)
+    if (v?.sortCol) { setSortCol(v.sortCol); setSortDir(v.sortDir ?? 'desc') }
+    else { setSortCol('priority'); setSortDir('desc') }
+    setSortFilter(v?.statuses?.length === 1 ? STATUS_TO_LABEL[v.statuses[0]] ?? 'All' : 'All')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeViewId])
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 2500)
+    return () => clearTimeout(t)
+  }, [toast])
 
   function handleSort(col: SortCol) {
     if (sortCol === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
@@ -38,15 +108,30 @@ export function TicketList({ brandId, channelId, filter }: Props) {
 
   const channel = channelId ? channels.find((c) => c.id === channelId) : null
 
+  function withOverrides(m: Message): Message {
+    const o = overrides[m.id]
+    return o ? { ...m, ...o } : m
+  }
+
   let filtered = messages
-    .filter((m) => !brandId || m.brandId === brandId)
-    .filter((m) => !channelId || (channel && m.channel === channel.name && m.platform === channel.platform))
+    .map(withOverrides)
+    .filter((m) => (filter === 'archive' ? m.archived === true : !m.archived))
     .filter((m) => {
+      if (activeView) {
+        const cust = customers.find((c) => c.id === m.customerId)
+        if (!messageMatchesView(m, cust, activeView)) return false
+        if (viewChannel && !(m.channel === viewChannel.name && m.platform === viewChannel.platform)) return false
+        return true
+      }
+      return (!brandId || m.brandId === brandId)
+        && (!channelId || (channel && m.channel === channel.name && m.platform === channel.platform))
+    })
+    .filter((m) => {
+      if (activeView) return true
       if (filter === 'new') return m.unread
       if (filter === 'starred') return m.starred
       if (filter === 'assigned_me') return m.assignedTo === 'Remko'
       if (filter === 'assigned_others') return m.assignedTo && m.assignedTo !== 'Remko'
-      if (filter === 'archive') return false
       return true
     })
     .filter((m) => {
@@ -65,6 +150,7 @@ export function TicketList({ brandId, channelId, filter }: Props) {
       else if (sortCol === 'replies') cmp = a.replyCount - b.replyCount
       else if (sortCol === 'reach') cmp = (custA?.totalReach ?? 0) - (custB?.totalReach ?? 0)
       else if (sortCol === 'channel') cmp = a.channel.localeCompare(b.channel)
+      else if (sortCol === 'priority') cmp = getPriorityScore(a, custA) - getPriorityScore(b, custB)
       return sortDir === 'asc' ? cmp : -cmp
     })
 
@@ -81,7 +167,84 @@ export function TicketList({ brandId, channelId, filter }: Props) {
     else setSelected(new Set(filtered.map((m) => m.id)))
   }
 
-  const headerLabel = brandId
+  function applyToSelected(patch: Partial<Message>) {
+    setOverrides((prev) => {
+      const next = { ...prev }
+      selected.forEach((id) => { next[id] = { ...next[id], ...patch } })
+      return next
+    })
+  }
+
+  function bulkAssign(name: string) {
+    if (!name) return
+    const count = selected.size
+    applyToSelected({ assignedTo: name })
+    setToast(`Assigned ${count} ticket${count > 1 ? 's' : ''} to ${name}`)
+    setSelected(new Set())
+  }
+
+  function bulkTag() {
+    const label = window.prompt('Tag to add to selected tickets:')
+    if (!label?.trim()) return
+    const newTag: Tag = { label: label.trim(), color: '#5e6ad2' }
+    const count = selected.size
+    setOverrides((prev) => {
+      const next = { ...prev }
+      selected.forEach((id) => {
+        const current = withOverrides(messages.find((m) => m.id === id)!)
+        if (!current.tags.some((t) => t.label.toLowerCase() === newTag.label.toLowerCase())) {
+          next[id] = { ...next[id], tags: [...current.tags, newTag] }
+        }
+      })
+      return next
+    })
+    setToast(`Tagged ${count} ticket${count > 1 ? 's' : ''} "${newTag.label}"`)
+    setSelected(new Set())
+  }
+
+  function bulkMarkAnswered() {
+    const count = selected.size
+    applyToSelected({ status: 'answered' })
+    setToast(`Marked ${count} ticket${count > 1 ? 's' : ''} as answered`)
+    setSelected(new Set())
+  }
+
+  function bulkArchive() {
+    const count = selected.size
+    applyToSelected({ archived: true })
+    setToast(`Archived ${count} ticket${count > 1 ? 's' : ''}`)
+    setSelected(new Set())
+  }
+
+  function saveCurrentView() {
+    const name = window.prompt('Name this view:', activeView ? `${activeView.name} (customized)` : '')
+    if (!name?.trim()) return
+    const statuses = sortFilter === 'All' ? undefined : [
+      sortFilter === 'Unanswered' ? 'unanswered' as const
+        : sortFilter === 'AI pending' ? 'ai_pending' as const
+        : 'answered' as const,
+    ]
+    onAddView({
+      id: `view-${Date.now()}`,
+      name: name.trim(),
+      icon: activeView?.icon ?? '📌',
+      color: activeView?.color ?? '#5e6ad2',
+      keywords: activeView?.keywords,
+      tags: activeView?.tags,
+      sentiments: activeView?.sentiments,
+      minReach: activeView?.minReach,
+      statuses,
+      brandId: activeView?.brandId ?? brandId ?? undefined,
+      channelId: activeView?.channelId ?? channelId ?? undefined,
+      sortCol,
+      sortDir,
+    })
+    setToast(`Saved view "${name.trim()}"`)
+  }
+
+  const headerLabel = activeView
+    ? `${activeView.icon} ${activeView.name}`
+    : brandId
     ? brands.find((b) => b.id === brandId)?.name ?? 'Inbox'
     : channel
     ? channel.name
@@ -112,27 +275,11 @@ export function TicketList({ brandId, channelId, filter }: Props) {
           {headerLabel}
         </h1>
 
-        {/* Status filter dropdown */}
-        <div style={{ position: 'relative' }}>
-          <button
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '5px 12px',
-              borderRadius: 6,
-              border: '1px solid #e5e7eb',
-              background: '#fff',
-              fontSize: 13,
-              fontWeight: 500,
-              color: '#374151',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            {sortFilter} <ChevronDown size={13} style={{ color: '#9ca3af' }} />
-          </button>
-        </div>
+        {activeView && (
+          <span style={{ fontSize: 12, color: '#6b7280', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 99, padding: '3px 10px' }}>
+            Smart view · across all brands &amp; channels, sorted by priority
+          </span>
+        )}
 
         {/* Status quick-filters */}
         <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
@@ -163,8 +310,46 @@ export function TicketList({ brandId, channelId, filter }: Props) {
           <Search size={18} style={{ color: '#9ca3af', cursor: 'pointer' }} />
           <Download size={18} style={{ color: '#9ca3af', cursor: 'pointer' }} />
           <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>
-            Sort by: {sortCol === 'time' ? 'Time' : sortCol === 'name' ? 'Name' : sortCol === 'ticket' ? 'Ticket #' : sortCol === 'replies' ? 'Replies' : sortCol === 'reach' ? 'Reach' : 'Channel'} {sortDir === 'asc' ? '↑' : '↓'}
+            Sort by: {sortCol === 'time' ? 'Time' : sortCol === 'name' ? 'Name' : sortCol === 'ticket' ? 'Ticket #' : sortCol === 'replies' ? 'Replies' : sortCol === 'reach' ? 'Reach' : sortCol === 'priority' ? 'Priority' : 'Channel'} {sortDir === 'asc' ? '↑' : '↓'}
           </span>
+          <button onClick={saveCurrentView} style={saveViewBtnStyle} title="Save the current filters, status, and sort order as a Smart View">
+            <BookmarkPlus size={13} /> Save view
+          </button>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowColumnMenu((v) => !v)} style={saveViewBtnStyle}>
+              <Columns3 size={13} /> Columns
+            </button>
+            {showColumnMenu && (
+              <>
+                <div
+                  onClick={() => setShowColumnMenu(false)}
+                  style={{ position: 'fixed', inset: 0, zIndex: 9 }}
+                />
+                <div
+                  style={{
+                    position: 'absolute', top: '110%', right: 0, zIndex: 10,
+                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 8, width: 160,
+                  }}
+                >
+                  {TOGGLEABLE_COLUMNS.map((col) => (
+                    <label
+                      key={col.key}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visibleCols.has(col.key)}
+                        onChange={() => toggleColumn(col.key)}
+                        style={{ cursor: 'pointer', accentColor: '#5e6ad2' }}
+                      />
+                      {col.label}
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -188,6 +373,35 @@ export function TicketList({ brandId, channelId, filter }: Props) {
         <span style={{ fontSize: 13, color: '#6b7280' }}>
           {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
         </span>
+
+        {selected.size > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <select
+              value=""
+              onChange={(e) => bulkAssign(e.target.value)}
+              style={bulkBtnStyle}
+            >
+              <option value="">Assign to…</option>
+              {AGENTS.map((a) => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <button onClick={bulkTag} style={bulkBtnStyle}>
+              <TagIcon size={13} /> Tag
+            </button>
+            <button onClick={bulkMarkAnswered} style={bulkBtnStyle}>
+              <CheckCheck size={13} /> Mark answered
+            </button>
+            <button onClick={bulkArchive} style={bulkBtnStyle}>
+              <Archive size={13} /> Archive
+            </button>
+          </div>
+        )}
+
+        <div style={{ flex: 1 }} />
+        {toast && (
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#15803d', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCheck size={13} /> {toast}
+          </span>
+        )}
         <RefreshCw size={14} style={{ color: '#9ca3af', cursor: 'pointer' }} />
       </div>
 
@@ -214,18 +428,20 @@ export function TicketList({ brandId, channelId, filter }: Props) {
         {/* Preview — not sortable, flex spacer */}
         <div style={{ flex: 1 }} />
 
+        {/* Priority */}
+        {visibleCols.has('priority') && <ColHeader label="Priority" col="priority" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={72} />}
         {/* Ticket # */}
-        <ColHeader label="Ticket #" col="ticket" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={80} />
+        {visibleCols.has('ticket') && <ColHeader label="Ticket #" col="ticket" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={80} />}
         {/* Replies */}
-        <ColHeader label="Replies" col="replies" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={60} />
+        {visibleCols.has('replies') && <ColHeader label="Replies" col="replies" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={60} />}
         {/* Reach */}
-        <ColHeader label="Reach" col="reach" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={70} />
+        {visibleCols.has('reach') && <ColHeader label="Reach" col="reach" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={70} />}
         {/* Channel */}
-        <ColHeader label="Channel" col="channel" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={130} />
+        {visibleCols.has('channel') && <ColHeader label="Channel" col="channel" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={130} />}
         {/* Assignee spacer */}
         <div style={{ width: 28, flexShrink: 0 }} />
         {/* Time */}
-        <ColHeader label="Time" col="time" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={44} />
+        {visibleCols.has('time') && <ColHeader label="Time" col="time" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={44} />}
       </div>
 
       {/* Ticket rows */}
@@ -255,6 +471,7 @@ export function TicketList({ brandId, channelId, filter }: Props) {
                 onSelect={() => toggleSelect(msg.id)}
                 active={msg.id === messageId}
                 onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
+                visibleCols={visibleCols}
               />
             ))}
             <div
@@ -317,15 +534,19 @@ function TicketRow({
   onSelect,
   active,
   onClick,
+  visibleCols,
 }: {
   msg: Message
   selected: boolean
   onSelect: () => void
   active: boolean
   onClick: () => void
+  visibleCols: Set<ColKey>
 }) {
   const customer = customers.find((c) => c.id === msg.customerId)
   const timeStr = format(new Date(msg.timestamp), 'HH:mm')
+  const score = getPriorityScore(msg, customer)
+  const tier = priorityTier(score)
 
   return (
     <div
@@ -436,65 +657,95 @@ function TicketRow({
         ))}
       </div>
 
-      {/* Ticket # */}
-      <div style={{ width: 80, flexShrink: 0 }}>
-        <span style={{ fontSize: 12, color: '#9ca3af' }}>{msg.ticketNumber}</span>
-      </div>
-
-      {/* Reply count */}
-      <div style={{ width: 60, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
-        <span style={{ fontSize: 13, color: '#6b7280' }}>{msg.replyCount}</span>
-        {msg.newReplies > 0 && (
+      {/* Priority */}
+      {visibleCols.has('priority') && (
+        <div style={{ width: 72, flexShrink: 0 }}>
           <span
             style={{
-              background: '#3b82f6',
-              color: '#fff',
-              fontSize: 10,
-              fontWeight: 700,
-              width: 18,
-              height: 18,
-              borderRadius: 4,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'center',
+              gap: 5,
+              padding: '2px 8px',
+              borderRadius: 99,
+              fontSize: 11,
+              fontWeight: 500,
+              background: tier.color + '15',
+              color: tier.color,
             }}
           >
-            {msg.newReplies}
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: tier.color, flexShrink: 0 }} />
+            {tier.label}
           </span>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Ticket # */}
+      {visibleCols.has('ticket') && (
+        <div style={{ width: 80, flexShrink: 0 }}>
+          <span style={{ fontSize: 12, color: '#9ca3af' }}>{msg.ticketNumber}</span>
+        </div>
+      )}
+
+      {/* Reply count */}
+      {visibleCols.has('replies') && (
+        <div style={{ width: 60, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>{msg.replyCount}</span>
+          {msg.newReplies > 0 && (
+            <span
+              style={{
+                background: '#3b82f6',
+                color: '#fff',
+                fontSize: 10,
+                fontWeight: 700,
+                width: 18,
+                height: 18,
+                borderRadius: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {msg.newReplies}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Reach */}
-      <div style={{ width: 70, flexShrink: 0, textAlign: 'right' }}>
-        {customer?.totalReach ? (
-          <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
-            <TrendingUp size={11} style={{ color: customer.totalReach >= 10000 ? '#f59e0b' : '#d1d5db' }} />
-            {customer.totalReach >= 1_000_000
-              ? `${(customer.totalReach / 1_000_000).toFixed(1)}M`
-              : customer.totalReach >= 1_000
-              ? `${(customer.totalReach / 1_000).toFixed(1)}K`
-              : customer.totalReach}
-          </span>
-        ) : (
-          <span style={{ fontSize: 12, color: '#e5e7eb' }}>—</span>
-        )}
-      </div>
+      {visibleCols.has('reach') && (
+        <div style={{ width: 70, flexShrink: 0, textAlign: 'right' }}>
+          {customer?.totalReach ? (
+            <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+              <TrendingUp size={11} style={{ color: customer.totalReach >= 10000 ? '#f59e0b' : '#d1d5db' }} />
+              {customer.totalReach >= 1_000_000
+                ? `${(customer.totalReach / 1_000_000).toFixed(1)}M`
+                : customer.totalReach >= 1_000
+                ? `${(customer.totalReach / 1_000).toFixed(1)}K`
+                : customer.totalReach}
+            </span>
+          ) : (
+            <span style={{ fontSize: 12, color: '#e5e7eb' }}>—</span>
+          )}
+        </div>
+      )}
 
       {/* Channel */}
-      <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <PlatformIcon platform={msg.platform} size={15} />
-        <span
-          style={{
-            fontSize: 12,
-            color: '#6b7280',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {msg.channel}
-        </span>
-      </div>
+      {visibleCols.has('channel') && (
+        <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <PlatformIcon platform={msg.platform} size={15} />
+          <span
+            style={{
+              fontSize: 12,
+              color: '#6b7280',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {msg.channel}
+          </span>
+        </div>
+      )}
 
       {/* Assignee avatar */}
       <div style={{ width: 28, flexShrink: 0 }}>
@@ -529,11 +780,43 @@ function TicketRow({
       </div>
 
       {/* Time */}
-      <div style={{ width: 44, flexShrink: 0, textAlign: 'right' }}>
-        <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: msg.unread ? 600 : 400 }}>
-          {timeStr}
-        </span>
-      </div>
+      {visibleCols.has('time') && (
+        <div style={{ width: 44, flexShrink: 0, textAlign: 'right' }}>
+          <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: msg.unread ? 600 : 400 }}>
+            {timeStr}
+          </span>
+        </div>
+      )}
     </div>
   )
+}
+
+const saveViewBtnStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 5,
+  padding: '5px 12px',
+  borderRadius: 6,
+  border: '1px solid #e5e7eb',
+  background: '#fff',
+  fontSize: 12,
+  fontWeight: 500,
+  color: '#374151',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+}
+
+const bulkBtnStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 5,
+  padding: '4px 10px',
+  borderRadius: 6,
+  border: '1px solid #d1d5db',
+  background: '#fff',
+  fontSize: 12,
+  fontWeight: 500,
+  color: '#374151',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
 }

@@ -6,6 +6,8 @@ import { MessageDetail } from './components/MessageDetail'
 import { BrandSettings } from './pages/BrandSettings'
 import { Publisher } from './pages/Publisher'
 import type { InboxFilter } from './data/mockData'
+import type { CustomView } from './lib/inboxScale'
+import { loadCustomViews, saveCustomViews } from './lib/inboxScale'
 
 const SPLIT_KEY = 'inbox-split-pct'
 const DEFAULT_SPLIT = 50
@@ -14,10 +16,16 @@ function InboxShell({
   brandId,
   channelId,
   filter,
+  customViews,
+  activeViewId,
+  onAddView,
 }: {
   brandId: string | null
   channelId: string | null
   filter: InboxFilter
+  customViews: CustomView[]
+  activeViewId: string | null
+  onAddView: (view: CustomView) => void
 }) {
   const { messageId } = useParams()
   const hasMessage = Boolean(messageId)
@@ -63,7 +71,14 @@ function InboxShell({
           flexDirection: 'column',
         }}
       >
-        <TicketList brandId={brandId} channelId={channelId} filter={filter} />
+        <TicketList
+          brandId={brandId}
+          channelId={channelId}
+          filter={filter}
+          customViews={customViews}
+          activeViewId={activeViewId}
+          onAddView={onAddView}
+        />
       </div>
 
       {/* Draggable divider */}
@@ -98,19 +113,26 @@ function InboxRoutes({
   brandId,
   channelId,
   filter,
+  customViews,
+  activeViewId,
+  onAddView,
 }: {
   brandId: string | null
   channelId: string | null
   filter: InboxFilter
+  customViews: CustomView[]
+  activeViewId: string | null
+  onAddView: (view: CustomView) => void
 }) {
+  const shell = <InboxShell brandId={brandId} channelId={channelId} filter={filter} customViews={customViews} activeViewId={activeViewId} onAddView={onAddView} />
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/inbox" replace />} />
       <Route path="/inbox/settings" element={<BrandSettings />} />
       <Route path="/publisher" element={<Publisher />} />
-      <Route path="/inbox" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
-      <Route path="/inbox/:brandId" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
-      <Route path="/inbox/:brandId/:messageId" element={<InboxShell brandId={brandId} channelId={channelId} filter={filter} />} />
+      <Route path="/inbox" element={shell} />
+      <Route path="/inbox/:brandId" element={shell} />
+      <Route path="/inbox/:brandId/:messageId" element={shell} />
     </Routes>
   )
 }
@@ -119,15 +141,43 @@ export default function App() {
   const [activeFilter, setActiveFilter] = useState<InboxFilter>('all')
   const [activeBrandId, setActiveBrandId] = useState<string | null>(null)
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
+  const [customViews, setCustomViews] = useState<CustomView[]>(() => loadCustomViews())
+  const [activeViewId, setActiveViewId] = useState<string | null>(null)
+
+  useEffect(() => { saveCustomViews(customViews) }, [customViews])
 
   function handleBrandChange(id: string | null) {
     setActiveBrandId(id)
     setActiveChannelId(null)
+    setActiveViewId(null)
   }
 
   function handleChannelChange(id: string | null) {
     setActiveChannelId(id)
     setActiveBrandId(null)
+    setActiveViewId(null)
+  }
+
+  function activateView(view: CustomView | null) {
+    setActiveViewId(view?.id ?? null)
+    if (view) {
+      setActiveBrandId(view.brandId ?? null)
+      setActiveChannelId(view.channelId ?? null)
+    }
+  }
+
+  function handleViewChange(id: string | null) {
+    activateView(id ? customViews.find((v) => v.id === id) ?? null : null)
+  }
+
+  function addCustomView(view: CustomView) {
+    setCustomViews((prev) => [...prev, view])
+    activateView(view)
+  }
+
+  function deleteCustomView(id: string) {
+    setCustomViews((prev) => prev.filter((v) => v.id !== id))
+    if (activeViewId === id) setActiveViewId(null)
   }
 
   return (
@@ -140,12 +190,20 @@ export default function App() {
           onBrandChange={handleBrandChange}
           activeChannelId={activeChannelId}
           onChannelChange={handleChannelChange}
+          customViews={customViews}
+          activeViewId={activeViewId}
+          onViewChange={handleViewChange}
+          onAddView={addCustomView}
+          onDeleteView={deleteCustomView}
         />
         <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <InboxRoutes
             brandId={activeBrandId}
             channelId={activeChannelId}
             filter={activeFilter}
+            customViews={customViews}
+            activeViewId={activeViewId}
+            onAddView={addCustomView}
           />
         </main>
       </div>
