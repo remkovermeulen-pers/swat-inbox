@@ -430,7 +430,7 @@ export function MessageDetail() {
           </div>
 
           {/* Customer info */}
-          {customer.mrr > 0 && (
+          {(customer.mrr > 0 || customer.totalReach > 0) && (
             <div style={{ padding: '14px 18px', borderBottom: '1px solid #f3f4f6' }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 10px' }}>Customer</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>

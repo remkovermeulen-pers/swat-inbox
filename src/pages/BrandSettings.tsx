@@ -99,6 +99,43 @@ export function BrandSettings() {
             </div>
           </div>
 
+          {/* ── Tone of voice ─────────────────────────────────────────── */}
+          <SettingsSection
+            icon={<Sparkles size={16} style={{ color: '#1a7bc4' }} />}
+            title="Tone of Voice"
+            description="Describe how the AI should sound when replying on behalf of this brand."
+          >
+            <textarea
+              value={brand.settings.toneOfVoice}
+              onChange={(e) => updateBrand({ toneOfVoice: e.target.value })}
+              rows={4}
+              style={{
+                width: '100%', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8,
+                padding: '10px 14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit',
+                lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box',
+              }}
+            />
+          </SettingsSection>
+
+          {/* ── Reply instructions ────────────────────────────────────── */}
+          <SettingsSection
+            icon={<Shield size={16} style={{ color: '#7c3aed' }} />}
+            title="Reply Instructions & Rules"
+            description="Specific rules the AI must follow. Use bullet points for clarity."
+          >
+            <textarea
+              value={brand.settings.instructions}
+              onChange={(e) => updateBrand({ instructions: e.target.value })}
+              rows={10}
+              style={{
+                width: '100%', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8,
+                padding: '10px 14px', color: '#334155', outline: 'none',
+                fontFamily: 'ui-monospace, monospace', lineHeight: 1.7,
+                resize: 'vertical', boxSizing: 'border-box', background: '#f8fafc',
+              }}
+            />
+          </SettingsSection>
+
           {/* ── Automation Rules ─────────────────────────────────────── */}
           <SettingsSection
             icon={<Bot size={16} style={{ color: '#7c3aed' }} />}
@@ -221,43 +258,6 @@ export function BrandSettings() {
                 />
               </div>
             </div>
-          </SettingsSection>
-
-          {/* ── Tone of voice ─────────────────────────────────────────── */}
-          <SettingsSection
-            icon={<Sparkles size={16} style={{ color: '#1a7bc4' }} />}
-            title="Tone of Voice"
-            description="Describe how the AI should sound when replying on behalf of this brand."
-          >
-            <textarea
-              value={brand.settings.toneOfVoice}
-              onChange={(e) => updateBrand({ toneOfVoice: e.target.value })}
-              rows={4}
-              style={{
-                width: '100%', fontSize: 13, border: '1px solid #e2e8f0', borderRadius: 8,
-                padding: '10px 14px', color: '#0f172a', outline: 'none', fontFamily: 'inherit',
-                lineHeight: 1.6, resize: 'vertical', boxSizing: 'border-box',
-              }}
-            />
-          </SettingsSection>
-
-          {/* ── Reply instructions ────────────────────────────────────── */}
-          <SettingsSection
-            icon={<Shield size={16} style={{ color: '#7c3aed' }} />}
-            title="Reply Instructions & Rules"
-            description="Specific rules the AI must follow. Use bullet points for clarity."
-          >
-            <textarea
-              value={brand.settings.instructions}
-              onChange={(e) => updateBrand({ instructions: e.target.value })}
-              rows={10}
-              style={{
-                width: '100%', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 8,
-                padding: '10px 14px', color: '#334155', outline: 'none',
-                fontFamily: 'ui-monospace, monospace', lineHeight: 1.7,
-                resize: 'vertical', boxSizing: 'border-box', background: '#f8fafc',
-              }}
-            />
           </SettingsSection>
 
           {/* ── Escalation keywords ───────────────────────────────────── */}

@@ -1,528 +1,265 @@
 import { useState, useRef, useEffect } from 'react'
 import {
-  Sparkles,
-  ChevronRight,
-  ChevronLeft,
-  CheckCheck,
-  Megaphone,
-  MessageSquare,
-  GitBranch,
-  Clock,
-  Mail,
-  Edit3,
-  Play,
-  Pause,
-  MoreHorizontal,
-  Users,
-  BarChart2,
-  ArrowRight,
-  Bot,
-  Zap,
-  Copy,
-  Terminal,
-  Send,
-  Wand2,
+  Sparkles, ChevronRight, ChevronLeft, CheckCheck,
+  Megaphone, MessageSquare, GitBranch, Clock, Mail,
+  Edit3, Play, Pause, MoreHorizontal, Users, BarChart2,
+  ArrowRight, Bot, Zap, Copy, Terminal, Send, Wand2,
 } from 'lucide-react'
 
-interface Ad {
-  id: string
-  headline: string
-  body: string
-  cta: string
-  platform: 'linkedin' | 'instagram' | 'twitter'
+/* ─── Types ──────────────────────────────────────────────────── */
+interface Ad { id: string; headline: string; body: string; cta: string; platform: 'linkedin' | 'instagram' | 'twitter' }
+interface LinkedInMessage { id: string; subject: string; body: string; angle: string }
+interface FollowUp { id: string; delay: number; unit: 'days'; condition: string; message: string }
+interface CampaignContent { ads: Ad[]; messages: LinkedInMessage[]; followUps: FollowUp[] }
+interface Campaign { id: string; name: string; goal: string; status: 'draft' | 'active' | 'paused'; leads: number; replies: number; createdAt: string; content?: CampaignContent }
+
+/* ─── Example content ────────────────────────────────────────── */
+const EXAMPLE_CONTENT: CampaignContent = {
+  ads: [
+    {
+      id: 'a1', platform: 'linkedin',
+      headline: '🚀 We\'re hiring a Social Media Manager — remote, creative, impactful',
+      body: 'Swat is a social media management platform trusted by 5,000+ brands. We\'re looking for a Social Media Manager who can own our voice across LinkedIn, Instagram, and X.\n\nYou\'ll get full creative freedom, a 32-hour work week option, and real impact on a product that social teams actually love.\n\nSound like you?',
+      cta: 'See the full role →',
+    },
+    {
+      id: 'a2', platform: 'instagram',
+      headline: 'Social Media Manager — own the whole strategy, not just the queue',
+      body: 'Tired of waiting 3 days for copy approval? At Swat, you run the show.\n\nWe\'re a lean team building a product that 5,000+ social media managers use every day — and we need one more great person to tell that story.\n\nRemote-first · Competitive salary · Real ownership.',
+      cta: 'Apply now',
+    },
+    {
+      id: 'a3', platform: 'twitter',
+      headline: 'We need a Social Media Manager who gets B2B — and makes it interesting',
+      body: 'B2B social doesn\'t have to be boring. We\'re hiring someone to prove that.\n\nSwat helps 5,000+ brands manage their social inbox. We want a Social Media Manager to help us grow the brand that tools people actually love using.\n\nIf you\'ve grown a B2B audience before, let\'s talk.',
+      cta: 'Learn more',
+    },
+  ],
+  messages: [
+    {
+      id: 'm1', angle: 'Creative angle',
+      subject: 'Saw your content — want to make more of it?',
+      body: `Hi {first_name},
+
+I came across your posts on LinkedIn and immediately thought: this is exactly the voice we're looking for.
+
+We're Swat — a social media management platform used by 5,000+ brands — and we're hiring a Social Media Manager to own our channels.
+
+Full creative freedom, remote-first, and a team that genuinely cares about good content. No approval bottlenecks.
+
+Would you be open to a 20-minute call this week to learn more?`,
+    },
+    {
+      id: 'm2', angle: 'Pain-point angle',
+      subject: 'Quick question about your current setup',
+      body: `Hi {first_name},
+
+I have a hunch you've experienced this: great content ideas, but not enough time — or not enough approvals — to actually ship them.
+
+We're building a team at Swat where the Social Media Manager calls the shots. Strategy, channel mix, content calendar — all yours.
+
+We're at the stage where your work will directly shape how thousands of people see our brand.
+
+Worth a quick chat?`,
+    },
+    {
+      id: 'm3', angle: 'Results angle',
+      subject: 'We grew from 2K → 47K followers — want to take it further?',
+      body: `Hi {first_name},
+
+In the past 18 months, we grew our LinkedIn from 2K to 47K followers with a team of two.
+
+Now we're ready to scale — and we're looking for a Social Media Manager to expand that across all channels.
+
+Given your background in {industry}, I think you'd find the challenge interesting. You'd be targeting a very similar audience to the one you've likely built before.
+
+Happy to share more details if you're curious.`,
+    },
+  ],
+  followUps: [
+    { id: 'f1', delay: 3, unit: 'days', condition: 'No reply to initial message', message: 'Hi {first_name}, just bumping this up in case it got buried! Still think you\'d be a great fit. Happy to answer any questions about the role, team, or what day-to-day actually looks like.' },
+    { id: 'f2', delay: 7, unit: 'days', condition: 'No reply to follow-up 1', message: 'Last note from me, {first_name}. If the timing isn\'t right, no worries at all. The role will be open for a few more weeks — feel free to reach out if anything changes.' },
+    { id: 'f3', delay: 1, unit: 'days', condition: 'Replied with interest', message: 'Great to hear from you, {first_name}! Sending over a calendar link so we can find a time — I\'ll also include a short overview of the role and team for context. Talk soon!' },
+  ],
 }
 
-interface LinkedInMessage {
-  id: string
-  subject: string
-  body: string
-  angle: string
-}
-
-interface FollowUp {
-  id: string
-  delay: number
-  unit: 'days' | 'hours'
-  condition: string
-  message: string
-}
-
-interface Campaign {
-  id: string
-  name: string
-  goal: string
-  status: 'draft' | 'active' | 'paused'
-  leads: number
-  replies: number
-  createdAt: string
-}
-
-const mockCampaigns: Campaign[] = [
-  { id: 'c1', name: 'Q3 Social Media Manager Outreach', goal: 'Hire social media managers', status: 'active', leads: 142, replies: 31, createdAt: '2026-06-01' },
-  { id: 'c2', name: 'Agency Partnership Program', goal: 'Find agency partners', status: 'paused', leads: 87, replies: 14, createdAt: '2026-05-15' },
+const INITIAL_CAMPAIGNS: Campaign[] = [
+  { id: 'c1', name: 'Q3 Social Media Manager Outreach', goal: 'Hire social media managers for our team', status: 'active', leads: 142, replies: 31, createdAt: '2026-06-01', content: EXAMPLE_CONTENT },
+  { id: 'c2', name: 'Agency Partnership Program', goal: 'Find agency partners for our reseller programme', status: 'paused', leads: 87, replies: 14, createdAt: '2026-05-15' },
 ]
 
-const DEFAULT_ADS: Ad[] = [
-  {
-    id: 'a1',
-    headline: '🚀 Join Our Social Media Team',
-    body: 'We\'re growing fast and looking for a creative Social Media Manager to own our brand voice across LinkedIn, Instagram & X. You\'ll get full creative freedom, a remote-first setup, and real impact on a product used by 5,000+ brands. Sound like you?',
-    cta: 'Apply now →',
-    platform: 'linkedin',
-  },
-  {
-    id: 'a2',
-    headline: 'Social Media Manager — Remote, Flexible, Impactful',
-    body: 'Tired of approvals that take forever? At Swat, you own your content calendar. We\'re hiring a Social Media Manager who thinks in content series, not one-off posts. Competitive salary · 32-hr work week option · Full benefits.',
-    cta: 'See the role',
-    platform: 'instagram',
-  },
-  {
-    id: 'a3',
-    headline: 'We\'re Hiring a Social Media Manager Who Gets B2B',
-    body: 'Most B2B social is boring. We\'re fixing that — and we need your help. Looking for someone who can turn complex SaaS features into stories people actually want to share. If you\'ve grown a B2B audience before, let\'s talk.',
-    cta: 'Learn more',
-    platform: 'twitter',
-  },
-]
+const STEPS = ['Brief', 'Ads', 'Messages', 'Follow-up', 'Review']
 
-const DEFAULT_MESSAGES: LinkedInMessage[] = [
-  {
-    id: 'm1',
-    angle: 'Creative angle',
-    subject: 'Saw your content — want to create more of it?',
-    body: 'Hi {first_name},\n\nI came across your work and immediately thought: this is exactly the voice we\'re looking for at Swat.\n\nWe\'re a social media management platform used by 5,000+ brands, and we\'re looking for a Social Media Manager who can own our own channels with the same energy.\n\nFull creative freedom, remote-first, competitive comp. Would love to share more details if you\'re open to a quick chat?',
-  },
-  {
-    id: 'm2',
-    angle: 'Pain-point angle',
-    subject: 'Quick question about your current role',
-    body: 'Hi {first_name},\n\nI know the feeling: great ideas, not enough time (or budget approval) to execute them.\n\nWe\'re building a team at Swat where the Social Media Manager actually calls the shots — content strategy, channel mix, posting cadence, all of it.\n\nWe\'re early enough that your work will shape how thousands of people perceive us. If that sounds interesting, happy to tell you more.',
-  },
-  {
-    id: 'm3',
-    angle: 'Data-driven angle',
-    subject: 'Growing from 2K → 40K followers — want to do it again?',
-    body: 'Hi {first_name},\n\nWe grew our LinkedIn from 2K to 40K followers in 18 months with a team of two. Now we\'re hiring a Social Media Manager to take it further across all channels.\n\nI think your background in {industry} makes you a strong fit — you understand the audience we\'re trying to reach.\n\nWorth a 20-minute call to explore?',
-  },
-]
+type RightPanel = 'empty' | 'wizard' | 'chat' | 'mcp' | { campaignId: string }
 
-const DEFAULT_FOLLOWUPS: FollowUp[] = [
-  {
-    id: 'f1',
-    delay: 3,
-    unit: 'days',
-    condition: 'No reply to initial message',
-    message: 'Hi {first_name}, just wanted to bump this up in case it got buried. Still think you\'d be a great fit — happy to answer any questions about the role or team culture.',
-  },
-  {
-    id: 'f2',
-    delay: 7,
-    unit: 'days',
-    condition: 'No reply to follow-up 1',
-    message: 'Last nudge from me, {first_name}. If the timing isn\'t right, totally understand. If it ever is, feel free to reach out — the role will be open for a few more weeks.',
-  },
-  {
-    id: 'f3',
-    delay: 1,
-    unit: 'days',
-    condition: 'Replied with interest',
-    message: 'Great to hear from you, {first_name}! I\'ll send over a calendar link so we can find a time that works. In the meantime, here\'s a bit more about what the day-to-day looks like: [link to job description].',
-  },
-]
-
-const STEPS = ['Brief', 'Ads', 'LinkedIn Messages', 'Follow-up Flow', 'Review']
-
+/* ─── Root ───────────────────────────────────────────────────── */
 export function Publisher() {
-  const [view, setView] = useState<'list' | 'wizard' | 'chat' | 'mcp'>('list')
+  const [campaigns, setCampaigns] = useState<Campaign[]>(INITIAL_CAMPAIGNS)
+  const [right, setRight] = useState<RightPanel>('empty')
+
+  // Wizard state
   const [step, setStep] = useState(0)
   const [goal, setGoal] = useState('')
   const [campaignName, setCampaignName] = useState('')
   const [audience, setAudience] = useState('')
-  const [ads, setAds] = useState<Ad[]>(DEFAULT_ADS)
-  const [messages, setMessages] = useState<LinkedInMessage[]>(DEFAULT_MESSAGES)
-  const [followUps, setFollowUps] = useState<FollowUp[]>(DEFAULT_FOLLOWUPS)
-  const [editingAd, setEditingAd] = useState<string | null>(null)
-  const [editingMsg, setEditingMsg] = useState<string | null>(null)
-  const [launched, setLaunched] = useState(false)
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns)
+  const [draftContent, setDraftContent] = useState<CampaignContent>(EXAMPLE_CONTENT)
+  const [wizardLaunched, setWizardLaunched] = useState(false)
 
   function startWizard() {
     setStep(0); setGoal(''); setCampaignName(''); setAudience('')
-    setAds(DEFAULT_ADS); setMessages(DEFAULT_MESSAGES); setFollowUps(DEFAULT_FOLLOWUPS)
-    setLaunched(false); setView('wizard')
+    setDraftContent(EXAMPLE_CONTENT); setWizardLaunched(false)
+    setRight('wizard')
+  }
+
+  function launchWizard() {
+    const c: Campaign = { id: `c${Date.now()}`, name: campaignName || goal.slice(0, 50) || 'New Campaign', goal, status: 'active', leads: 0, replies: 0, createdAt: new Date().toISOString().split('T')[0], content: draftContent }
+    setCampaigns(p => [c, ...p])
+    setWizardLaunched(true)
   }
 
   function addCampaign(name: string, goal: string) {
-    setCampaigns(prev => [{
-      id: `c${Date.now()}`, name, goal, status: 'active', leads: 0, replies: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-    }, ...prev])
+    const c: Campaign = { id: `c${Date.now()}`, name, goal, status: 'active', leads: 0, replies: 0, createdAt: new Date().toISOString().split('T')[0], content: EXAMPLE_CONTENT }
+    setCampaigns(p => [c, ...p])
+    setRight({ campaignId: c.id })
   }
 
-  function launch() {
-    setLaunched(true)
-    addCampaign(campaignName || 'New Campaign', goal)
+  function updateCampaign(id: string, content: CampaignContent) {
+    setCampaigns(p => p.map(c => c.id === id ? { ...c, content } : c))
   }
 
-  if (view === 'list') {
-    return <CampaignList campaigns={campaigns} onWizard={startWizard} onChat={() => setView('chat')} onMcp={() => setView('mcp')} />
-  }
-  if (view === 'chat') {
-    return <ChatCreator onBack={() => setView('list')} onLaunch={addCampaign} />
-  }
-  if (view === 'mcp') {
-    return <McpPanel onBack={() => setView('list')} />
-  }
+  const selectedCampaign = typeof right === 'object' ? campaigns.find(c => c.id === right.campaignId) : null
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#f9fafb', overflow: 'hidden' }}>
-      {/* Wizard header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-        <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
-          <ChevronLeft size={16} /> Campaigns
-        </button>
-        <span style={{ color: '#e5e7eb' }}>|</span>
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>New Campaign</span>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Header */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <h1 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>Publisher</h1>
+      </div>
 
-        {/* Step indicators */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginLeft: 'auto' }}>
-          {STEPS.map((s, i) => (
-            <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '4px 12px', borderRadius: 6,
-                background: i === step ? '#f0fdf4' : 'transparent',
-                cursor: i < step ? 'pointer' : 'default',
-              }} onClick={() => { if (i < step) setStep(i) }}>
-                <div style={{
-                  width: 20, height: 20, borderRadius: '50%',
-                  background: i < step ? '#22c55e' : i === step ? '#111827' : '#e5e7eb',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, fontWeight: 700, color: '#fff', flexShrink: 0,
-                }}>
-                  {i < step ? '✓' : i + 1}
+      {/* Body — split pane */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* ── Left: Campaign list ── */}
+        <div style={{ width: 300, flexShrink: 0, borderRight: '1px solid #e5e7eb', background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: '12px 14px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', flex: 1 }}>CAMPAIGNS</span>
+            <button onClick={startWizard} style={{ fontSize: 11, fontWeight: 600, color: '#22c55e', background: 'none', border: 'none', cursor: 'pointer', padding: '3px 8px', borderRadius: 5, fontFamily: 'inherit' }}>+ New</button>
+          </div>
+
+          {/* Creation mode options */}
+          <div style={{ padding: '10px 10px 6px', display: 'flex', gap: 6 }}>
+            <MiniCard icon={<Wand2 size={13} style={{ color: '#7c3aed' }} />} label="Wizard" active={right === 'wizard'} onClick={startWizard} />
+            <MiniCard icon={<Bot size={13} style={{ color: '#2563eb' }} />} label="Chat" active={right === 'chat'} onClick={() => setRight('chat')} />
+            <MiniCard icon={<Zap size={13} style={{ color: '#d97706' }} />} label="MCP" active={right === 'mcp'} onClick={() => setRight('mcp')} />
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {campaigns.map(c => {
+              const isSelected = typeof right === 'object' && right.campaignId === c.id
+              return (
+                <div key={c.id} onClick={() => setRight({ campaignId: c.id })} style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #f9fafb', background: isSelected ? '#f0fdf4' : '#fff', borderLeft: isSelected ? '3px solid #22c55e' : '3px solid transparent' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: c.status === 'active' ? '#22c55e' : '#d1d5db', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3, paddingLeft: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.goal}</div>
+                  <div style={{ display: 'flex', gap: 12, marginTop: 6, paddingLeft: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.leads} leads</span>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.replies} replies</span>
+                    <span style={{ fontSize: 11, color: c.status === 'active' ? '#15803d' : '#9ca3af', fontWeight: 500 }}>{c.status}</span>
+                  </div>
                 </div>
-                <span style={{ fontSize: 12, fontWeight: i === step ? 600 : 400, color: i === step ? '#111827' : i < step ? '#22c55e' : '#9ca3af', whiteSpace: 'nowrap' }}>{s}</span>
-              </div>
-              {i < STEPS.length - 1 && <div style={{ width: 20, height: 1, background: i < step ? '#22c55e' : '#e5e7eb' }} />}
-            </div>
-          ))}
+              )
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Step content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
-        {step === 0 && (
-          <StepBrief goal={goal} setGoal={setGoal} name={campaignName} setName={setCampaignName} audience={audience} setAudience={setAudience} />
-        )}
-        {step === 1 && (
-          <StepAds ads={ads} setAds={setAds} editingId={editingAd} setEditingId={setEditingAd} />
-        )}
-        {step === 2 && (
-          <StepMessages messages={messages} setMessages={setMessages} editingId={editingMsg} setEditingId={setEditingMsg} />
-        )}
-        {step === 3 && (
-          <StepFollowUp followUps={followUps} setFollowUps={setFollowUps} />
-        )}
-        {step === 4 && (
-          <StepReview
-            name={campaignName} goal={goal} audience={audience}
-            ads={ads} messages={messages} followUps={followUps}
-            launched={launched} onLaunch={launch} onBack={() => setView('list')}
-          />
-        )}
-      </div>
-
-      {/* Footer nav */}
-      {!launched && (
-        <div style={{ background: '#fff', borderTop: '1px solid #e5e7eb', padding: '14px 24px', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
-          <button
-            onClick={() => step > 0 ? setStep(step - 1) : setView('list')}
-            style={{ padding: '8px 20px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}
-          >
-            {step === 0 ? 'Cancel' : '← Back'}
-          </button>
-          {step < STEPS.length - 1 && (
-            <button
-              onClick={() => setStep(step + 1)}
-              disabled={step === 0 && !goal.trim()}
-              style={{ padding: '8px 24px', borderRadius: 8, border: 'none', background: step === 0 && !goal.trim() ? '#d1d5db' : '#111827', fontSize: 13, fontWeight: 600, color: '#fff', cursor: step === 0 && !goal.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}
-            >
-              Continue <ChevronRight size={14} />
-            </button>
+        {/* ── Right: Content panel ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f9fafb' }}>
+          {right === 'empty' && <EmptyState onWizard={startWizard} onChat={() => setRight('chat')} onMcp={() => setRight('mcp')} />}
+          {right === 'wizard' && (
+            <WizardPanel
+              step={step} setStep={setStep}
+              goal={goal} setGoal={setGoal}
+              campaignName={campaignName} setCampaignName={setCampaignName}
+              audience={audience} setAudience={setAudience}
+              content={draftContent} setContent={setDraftContent}
+              launched={wizardLaunched} onLaunch={launchWizard}
+              onDone={() => { const last = campaigns[0]; if (last) setRight({ campaignId: last.id }) }}
+            />
+          )}
+          {right === 'chat' && <ChatCreator onLaunch={addCampaign} />}
+          {right === 'mcp' && <McpPanel />}
+          {selectedCampaign && (
+            <CampaignEditor
+              campaign={selectedCampaign}
+              onChange={content => updateCampaign(selectedCampaign.id, content)}
+            />
           )}
         </div>
-      )}
+      </div>
     </div>
   )
 }
 
-/* ─── Campaign List ─────────────────────────────────────────── */
-function CampaignList({ campaigns, onWizard, onChat, onMcp }: {
-  campaigns: Campaign[]; onWizard: () => void; onChat: () => void; onMcp: () => void
-}) {
+function MiniCard({ icon, label, active, onClick }: { icon: React.ReactNode; label: string; active: boolean; onClick: () => void }) {
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', background: '#f9fafb', overflow: 'hidden' }}>
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '16px 24px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>Publisher</h1>
-        <span style={{ fontSize: 13, color: '#9ca3af' }}>Campaigns</span>
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
-        {/* Creation mode cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
-          <CreationCard
-            icon={<Wand2 size={22} style={{ color: '#7c3aed' }} />}
-            bg="#faf5ff" border="#e9d5ff"
-            title="Step-by-step Wizard"
-            description="Walk through a guided flow: set your goal, review AI-generated ads, LinkedIn messages, and a follow-up sequence."
-            cta="Open Wizard"
-            ctaColor="#7c3aed"
-            onClick={onWizard}
-          />
-          <CreationCard
-            icon={<Bot size={22} style={{ color: '#2563eb' }} />}
-            bg="#eff6ff" border="#bfdbfe"
-            title="Chat with AI"
-            description="Describe your campaign in plain language. The AI asks follow-up questions and builds everything for you in one conversation."
-            cta="Start Chat"
-            ctaColor="#2563eb"
-            onClick={onChat}
-          />
-          <CreationCard
-            icon={<Zap size={22} style={{ color: '#d97706' }} />}
-            bg="#fffbeb" border="#fde68a"
-            title="Connect via MCP"
-            description="Create and manage campaigns directly from Claude, ChatGPT, Cursor, or any MCP-compatible AI tool."
-            cta="Setup MCP"
-            ctaColor="#d97706"
-            onClick={onMcp}
-          />
-        </div>
-
-        {/* Campaign list */}
-        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>Your campaigns</span>
-          <span style={{ fontSize: 12, color: '#9ca3af' }}>{campaigns.length} total</span>
-        </div>
-        <div style={{ display: 'grid', gap: 10 }}>
-          {campaigns.map(c => (
-            <div key={c.id} style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: c.status === 'active' ? '#f0fdf4' : '#f9fafb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                {c.status === 'active' ? <Play size={15} style={{ color: '#22c55e' }} /> : <Pause size={15} style={{ color: '#9ca3af' }} />}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{c.name}</div>
-                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>{c.goal}</div>
-              </div>
-              <div style={{ display: 'flex', gap: 20 }}>
-                <Stat icon={<Users size={13} />} label="Leads" value={c.leads} />
-                <Stat icon={<MessageSquare size={13} />} label="Replies" value={c.replies} />
-                <Stat icon={<BarChart2 size={13} />} label="Rate" value={`${c.leads ? Math.round((c.replies / c.leads) * 100) : 0}%`} />
-              </div>
-              <div style={{ padding: '3px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: c.status === 'active' ? '#dcfce7' : '#f3f4f6', color: c.status === 'active' ? '#15803d' : '#6b7280' }}>
-                {c.status === 'active' ? 'Active' : 'Paused'}
-              </div>
-              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', padding: 4 }}>
-                <MoreHorizontal size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <button onClick={onClick} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, padding: '6px 0', borderRadius: 7, border: `1px solid ${active ? '#22c55e' : '#e5e7eb'}`, background: active ? '#f0fdf4' : '#f9fafb', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, fontWeight: 600, color: active ? '#15803d' : '#6b7280' }}>
+      {icon} {label}
+    </button>
   )
 }
 
-function CreationCard({ icon, bg, border, title, description, cta, ctaColor, onClick }: {
-  icon: React.ReactNode; bg: string; border: string
-  title: string; description: string; cta: string; ctaColor: string; onClick: () => void
-}) {
+/* ─── Empty state ────────────────────────────────────────────── */
+function EmptyState({ onWizard, onChat, onMcp }: { onWizard: () => void; onChat: () => void; onMcp: () => void }) {
   return (
-    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12, cursor: 'pointer' }} onClick={onClick}>
-      <div style={{ width: 42, height: 42, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 0 1px ${border}` }}>
-        {icon}
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 32, padding: 40 }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>📣</div>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Select a campaign or create a new one</h2>
+        <p style={{ fontSize: 13, color: '#9ca3af', margin: 0 }}>Choose how you'd like to get started</p>
       </div>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 4 }}>{title}</div>
-        <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6 }}>{description}</div>
+      <div style={{ display: 'flex', gap: 14, maxWidth: 620 }}>
+        <CreationCard icon={<Wand2 size={20} style={{ color: '#7c3aed' }} />} bg="#faf5ff" border="#e9d5ff" title="Step-by-step Wizard" description="Guided flow with AI-generated ads, messages, and follow-up sequence." cta="Open Wizard" ctaColor="#7c3aed" onClick={onWizard} />
+        <CreationCard icon={<Bot size={20} style={{ color: '#2563eb' }} />} bg="#eff6ff" border="#bfdbfe" title="Chat with AI" description="Describe your campaign in plain language and the AI builds it for you." cta="Start Chat" ctaColor="#2563eb" onClick={onChat} />
+        <CreationCard icon={<Zap size={20} style={{ color: '#d97706' }} />} bg="#fffbeb" border="#fde68a" title="Connect via MCP" description="Create campaigns directly from Claude, ChatGPT, or Cursor." cta="Setup MCP" ctaColor="#d97706" onClick={onMcp} />
       </div>
-      <button onClick={e => { e.stopPropagation(); onClick() }} style={{ alignSelf: 'flex-start', padding: '6px 14px', borderRadius: 7, border: `1px solid ${ctaColor}30`, background: '#fff', fontSize: 12, fontWeight: 600, color: ctaColor, cursor: 'pointer', fontFamily: 'inherit' }}>
-        {cta} →
-      </button>
     </div>
   )
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+function CreationCard({ icon, bg, border, title, description, cta, ctaColor, onClick }: { icon: React.ReactNode; bg: string; border: string; title: string; description: string; cta: string; ctaColor: string; onClick: () => void }) {
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center', color: '#6b7280', marginBottom: 2 }}>{icon}<span style={{ fontSize: 11, color: '#9ca3af' }}>{label}</span></div>
-      <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{value}</div>
+    <div onClick={onClick} style={{ flex: 1, background: bg, border: `1px solid ${border}`, borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 10, cursor: 'pointer' }}>
+      <div style={{ width: 38, height: 38, borderRadius: 9, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 0 1px ${border}` }}>{icon}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{title}</div>
+      <div style={{ fontSize: 12, color: '#6b7280', lineHeight: 1.6, flex: 1 }}>{description}</div>
+      <span style={{ fontSize: 12, fontWeight: 600, color: ctaColor }}>{cta} →</span>
     </div>
   )
 }
 
-/* ─── Step 1: Brief ─────────────────────────────────────────── */
-function StepBrief({ goal, setGoal, name, setName, audience, setAudience }: {
-  goal: string; setGoal: (v: string) => void
-  name: string; setName: (v: string) => void
-  audience: string; setAudience: (v: string) => void
-}) {
-  const suggestions = [
-    'Find social media managers for our team',
-    'Generate leads for our agency tier',
-    'Recruit content creators & influencers',
-    'Promote our new AI features to marketing teams',
-  ]
-  return (
-    <div style={{ maxWidth: 680 }}>
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>What\'s this campaign for?</h2>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Describe your goal in plain language. AI will generate ads, messages, and a follow-up flow based on this.</p>
-      </div>
+/* ─── Campaign Editor ────────────────────────────────────────── */
+type EditorTab = 'ads' | 'messages' | 'followup'
 
-      <div style={{ marginBottom: 20 }}>
-        <label style={labelStyle}>Campaign goal *</label>
-        <textarea
-          value={goal}
-          onChange={e => setGoal(e.target.value)}
-          placeholder="e.g. Find social media managers for our growing team — targeting people with 2–5 years experience in B2B SaaS"
-          rows={3}
-          style={{ ...inputStyle, resize: 'vertical' }}
-        />
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-          {suggestions.map(s => (
-            <button key={s} onClick={() => setGoal(s)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', fontSize: 12, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div>
-          <label style={labelStyle}>Campaign name</label>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="Q3 Social Media Manager Outreach" style={inputStyle} />
-        </div>
-        <div>
-          <label style={labelStyle}>Target audience</label>
-          <input value={audience} onChange={e => setAudience(e.target.value)} placeholder="e.g. Social media managers, 2–5 yrs exp, B2B SaaS" style={inputStyle} />
-        </div>
-      </div>
-
-      <div style={{ marginTop: 24, padding: '14px 16px', background: '#f0fdf4', borderRadius: 10, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <Sparkles size={14} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }} />
-        <div style={{ fontSize: 13, color: '#15803d' }}>
-          <strong>AI will generate for you:</strong> 3 ad variants (LinkedIn, Instagram, X), 3 LinkedIn outreach messages with different angles, and a 3-step follow-up sequence with branching logic.
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ─── Step 2: Ads ───────────────────────────────────────────── */
-function StepAds({ ads, setAds, editingId, setEditingId }: {
-  ads: Ad[]; setAds: (ads: Ad[]) => void
-  editingId: string | null; setEditingId: (id: string | null) => void
-}) {
-  const platformColors: Record<string, string> = { linkedin: '#0077b5', instagram: '#e1306c', twitter: '#000' }
-  const platformLabels: Record<string, string> = { linkedin: 'LinkedIn Ad', instagram: 'Instagram Ad', twitter: 'X (Twitter) Ad' }
+function CampaignEditor({ campaign, onChange }: { campaign: Campaign; onChange: (c: CampaignContent) => void }) {
+  const [tab, setTab] = useState<EditorTab>('ads')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const content = campaign.content ?? EXAMPLE_CONTENT
 
   function updateAd(id: string, field: keyof Ad, value: string) {
-    setAds(ads.map(a => a.id === id ? { ...a, [field]: value } : a))
+    onChange({ ...content, ads: content.ads.map(a => a.id === id ? { ...a, [field]: value } : a) })
   }
-
-  return (
-    <div style={{ maxWidth: 800 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>3 Ad Variants</h2>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Each ad is tailored to a different platform and angle. Click any field to edit.</p>
-      </div>
-      <div style={{ display: 'grid', gap: 16 }}>
-        {ads.map((ad, i) => (
-          <div key={ad.id} style={{ background: '#fff', borderRadius: 10, border: editingId === ad.id ? '2px solid #22c55e' : '1px solid #e5e7eb', overflow: 'hidden' }}>
-            <div style={{ padding: '10px 16px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ padding: '2px 8px', borderRadius: 4, background: platformColors[ad.platform], color: '#fff', fontSize: 11, fontWeight: 700 }}>{platformLabels[ad.platform]}</span>
-              <span style={{ fontSize: 12, color: '#9ca3af' }}>Variant {i + 1}</span>
-              <button onClick={() => setEditingId(editingId === ad.id ? null : ad.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                <Edit3 size={13} /> {editingId === ad.id ? 'Done' : 'Edit'}
-              </button>
-            </div>
-            <div style={{ padding: 16 }}>
-              {editingId === ad.id ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div><label style={labelStyle}>Headline</label><input value={ad.headline} onChange={e => updateAd(ad.id, 'headline', e.target.value)} style={inputStyle} /></div>
-                  <div><label style={labelStyle}>Body</label><textarea value={ad.body} onChange={e => updateAd(ad.id, 'body', e.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical' }} /></div>
-                  <div><label style={labelStyle}>CTA</label><input value={ad.cta} onChange={e => updateAd(ad.id, 'cta', e.target.value)} style={inputStyle} /></div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{ad.headline}</div>
-                  <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, marginBottom: 10 }}>{ad.body}</div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#2563eb' }}>{ad.cta}</span>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ─── Step 3: LinkedIn Messages ─────────────────────────────── */
-function StepMessages({ messages, setMessages, editingId, setEditingId }: {
-  messages: LinkedInMessage[]; setMessages: (m: LinkedInMessage[]) => void
-  editingId: string | null; setEditingId: (id: string | null) => void
-}) {
   function updateMsg(id: string, field: keyof LinkedInMessage, value: string) {
-    setMessages(messages.map(m => m.id === id ? { ...m, [field]: value } : m))
+    onChange({ ...content, messages: content.messages.map(m => m.id === id ? { ...m, [field]: value } : m) })
   }
+  function updateFu(id: string, field: keyof FollowUp, value: string | number) {
+    onChange({ ...content, followUps: content.followUps.map(f => f.id === id ? { ...f, [field]: value } : f) })
+  }
+
+  const platformColors: Record<string, string> = { linkedin: '#0077b5', instagram: '#e1306c', twitter: '#000' }
+  const platformLabels: Record<string, string> = { linkedin: 'LinkedIn', instagram: 'Instagram', twitter: 'X / Twitter' }
   const angleColors = ['#7c3aed', '#2563eb', '#0891b2']
-
-  return (
-    <div style={{ maxWidth: 800 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>3 LinkedIn Outreach Messages</h2>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Each message uses a different hook. A/B test which angle resonates best with your audience.</p>
-      </div>
-      <div style={{ display: 'grid', gap: 16 }}>
-        {messages.map((msg, i) => (
-          <div key={msg.id} style={{ background: '#fff', borderRadius: 10, border: editingId === msg.id ? '2px solid #22c55e' : '1px solid #e5e7eb', overflow: 'hidden' }}>
-            <div style={{ padding: '10px 16px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ padding: '2px 8px', borderRadius: 4, background: angleColors[i] + '15', color: angleColors[i], fontSize: 11, fontWeight: 700, border: `1px solid ${angleColors[i]}30` }}>{msg.angle}</span>
-              <button onClick={() => setEditingId(editingId === msg.id ? null : msg.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
-                <Edit3 size={13} /> {editingId === msg.id ? 'Done' : 'Edit'}
-              </button>
-            </div>
-            <div style={{ padding: 16 }}>
-              {editingId === msg.id ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div><label style={labelStyle}>Subject / Opening line</label><input value={msg.subject} onChange={e => updateMsg(msg.id, 'subject', e.target.value)} style={inputStyle} /></div>
-                  <div><label style={labelStyle}>Message body</label><textarea value={msg.body} onChange={e => updateMsg(msg.id, 'body', e.target.value)} rows={8} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} /></div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 8 }}>"{msg.subject}"</div>
-                  <pre style={{ fontSize: 12, color: '#374151', lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{msg.body}</pre>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/* ─── Step 4: Follow-up Flow ────────────────────────────────── */
-function StepFollowUp({ followUps, setFollowUps }: { followUps: FollowUp[]; setFollowUps: (f: FollowUp[]) => void }) {
-  function updateFollowUp(id: string, field: keyof FollowUp, value: string | number) {
-    setFollowUps(followUps.map(f => f.id === id ? { ...f, [field]: value } : f))
-  }
-
   const conditionColors: Record<string, { bg: string; text: string; border: string }> = {
     'No reply to initial message': { bg: '#fef3c7', text: '#92400e', border: '#fde68a' },
     'No reply to follow-up 1': { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' },
@@ -530,70 +267,120 @@ function StepFollowUp({ followUps, setFollowUps }: { followUps: FollowUp[]; setF
   }
 
   return (
-    <div style={{ maxWidth: 700 }}>
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>Follow-up Flow</h2>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Automated messages sent based on how contacts respond. Timing and messages are fully editable.</p>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* Campaign header */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 24px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: campaign.status === 'active' ? '#22c55e' : '#d1d5db' }} />
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827', margin: 0, flex: 1 }}>{campaign.name}</h2>
+          <span style={{ fontSize: 12, color: '#9ca3af' }}>{campaign.leads} leads · {campaign.replies} replies</span>
+          {campaign.status === 'active'
+            ? <span style={{ padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#15803d' }}>Active</span>
+            : <span style={{ padding: '2px 10px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: '#f3f4f6', color: '#6b7280' }}>Paused</span>}
+        </div>
+        <p style={{ fontSize: 12, color: '#9ca3af', margin: '4px 0 12px 18px' }}>{campaign.goal}</p>
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {([['ads', 'Ads (3)'], ['messages', 'LinkedIn Messages (3)'], ['followup', 'Follow-up Flow']] as [EditorTab, string][]).map(([t, label]) => (
+            <button key={t} onClick={() => { setTab(t); setEditingId(null) }} style={{ padding: '6px 14px', borderRadius: 7, border: 'none', background: tab === t ? '#111827' : 'transparent', color: tab === t ? '#fff' : '#6b7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>
+          ))}
+        </div>
       </div>
 
-      {/* Flow diagram */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}>
-        {/* Start node */}
-        <FlowNode icon={<Mail size={14} />} label="Initial outreach sent" color="#111827" bg="#111827" textColor="#fff" />
+      {/* Tab content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
 
-        {followUps.map((fu, i) => {
-          const colors = conditionColors[fu.condition] || { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' }
-          const isPositive = fu.condition.includes('interest')
-          return (
-            <div key={fu.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
-              {/* Arrow + condition */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: isPositive ? 60 : 0, marginLeft: isPositive ? 0 : 20, marginTop: 4, marginBottom: 4 }}>
-                {isPositive ? <ArrowRight size={14} style={{ color: '#22c55e', flexShrink: 0 }} /> : <div style={{ width: 1, height: 20, background: '#e5e7eb', marginLeft: 19 }} />}
-                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: colors.bg, color: colors.text, border: `1px solid ${colors.border}`, fontWeight: 500, whiteSpace: 'nowrap' }}>
-                  {fu.condition}
-                </span>
-                {!isPositive && (
-                  <span style={{ fontSize: 11, color: '#9ca3af' }}>→ wait <strong style={{ color: '#374151' }}>{fu.delay} {fu.unit}</strong></span>
-                )}
-              </div>
-
-              {/* Message card */}
-              <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', width: '100%', overflow: 'hidden', marginLeft: isPositive ? 60 : 0 }}>
-                <div style={{ padding: '8px 14px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Clock size={12} style={{ color: '#9ca3af' }} />
-                  {!isPositive && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 11, color: '#6b7280' }}>Send after</span>
-                      <input
-                        type="number"
-                        value={fu.delay}
-                        onChange={e => updateFollowUp(fu.id, 'delay', parseInt(e.target.value) || 1)}
-                        style={{ width: 40, padding: '2px 6px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 12, fontFamily: 'inherit', textAlign: 'center' }}
-                      />
-                      <span style={{ fontSize: 11, color: '#6b7280' }}>days with no reply</span>
-                    </div>
-                  )}
-                  {isPositive && <span style={{ fontSize: 11, color: '#6b7280' }}>Auto-reply when interest detected</span>}
-                  <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9ca3af' }}>Step {i + 1}</span>
-                </div>
-                <div style={{ padding: '10px 14px' }}>
-                  <textarea
-                    value={fu.message}
-                    onChange={e => updateFollowUp(fu.id, 'message', e.target.value)}
-                    rows={3}
-                    style={{ ...inputStyle, resize: 'vertical', fontSize: 12 }}
-                  />
-                </div>
-              </div>
+        {tab === 'ads' && content.ads.map((ad, i) => (
+          <div key={ad.id} style={{ background: '#fff', borderRadius: 10, border: editingId === ad.id ? '2px solid #22c55e' : '1px solid #e5e7eb', marginBottom: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '9px 14px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ padding: '2px 8px', borderRadius: 4, background: platformColors[ad.platform], color: '#fff', fontSize: 11, fontWeight: 700 }}>{platformLabels[ad.platform]}</span>
+              <span style={{ fontSize: 11, color: '#9ca3af' }}>Variant {i + 1}</span>
+              <button onClick={() => setEditingId(editingId === ad.id ? null : ad.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                <Edit3 size={12} /> {editingId === ad.id ? 'Done' : 'Edit'}
+              </button>
             </div>
-          )
-        })}
+            <div style={{ padding: 16 }}>
+              {editingId === ad.id ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div><label style={labelStyle}>Headline</label><input value={ad.headline} onChange={e => updateAd(ad.id, 'headline', e.target.value)} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Body</label><textarea value={ad.body} onChange={e => updateAd(ad.id, 'body', e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} /></div>
+                  <div><label style={labelStyle}>CTA</label><input value={ad.cta} onChange={e => updateAd(ad.id, 'cta', e.target.value)} style={inputStyle} /></div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{ad.headline}</div>
+                  <pre style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, margin: '0 0 10px', whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{ad.body}</pre>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#2563eb' }}>{ad.cta}</span>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
 
-        {/* End node */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <div style={{ width: 1, height: 20, background: '#e5e7eb', marginLeft: 19, marginTop: 4 }} />
-          <FlowNode icon={<CheckCheck size={14} />} label="Campaign ends / contact archived" color="#6b7280" bg="#f3f4f6" textColor="#6b7280" />
-        </div>
+        {tab === 'messages' && content.messages.map((msg, i) => (
+          <div key={msg.id} style={{ background: '#fff', borderRadius: 10, border: editingId === msg.id ? '2px solid #22c55e' : '1px solid #e5e7eb', marginBottom: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '9px 14px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ padding: '2px 8px', borderRadius: 4, background: angleColors[i] + '15', color: angleColors[i], fontSize: 11, fontWeight: 700, border: `1px solid ${angleColors[i]}30` }}>{msg.angle}</span>
+              <button onClick={() => setEditingId(editingId === msg.id ? null : msg.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+                <Edit3 size={12} /> {editingId === msg.id ? 'Done' : 'Edit'}
+              </button>
+            </div>
+            <div style={{ padding: 16 }}>
+              {editingId === msg.id ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div><label style={labelStyle}>Opening line / subject</label><input value={msg.subject} onChange={e => updateMsg(msg.id, 'subject', e.target.value)} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Message body</label><textarea value={msg.body} onChange={e => updateMsg(msg.id, 'body', e.target.value)} rows={10} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} /></div>
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 10 }}>"{msg.subject}"</div>
+                  <pre style={{ fontSize: 12, color: '#374151', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{msg.body}</pre>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {tab === 'followup' && (
+          <div style={{ maxWidth: 640 }}>
+            <FlowNode icon={<Mail size={14} />} label="Initial outreach sent" color="#111827" bg="#111827" textColor="#fff" />
+            {content.followUps.map((fu, i) => {
+              const colors = conditionColors[fu.condition] || { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' }
+              const isPositive = fu.condition.includes('interest')
+              return (
+                <div key={fu.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: isPositive ? 56 : 0, marginLeft: isPositive ? 0 : 19, marginTop: 4, marginBottom: 4 }}>
+                    {isPositive ? <ArrowRight size={14} style={{ color: '#22c55e' }} /> : <div style={{ width: 1, height: 20, background: '#e5e7eb' }} />}
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: colors.bg, color: colors.text, border: `1px solid ${colors.border}`, fontWeight: 500, whiteSpace: 'nowrap' }}>{fu.condition}</span>
+                    {!isPositive && <span style={{ fontSize: 11, color: '#9ca3af' }}>→ wait <strong style={{ color: '#374151' }}>{fu.delay} {fu.unit}</strong></span>}
+                  </div>
+                  <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', width: '100%', overflow: 'hidden', marginLeft: isPositive ? 56 : 0 }}>
+                    <div style={{ padding: '7px 12px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Clock size={12} style={{ color: '#9ca3af' }} />
+                      {!isPositive && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: '#6b7280' }}>Send after</span>
+                          <input type="number" value={fu.delay} onChange={e => updateFu(fu.id, 'delay', parseInt(e.target.value) || 1)} style={{ width: 38, padding: '2px 5px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 12, fontFamily: 'inherit', textAlign: 'center' }} />
+                          <span style={{ fontSize: 11, color: '#6b7280' }}>days with no reply</span>
+                        </div>
+                      )}
+                      {isPositive && <span style={{ fontSize: 11, color: '#6b7280' }}>Auto-reply when interest detected</span>}
+                      <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9ca3af' }}>Step {i + 1}</span>
+                    </div>
+                    <div style={{ padding: '10px 12px' }}>
+                      <textarea value={fu.message} onChange={e => updateFu(fu.id, 'message', e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical', fontSize: 12 }} />
+                    </div>
+                  </div>
+                  {i < content.followUps.length - 1 && <div style={{ width: 1, height: 12, background: '#e5e7eb', marginLeft: 19, marginTop: 4 }} />}
+                </div>
+              )
+            })}
+            <div style={{ marginTop: 8 }}>
+              <div style={{ width: 1, height: 16, background: '#e5e7eb', marginLeft: 19 }} />
+              <FlowNode icon={<CheckCheck size={13} />} label="Campaign ends / contact archived" color="#9ca3af" bg="#f3f4f6" textColor="#6b7280" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -602,121 +389,226 @@ function StepFollowUp({ followUps, setFollowUps }: { followUps: FollowUp[]; setF
 function FlowNode({ icon, label, color, bg, textColor }: { icon: React.ReactNode; label: string; color: string; bg: string; textColor: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ width: 38, height: 38, borderRadius: '50%', background: bg, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: textColor, flexShrink: 0 }}>
-        {icon}
-      </div>
+      <div style={{ width: 38, height: 38, borderRadius: '50%', background: bg, border: `2px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: textColor, flexShrink: 0 }}>{icon}</div>
       <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{label}</span>
     </div>
   )
 }
 
-/* ─── Step 5: Review & Launch ───────────────────────────────── */
-function StepReview({ name, goal, audience, ads, messages, followUps, launched, onLaunch, onBack }: {
-  name: string; goal: string; audience: string
-  ads: Ad[]; messages: LinkedInMessage[]; followUps: FollowUp[]
-  launched: boolean; onLaunch: () => void; onBack: () => void
+/* ─── Wizard Panel ───────────────────────────────────────────── */
+function WizardPanel({ step, setStep, goal, setGoal, campaignName, setCampaignName, audience, setAudience, content, setContent, launched, onLaunch, onDone }: {
+  step: number; setStep: (n: number) => void
+  goal: string; setGoal: (v: string) => void
+  campaignName: string; setCampaignName: (v: string) => void
+  audience: string; setAudience: (v: string) => void
+  content: CampaignContent; setContent: (c: CampaignContent) => void
+  launched: boolean; onLaunch: () => void; onDone: () => void
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null)
+
   if (launched) {
     return (
-      <div style={{ maxWidth: 520, textAlign: 'center', margin: '80px auto 0' }}>
-        <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-          <CheckCheck size={28} style={{ color: '#22c55e' }} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <CheckCheck size={24} style={{ color: '#22c55e' }} />
         </div>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 10px' }}>Campaign launched! 🚀</h2>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: '0 0 28px', lineHeight: 1.6 }}>
-          <strong>{name || 'Your campaign'}</strong> is now live. We'll start sending outreach messages and you'll get notified as replies come in.
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0 }}>Campaign launched! 🚀</h2>
+        <p style={{ fontSize: 13, color: '#6b7280', margin: 0, textAlign: 'center', maxWidth: 360 }}>
+          <strong>{campaignName || 'Your campaign'}</strong> is live. Click it in the list to edit content anytime.
         </p>
-        <button onClick={onBack} style={{ padding: '10px 28px', borderRadius: 8, border: 'none', background: '#111827', fontSize: 14, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
-          Back to Campaigns
-        </button>
+        <button onClick={onDone} style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: '#111827', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>Open Campaign →</button>
       </div>
     )
   }
 
   return (
-    <div style={{ maxWidth: 720 }}>
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>Review & Launch</h2>
-        <p style={{ fontSize: 14, color: '#6b7280', margin: 0 }}>Everything looks good? Hit launch to start the campaign.</p>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Step tabs */}
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 24px', display: 'flex', gap: 0, flexShrink: 0 }}>
+        {STEPS.map((s, i) => (
+          <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, background: i === step ? '#f0fdf4' : 'transparent', cursor: i < step ? 'pointer' : 'default' }} onClick={() => { if (i < step) setStep(i) }}>
+              <div style={{ width: 18, height: 18, borderRadius: '50%', background: i < step ? '#22c55e' : i === step ? '#111827' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                {i < step ? '✓' : i + 1}
+              </div>
+              <span style={{ fontSize: 11, fontWeight: i === step ? 600 : 400, color: i === step ? '#111827' : i < step ? '#22c55e' : '#9ca3af', whiteSpace: 'nowrap' }}>{s}</span>
+            </div>
+            {i < STEPS.length - 1 && <div style={{ width: 16, height: 1, background: i < step ? '#22c55e' : '#e5e7eb' }} />}
+          </div>
+        ))}
       </div>
 
-      <div style={{ display: 'grid', gap: 14 }}>
-        <ReviewSection icon={<Megaphone size={15} />} title="Campaign Brief">
-          <div style={{ fontSize: 13, color: '#374151' }}><strong>Goal:</strong> {goal || '—'}</div>
-          {name && <div style={{ fontSize: 13, color: '#374151', marginTop: 4 }}><strong>Name:</strong> {name}</div>}
-          {audience && <div style={{ fontSize: 13, color: '#374151', marginTop: 4 }}><strong>Audience:</strong> {audience}</div>}
-        </ReviewSection>
-
-        <ReviewSection icon={<BarChart2 size={15} />} title={`${ads.length} Ad Variants`}>
-          {ads.map((ad, i) => (
-            <div key={ad.id} style={{ fontSize: 13, color: '#374151', marginBottom: 4 }}>
-              <strong>{i + 1}. {ad.platform.charAt(0).toUpperCase() + ad.platform.slice(1)}:</strong> {ad.headline}
-            </div>
-          ))}
-        </ReviewSection>
-
-        <ReviewSection icon={<MessageSquare size={15} />} title={`${messages.length} LinkedIn Messages`}>
-          {messages.map((m, i) => (
-            <div key={m.id} style={{ fontSize: 13, color: '#374151', marginBottom: 4 }}>
-              <strong>{i + 1}. {m.angle}:</strong> "{m.subject}"
-            </div>
-          ))}
-        </ReviewSection>
-
-        <ReviewSection icon={<GitBranch size={15} />} title={`${followUps.length}-step Follow-up Flow`}>
-          {followUps.map((f, i) => (
-            <div key={f.id} style={{ fontSize: 13, color: '#374151', marginBottom: 4 }}>
-              <strong>Step {i + 1}:</strong> {f.condition} → {f.delay} {f.unit} later
-            </div>
-          ))}
-        </ReviewSection>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
+        {step === 0 && <StepBrief goal={goal} setGoal={setGoal} name={campaignName} setName={setCampaignName} audience={audience} setAudience={setAudience} />}
+        {step === 1 && (
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>3 Ad Variants</h2>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>AI-generated based on your brief. Click Edit to customise.</p>
+            {content.ads.map((ad, i) => {
+              const platformColors: Record<string, string> = { linkedin: '#0077b5', instagram: '#e1306c', twitter: '#000' }
+              const platformLabels: Record<string, string> = { linkedin: 'LinkedIn', instagram: 'Instagram', twitter: 'X / Twitter' }
+              return (
+                <div key={ad.id} style={{ background: '#fff', borderRadius: 10, border: editingId === ad.id ? '2px solid #22c55e' : '1px solid #e5e7eb', marginBottom: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '9px 14px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 4, background: platformColors[ad.platform], color: '#fff', fontSize: 11, fontWeight: 700 }}>{platformLabels[ad.platform]}</span>
+                    <span style={{ fontSize: 11, color: '#9ca3af' }}>Variant {i + 1}</span>
+                    <button onClick={() => setEditingId(editingId === ad.id ? null : ad.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}><Edit3 size={12} /> {editingId === ad.id ? 'Done' : 'Edit'}</button>
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    {editingId === ad.id ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div><label style={labelStyle}>Headline</label><input value={ad.headline} onChange={e => setContent({ ...content, ads: content.ads.map(a => a.id === ad.id ? { ...a, headline: e.target.value } : a) })} style={inputStyle} /></div>
+                        <div><label style={labelStyle}>Body</label><textarea value={ad.body} onChange={e => setContent({ ...content, ads: content.ads.map(a => a.id === ad.id ? { ...a, body: e.target.value } : a) })} rows={5} style={{ ...inputStyle, resize: 'vertical' }} /></div>
+                        <div><label style={labelStyle}>CTA</label><input value={ad.cta} onChange={e => setContent({ ...content, ads: content.ads.map(a => a.id === ad.id ? { ...a, cta: e.target.value } : a) })} style={inputStyle} /></div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 8 }}>{ad.headline}</div>
+                        <pre style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, margin: '0 0 10px', whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{ad.body}</pre>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: '#2563eb' }}>{ad.cta}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {step === 2 && (
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>3 LinkedIn Messages</h2>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Three different angles for A/B testing. Edit any field directly.</p>
+            {content.messages.map((msg, i) => {
+              const angleColors = ['#7c3aed', '#2563eb', '#0891b2']
+              return (
+                <div key={msg.id} style={{ background: '#fff', borderRadius: 10, border: editingId === msg.id ? '2px solid #22c55e' : '1px solid #e5e7eb', marginBottom: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '9px 14px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 4, background: angleColors[i] + '15', color: angleColors[i], fontSize: 11, fontWeight: 700, border: `1px solid ${angleColors[i]}30` }}>{msg.angle}</span>
+                    <button onClick={() => setEditingId(editingId === msg.id ? null : msg.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}><Edit3 size={12} /> {editingId === msg.id ? 'Done' : 'Edit'}</button>
+                  </div>
+                  <div style={{ padding: 16 }}>
+                    {editingId === msg.id ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div><label style={labelStyle}>Opening line</label><input value={msg.subject} onChange={e => setContent({ ...content, messages: content.messages.map(m => m.id === msg.id ? { ...m, subject: e.target.value } : m) })} style={inputStyle} /></div>
+                        <div><label style={labelStyle}>Body</label><textarea value={msg.body} onChange={e => setContent({ ...content, messages: content.messages.map(m => m.id === msg.id ? { ...m, body: e.target.value } : m) })} rows={10} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }} /></div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', marginBottom: 10 }}>"{msg.subject}"</div>
+                        <pre style={{ fontSize: 12, color: '#374151', lineHeight: 1.8, margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>{msg.body}</pre>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {step === 3 && (
+          <div style={{ maxWidth: 580 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>Follow-up Flow</h2>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Edit timing and messages. All fields are live.</p>
+            <FlowNode icon={<Mail size={14} />} label="Initial outreach sent" color="#111827" bg="#111827" textColor="#fff" />
+            {content.followUps.map((fu, i) => {
+              const conditionColors: Record<string, { bg: string; text: string; border: string }> = { 'No reply to initial message': { bg: '#fef3c7', text: '#92400e', border: '#fde68a' }, 'No reply to follow-up 1': { bg: '#fee2e2', text: '#991b1b', border: '#fca5a5' }, 'Replied with interest': { bg: '#dcfce7', text: '#15803d', border: '#bbf7d0' } }
+              const colors = conditionColors[fu.condition] || { bg: '#f3f4f6', text: '#374151', border: '#e5e7eb' }
+              const isPositive = fu.condition.includes('interest')
+              return (
+                <div key={fu.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: isPositive ? 56 : 0, marginLeft: isPositive ? 0 : 19, marginTop: 4, marginBottom: 4 }}>
+                    {isPositive ? <ArrowRight size={14} style={{ color: '#22c55e' }} /> : <div style={{ width: 1, height: 20, background: '#e5e7eb' }} />}
+                    <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: colors.bg, color: colors.text, border: `1px solid ${colors.border}`, fontWeight: 500, whiteSpace: 'nowrap' }}>{fu.condition}</span>
+                    {!isPositive && <span style={{ fontSize: 11, color: '#9ca3af' }}>→ wait <strong style={{ color: '#374151' }}>{fu.delay} {fu.unit}</strong></span>}
+                  </div>
+                  <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', width: '100%', overflow: 'hidden', marginLeft: isPositive ? 56 : 0 }}>
+                    <div style={{ padding: '7px 12px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Clock size={12} style={{ color: '#9ca3af' }} />
+                      {!isPositive && <><span style={{ fontSize: 11, color: '#6b7280' }}>Send after</span><input type="number" value={fu.delay} onChange={e => setContent({ ...content, followUps: content.followUps.map(f => f.id === fu.id ? { ...f, delay: parseInt(e.target.value) || 1 } : f) })} style={{ width: 38, padding: '2px 5px', border: '1px solid #e5e7eb', borderRadius: 4, fontSize: 12, fontFamily: 'inherit', textAlign: 'center' }} /><span style={{ fontSize: 11, color: '#6b7280' }}>days with no reply</span></>}
+                      {isPositive && <span style={{ fontSize: 11, color: '#6b7280' }}>Auto-reply when interest detected</span>}
+                      <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9ca3af' }}>Step {i + 1}</span>
+                    </div>
+                    <div style={{ padding: '10px 12px' }}>
+                      <textarea value={fu.message} onChange={e => setContent({ ...content, followUps: content.followUps.map(f => f.id === fu.id ? { ...f, message: e.target.value } : f) })} rows={3} style={{ ...inputStyle, resize: 'vertical', fontSize: 12 }} />
+                    </div>
+                  </div>
+                  {i < content.followUps.length - 1 && <div style={{ width: 1, height: 10, background: '#e5e7eb', marginLeft: 19, marginTop: 4 }} />}
+                </div>
+              )
+            })}
+          </div>
+        )}
+        {step === 4 && (
+          <div style={{ maxWidth: 560 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>Review & Launch</h2>
+            <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Everything looks good? Launch to activate the campaign.</p>
+            {[['Campaign', goal || '—'], ['Name', campaignName || '—'], ['Audience', audience || '—']].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ fontSize: 12, color: '#9ca3af', width: 80, flexShrink: 0 }}>{k}</span>
+                <span style={{ fontSize: 13, color: '#111827' }}>{v}</span>
+              </div>
+            ))}
+            {[['Ads', `${content.ads.length} variants`], ['Messages', `${content.messages.length} LinkedIn messages`], ['Follow-up', `${content.followUps.length} steps`]].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                <span style={{ fontSize: 12, color: '#9ca3af', width: 80, flexShrink: 0 }}>{k}</span>
+                <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 600 }}>✓ {v}</span>
+              </div>
+            ))}
+            <button onClick={onLaunch} style={{ marginTop: 24, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px', borderRadius: 8, border: 'none', background: '#22c55e', fontSize: 13, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
+              <Play size={14} fill="#fff" /> Launch Campaign
+            </button>
+          </div>
+        )}
       </div>
 
-      <div style={{ marginTop: 28, display: 'flex', gap: 12 }}>
-        <button
-          onClick={onLaunch}
-          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 28px', borderRadius: 8, border: 'none', background: '#22c55e', fontSize: 14, fontWeight: 700, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}
-        >
-          <Play size={15} fill="#fff" /> Launch Campaign
-        </button>
-        <button style={{ padding: '10px 20px', borderRadius: 8, border: '1px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>
-          Save as Draft
-        </button>
+      {/* Footer nav */}
+      <div style={{ background: '#fff', borderTop: '1px solid #e5e7eb', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
+        <button onClick={() => setStep(Math.max(0, step - 1))} style={{ padding: '7px 18px', borderRadius: 7, border: '1px solid #e5e7eb', background: '#fff', fontSize: 13, fontWeight: 500, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>← Back</button>
+        {step < STEPS.length - 1 && (
+          <button onClick={() => setStep(step + 1)} disabled={step === 0 && !goal.trim()} style={{ padding: '7px 20px', borderRadius: 7, border: 'none', background: step === 0 && !goal.trim() ? '#d1d5db' : '#111827', fontSize: 13, fontWeight: 600, color: '#fff', cursor: step === 0 && !goal.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
+            Continue <ChevronRight size={14} />
+          </button>
+        )}
       </div>
     </div>
   )
 }
 
-function ReviewSection({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+/* ─── Step Brief ─────────────────────────────────────────────── */
+function StepBrief({ goal, setGoal, name, setName, audience, setAudience }: { goal: string; setGoal: (v: string) => void; name: string; setName: (v: string) => void; audience: string; setAudience: (v: string) => void }) {
+  const suggestions = ['Find social media managers for our team', 'Generate leads for our agency tier', 'Recruit content creators & influencers', 'Promote our new AI features to marketing teams']
   return (
-    <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-      <div style={{ padding: '10px 16px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: '#6b7280' }}>{icon}</span>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{title}</span>
+    <div style={{ maxWidth: 560 }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 4px' }}>What's this campaign for?</h2>
+      <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px' }}>Describe your goal — AI will generate everything based on this.</p>
+      <div style={{ marginBottom: 16 }}>
+        <label style={labelStyle}>Campaign goal *</label>
+        <textarea value={goal} onChange={e => setGoal(e.target.value)} placeholder="e.g. Find social media managers with 2–5 years experience in B2B SaaS" rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 8 }}>
+          {suggestions.map(s => <button key={s} onClick={() => setGoal(s)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', fontSize: 11, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>{s}</button>)}
+        </div>
       </div>
-      <div style={{ padding: '12px 16px' }}>{children}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div><label style={labelStyle}>Campaign name</label><input value={name} onChange={e => setName(e.target.value)} placeholder="Q3 Social Media Manager Outreach" style={inputStyle} /></div>
+        <div><label style={labelStyle}>Target audience</label><input value={audience} onChange={e => setAudience(e.target.value)} placeholder="e.g. Social media managers, B2B SaaS" style={inputStyle} /></div>
+      </div>
+      <div style={{ marginTop: 20, padding: '12px 14px', background: '#f0fdf4', borderRadius: 9, border: '1px solid #bbf7d0', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+        <Sparkles size={13} style={{ color: '#22c55e', flexShrink: 0, marginTop: 1 }} />
+        <div style={{ fontSize: 12, color: '#15803d' }}><strong>AI will generate:</strong> 3 ad variants (LinkedIn, Instagram, X), 3 LinkedIn outreach messages, and a 3-step follow-up sequence.</div>
+      </div>
     </div>
   )
 }
 
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5 }
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid #e5e7eb',
-  fontSize: 13, fontFamily: 'inherit', color: '#111827', outline: 'none',
-  boxSizing: 'border-box', background: '#fff',
-}
-
-/* ─── Chat Creator ──────────────────────────────────────────── */
-interface ChatMsg { role: 'ai' | 'user'; text: string; ts?: number }
-
-const CHAT_FLOW: { prompt: string; key: string }[] = [
-  { key: 'goal',     prompt: "Hi! I'll help you create a campaign in a few questions.\n\nWhat's the main goal of this campaign? For example: *find social media managers*, *generate leads for our agency tier*, or *promote a product launch*." },
-  { key: 'audience', prompt: "Got it. Who are you targeting? Be as specific as you like — role, seniority, industry, company size, geography, etc." },
-  { key: 'tone',     prompt: "What tone should the messages have? (e.g. friendly and direct, professional, bold and punchy, empathetic)" },
-  { key: 'confirm',  prompt: "Perfect. Based on that I'll generate:\n\n• **3 ad variants** (LinkedIn, Instagram, X)\n• **3 LinkedIn outreach messages** (creative / pain-point / data-driven angles)\n• **A 3-step follow-up sequence** with branching logic\n\nShall I go ahead and create the campaign?" },
+/* ─── Chat Creator ───────────────────────────────────────────── */
+interface ChatMsg { role: 'ai' | 'user'; text: string }
+const CHAT_FLOW = [
+  { key: 'goal', prompt: "Hi! I'll help you create a campaign in a few questions.\n\nWhat's the main goal? For example: find social media managers, generate agency leads, or promote a feature launch." },
+  { key: 'audience', prompt: "Got it. Who are you targeting? Be as specific as you like — role, seniority, industry, company size, geography." },
+  { key: 'tone', prompt: "What tone should the messages have? (e.g. friendly and direct, professional, bold and punchy, empathetic)" },
+  { key: 'confirm', prompt: "Perfect. I'll generate:\n\n• 3 ad variants (LinkedIn, Instagram, X)\n• 3 LinkedIn outreach messages with different angles\n• A 3-step follow-up sequence with branching logic\n\nShall I go ahead?" },
 ]
 
-function ChatCreator({ onBack, onLaunch }: { onBack: () => void; onLaunch: (name: string, goal: string) => void }) {
+function ChatCreator({ onLaunch }: { onLaunch: (name: string, goal: string) => void }) {
   const [msgs, setMsgs] = useState<ChatMsg[]>([{ role: 'ai', text: CHAT_FLOW[0].prompt }])
   const [input, setInput] = useState('')
   const [flowIdx, setFlowIdx] = useState(0)
@@ -724,268 +616,141 @@ function ChatCreator({ onBack, onLaunch }: { onBack: () => void; onLaunch: (name
   const [generating, setGenerating] = useState(false)
   const [done, setDone] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
-
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, generating])
 
   function send() {
-    const text = input.trim()
-    if (!text) return
+    const text = input.trim(); if (!text) return
     const key = CHAT_FLOW[flowIdx]?.key ?? ''
     const newAnswers = { ...answers, [key]: text }
-    setAnswers(newAnswers)
-    setMsgs(prev => [...prev, { role: 'user', text }])
-    setInput('')
-
-    const nextIdx = flowIdx + 1
-    setFlowIdx(nextIdx)
-
+    setAnswers(newAnswers); setMsgs(p => [...p, { role: 'user', text }]); setInput('')
+    const nextIdx = flowIdx + 1; setFlowIdx(nextIdx)
     if (nextIdx < CHAT_FLOW.length) {
-      setTimeout(() => {
-        setMsgs(prev => [...prev, { role: 'ai', text: CHAT_FLOW[nextIdx].prompt }])
-      }, 600)
+      setTimeout(() => setMsgs(p => [...p, { role: 'ai', text: CHAT_FLOW[nextIdx].prompt }]), 600)
     } else {
-      // User confirmed — simulate generation
       setGenerating(true)
       setTimeout(() => {
-        setGenerating(false)
-        setDone(true)
+        setGenerating(false); setDone(true)
         const name = newAnswers.goal?.slice(0, 50) || 'New Campaign'
-        setMsgs(prev => [...prev, { role: 'ai', text: `✅ Done! I've created **"${name}"** with 3 ads, 3 LinkedIn messages, and a follow-up sequence.\n\nThe campaign is now in your list and ready to launch.` }])
+        setMsgs(p => [...p, { role: 'ai', text: `✅ Done! I've created **"${name}"** with 3 ads, 3 LinkedIn messages, and a follow-up sequence. It's in your campaign list.` }])
         onLaunch(name, newAnswers.goal || '')
       }, 2000)
     }
   }
 
-  const suggestions: Record<string, string[]> = {
-    goal: ['Find social media managers', 'Generate leads for agency tier', 'Promote our AI features', 'Recruit content creators'],
-    tone: ['Friendly and direct', 'Professional and concise', 'Bold and punchy', 'Empathetic and human'],
-  }
-  const currentKey = CHAT_FLOW[flowIdx]?.key ?? ''
-  const chips = suggestions[currentKey] ?? []
+  const chips: Record<string, string[]> = { goal: ['Find social media managers', 'Generate leads for agency tier', 'Promote our AI features', 'Recruit content creators'], tone: ['Friendly and direct', 'Professional and concise', 'Bold and punchy', 'Empathetic'] }
+  const currentChips = chips[CHAT_FLOW[flowIdx]?.key ?? ''] ?? []
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
-          <ChevronLeft size={16} /> Campaigns
-        </button>
-        <span style={{ color: '#e5e7eb' }}>|</span>
-        <Bot size={16} style={{ color: '#2563eb' }} />
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>Chat Campaign Creator</span>
-        <span style={{ fontSize: 12, color: '#9ca3af', marginLeft: 4 }}>Powered by AI</span>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <Bot size={15} style={{ color: '#2563eb' }} />
+        <span style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Chat Campaign Creator</span>
+        <span style={{ fontSize: 12, color: '#9ca3af' }}>· AI powered</span>
       </div>
-
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0', display: 'flex', flexDirection: 'column', gap: 0, background: '#f9fafb' }}>
-        <div style={{ maxWidth: 660, width: '100%', margin: '0 auto', padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {msgs.map((m, i) => (
-            <div key={i} style={{ display: 'flex', gap: 12, justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
-              {m.role === 'ai' && (
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-                  <Bot size={15} style={{ color: '#2563eb' }} />
-                </div>
-              )}
-              <div style={{
-                maxWidth: '78%',
-                padding: '10px 14px',
-                borderRadius: m.role === 'ai' ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
-                background: m.role === 'ai' ? '#fff' : '#2563eb',
-                border: m.role === 'ai' ? '1px solid #e5e7eb' : 'none',
-                fontSize: 13, lineHeight: 1.7,
-                color: m.role === 'ai' ? '#111827' : '#fff',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                whiteSpace: 'pre-wrap',
-              }}>
-                {m.text.replace(/\*\*(.*?)\*\*/g, '$1')}
-              </div>
-              {m.role === 'user' && (
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, fontSize: 12, fontWeight: 700, color: '#fff' }}>R</div>
-              )}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 8px', display: 'flex', flexDirection: 'column', gap: 14, background: '#f9fafb' }}>
+        {msgs.map((m, i) => (
+          <div key={i} style={{ display: 'flex', gap: 10, justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-start' }}>
+            {m.role === 'ai' && <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Bot size={14} style={{ color: '#2563eb' }} /></div>}
+            <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: m.role === 'ai' ? '4px 14px 14px 14px' : '14px 4px 14px 14px', background: m.role === 'ai' ? '#fff' : '#2563eb', border: m.role === 'ai' ? '1px solid #e5e7eb' : 'none', fontSize: 13, lineHeight: 1.7, color: m.role === 'ai' ? '#111827' : '#fff', whiteSpace: 'pre-wrap' }}>
+              {m.text.replace(/\*\*(.*?)\*\*/g, '$1')}
             </div>
-          ))}
-          {generating && (
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Bot size={15} style={{ color: '#2563eb' }} />
-              </div>
-              <div style={{ padding: '12px 16px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px 14px 14px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Sparkles size={14} style={{ color: '#2563eb' }} />
-                <span style={{ fontSize: 13, color: '#6b7280' }}>Generating your campaign…</span>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', opacity: 0.4, animation: `pulse ${0.8 + i * 0.2}s infinite` }} />)}
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
-      </div>
-
-      {/* Suggestion chips */}
-      {chips.length > 0 && !done && (
-        <div style={{ background: '#f9fafb', padding: '0 24px 10px', display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-          {chips.map(c => (
-            <button key={c} onClick={() => { setInput(c) }} style={{ padding: '5px 12px', borderRadius: 99, border: '1px solid #e5e7eb', background: '#fff', fontSize: 12, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>{c}</button>
-          ))}
-        </div>
-      )}
-
-      {/* Input */}
-      <div style={{ background: '#fff', borderTop: '1px solid #e5e7eb', padding: '14px 24px', flexShrink: 0 }}>
-        {done ? (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <button onClick={onBack} style={{ padding: '9px 24px', borderRadius: 8, border: 'none', background: '#111827', fontSize: 13, fontWeight: 600, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>← Back to Campaigns</button>
+            {m.role === 'user' && <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#fff' }}>R</div>}
           </div>
-        ) : (
-          <div style={{ display: 'flex', gap: 10, maxWidth: 660, margin: '0 auto', width: '100%' }}>
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') send() }}
-              placeholder={flowIdx >= CHAT_FLOW.length - 1 ? 'Type "yes" to confirm…' : 'Type your answer…'}
-              style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 13, fontFamily: 'inherit', outline: 'none' }}
-              autoFocus
-            />
-            <button onClick={send} disabled={!input.trim()} style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: input.trim() ? '#2563eb' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
-              <Send size={15} style={{ color: '#fff' }} />
-            </button>
+        ))}
+        {generating && (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Bot size={14} style={{ color: '#2563eb' }} /></div>
+            <div style={{ padding: '10px 14px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px 14px 14px 14px', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6b7280' }}>
+              <Sparkles size={13} style={{ color: '#2563eb' }} /> Generating your campaign…
+            </div>
           </div>
         )}
+        <div ref={bottomRef} />
       </div>
-    </div>
-  )
-}
-
-/* ─── MCP Panel ─────────────────────────────────────────────── */
-function McpPanel({ onBack }: { onBack: () => void }) {
-  const [copied, setCopied] = useState<string | null>(null)
-
-  function copy(text: string, key: string) {
-    navigator.clipboard.writeText(text)
-    setCopied(key)
-    setTimeout(() => setCopied(null), 2000)
-  }
-
-  const MCP_URL = 'https://mcp.swat.io/v1'
-  const clients = [
-    {
-      name: 'Claude (Desktop)',
-      logo: '🤖',
-      description: 'Add Swat as an MCP server in Claude\'s settings.',
-      config: `{
-  "mcpServers": {
-    "swat": {
-      "url": "${MCP_URL}",
-      "apiKey": "YOUR_API_KEY"
-    }
-  }
-}`,
-      path: '~/.claude/claude_desktop_config.json',
-    },
-    {
-      name: 'Cursor',
-      logo: '⚡',
-      description: 'Add to your .cursor/mcp.json to use Swat tools in AI chat.',
-      config: `{
-  "servers": {
-    "swat": {
-      "url": "${MCP_URL}",
-      "apiKey": "YOUR_API_KEY"
-    }
-  }
-}`,
-      path: '.cursor/mcp.json',
-    },
-    {
-      name: 'ChatGPT (Actions)',
-      logo: '💬',
-      description: 'Import Swat as a GPT Action using the OpenAPI spec.',
-      config: `https://mcp.swat.io/openapi.json`,
-      path: 'GPT Editor → Actions → Import from URL',
-    },
-  ]
-
-  const tools = [
-    { name: 'create_campaign', description: 'Create a new campaign with ads, messages, and follow-up flow' },
-    { name: 'list_campaigns', description: 'List all campaigns with status and performance stats' },
-    { name: 'update_campaign', description: 'Update campaign content, status, or targeting' },
-    { name: 'get_replies', description: 'Fetch incoming replies from any campaign' },
-    { name: 'send_message', description: 'Send or approve a reply to a prospect' },
-    { name: 'create_ad', description: 'Add a new ad variant to an existing campaign' },
-  ]
-
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ background: '#fff', borderBottom: '1px solid #e5e7eb', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}>
-          <ChevronLeft size={16} /> Campaigns
-        </button>
-        <span style={{ color: '#e5e7eb' }}>|</span>
-        <Zap size={16} style={{ color: '#d97706' }} />
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>Connect via MCP</span>
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px' }}>
-        <div style={{ maxWidth: 760 }}>
-          <div style={{ marginBottom: 28 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: '0 0 8px' }}>Model Context Protocol</h2>
-            <p style={{ fontSize: 14, color: '#6b7280', margin: 0, lineHeight: 1.7 }}>
-              Connect Swat to any MCP-compatible AI tool and create campaigns, fetch replies, and manage your inbox directly from your AI assistant. No copy-paste, no switching tabs.
-            </p>
-          </div>
-
-          {/* API Key */}
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '14px 16px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Terminal size={16} style={{ color: '#d97706', flexShrink: 0 }} />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#92400e', marginBottom: 4 }}>Your MCP API Key</div>
-              <code style={{ fontSize: 12, color: '#374151', background: '#fff', padding: '3px 8px', borderRadius: 5, border: '1px solid #fde68a' }}>swt_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code>
-            </div>
-            <button onClick={() => copy('swt_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'key')} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 6, border: '1px solid #fde68a', background: '#fff', fontSize: 12, fontWeight: 500, color: '#92400e', cursor: 'pointer', fontFamily: 'inherit' }}>
-              <Copy size={12} /> {copied === 'key' ? 'Copied!' : 'Copy key'}
-            </button>
-          </div>
-
-          {/* Client configs */}
-          <div style={{ marginBottom: 10, fontSize: 13, fontWeight: 600, color: '#374151' }}>Connect your AI tool</div>
-          <div style={{ display: 'grid', gap: 14, marginBottom: 28 }}>
-            {clients.map(client => (
-              <div key={client.name} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 18 }}>{client.logo}</span>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{client.name}</div>
-                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{client.description}</div>
-                  </div>
-                  <button onClick={() => copy(client.config, client.name)} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f9fafb', fontSize: 12, fontWeight: 500, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>
-                    <Copy size={12} /> {copied === client.name ? 'Copied!' : 'Copy config'}
-                  </button>
-                </div>
-                <div style={{ padding: '12px 16px', background: '#f8fafc' }}>
-                  <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6 }}>Add to <code style={{ background: '#e5e7eb', padding: '1px 5px', borderRadius: 3 }}>{client.path}</code></div>
-                  <pre style={{ margin: 0, fontSize: 12, color: '#374151', lineHeight: 1.6, overflow: 'auto', fontFamily: 'monospace' }}>{client.config}</pre>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Available tools */}
-          <div style={{ marginBottom: 10, fontSize: 13, fontWeight: 600, color: '#374151' }}>Available MCP tools</div>
-          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
-            {tools.map((t, i) => (
-              <div key={t.name} style={{ padding: '11px 16px', borderBottom: i < tools.length - 1 ? '1px solid #f3f4f6' : 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <code style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed', background: '#faf5ff', padding: '2px 8px', borderRadius: 5, flexShrink: 0 }}>{t.name}</code>
-                <span style={{ fontSize: 13, color: '#6b7280' }}>{t.description}</span>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 20, padding: '12px 16px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', fontSize: 12, color: '#15803d' }}>
-            <strong>Example prompt in Claude:</strong> "Create a campaign to find social media managers targeting B2B SaaS companies in Europe. Make it friendly and direct."
-          </div>
+      {currentChips.length > 0 && !done && (
+        <div style={{ padding: '6px 16px 8px', display: 'flex', gap: 7, flexWrap: 'wrap', background: '#f9fafb' }}>
+          {currentChips.map(c => <button key={c} onClick={() => setInput(c)} style={{ padding: '4px 10px', borderRadius: 99, border: '1px solid #e5e7eb', background: '#fff', fontSize: 11, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>{c}</button>)}
+        </div>
+      )}
+      <div style={{ background: '#fff', borderTop: '1px solid #e5e7eb', padding: '12px 16px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') send() }} placeholder={done ? 'Campaign created!' : 'Type your answer…'} disabled={done || generating} style={{ flex: 1, padding: '8px 12px', borderRadius: 7, border: '1px solid #e5e7eb', fontSize: 13, fontFamily: 'inherit', outline: 'none', background: done ? '#f9fafb' : '#fff' }} autoFocus />
+          <button onClick={send} disabled={!input.trim() || done || generating} style={{ width: 36, height: 36, borderRadius: 7, border: 'none', background: input.trim() && !done ? '#2563eb' : '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: input.trim() && !done ? 'pointer' : 'not-allowed', flexShrink: 0 }}>
+            <Send size={14} style={{ color: '#fff' }} />
+          </button>
         </div>
       </div>
     </div>
   )
 }
+
+/* ─── MCP Panel ──────────────────────────────────────────────── */
+function McpPanel() {
+  const [copied, setCopied] = useState<string | null>(null)
+  function copy(text: string, key: string) { navigator.clipboard.writeText(text); setCopied(key); setTimeout(() => setCopied(null), 2000) }
+  const MCP_URL = 'https://mcp.swat.io/v1'
+  const clients = [
+    { name: 'Claude (Desktop)', logo: '🤖', description: 'Add to claude_desktop_config.json', config: `{\n  "mcpServers": {\n    "swat": {\n      "url": "${MCP_URL}",\n      "apiKey": "YOUR_API_KEY"\n    }\n  }\n}`, path: '~/.claude/claude_desktop_config.json' },
+    { name: 'Cursor', logo: '⚡', description: 'Add to .cursor/mcp.json', config: `{\n  "servers": {\n    "swat": {\n      "url": "${MCP_URL}",\n      "apiKey": "YOUR_API_KEY"\n    }\n  }\n}`, path: '.cursor/mcp.json' },
+    { name: 'ChatGPT (Actions)', logo: '💬', description: 'Import via OpenAPI spec URL', config: `https://mcp.swat.io/openapi.json`, path: 'GPT Editor → Actions → Import from URL' },
+  ]
+  const tools = [
+    { name: 'create_campaign', description: 'Create a campaign with ads, messages, and follow-up flow' },
+    { name: 'list_campaigns', description: 'List all campaigns with status and stats' },
+    { name: 'update_campaign', description: 'Update content, status, or targeting' },
+    { name: 'get_replies', description: 'Fetch incoming replies from any campaign' },
+    { name: 'send_message', description: 'Send or approve a reply to a prospect' },
+    { name: 'create_ad', description: 'Add an ad variant to an existing campaign' },
+  ]
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+      <div style={{ maxWidth: 680 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: '0 0 6px' }}>Connect via MCP</h2>
+        <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 20px', lineHeight: 1.7 }}>Create and manage campaigns directly from Claude, ChatGPT, Cursor, or any MCP-compatible AI tool.</p>
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 9, padding: '12px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Terminal size={14} style={{ color: '#d97706', flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#92400e', marginBottom: 3 }}>Your MCP API Key</div>
+            <code style={{ fontSize: 12, color: '#374151', background: '#fff', padding: '2px 7px', borderRadius: 4, border: '1px solid #fde68a' }}>swt_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code>
+          </div>
+          <button onClick={() => copy('swt_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', 'key')} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 6, border: '1px solid #fde68a', background: '#fff', fontSize: 11, fontWeight: 500, color: '#92400e', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <Copy size={11} /> {copied === 'key' ? 'Copied!' : 'Copy'}
+          </button>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Connect your AI tool</div>
+        <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
+          {clients.map(c => (
+            <div key={c.name} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 9, overflow: 'hidden' }}>
+              <div style={{ padding: '10px 14px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 16 }}>{c.logo}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{c.name}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af' }}>{c.description}</div>
+                </div>
+                <button onClick={() => copy(c.config, c.name)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 5, border: '1px solid #e5e7eb', background: '#f9fafb', fontSize: 11, fontWeight: 500, color: '#374151', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <Copy size={11} /> {copied === c.name ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+              <pre style={{ margin: 0, padding: '10px 14px', fontSize: 11, color: '#374151', lineHeight: 1.6, background: '#f8fafc', overflow: 'auto', fontFamily: 'monospace' }}>{c.config}</pre>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Available tools</div>
+        <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 9, overflow: 'hidden', marginBottom: 16 }}>
+          {tools.map((t, i) => (
+            <div key={t.name} style={{ padding: '9px 14px', borderBottom: i < tools.length - 1 ? '1px solid #f3f4f6' : 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <code style={{ fontSize: 11, fontWeight: 600, color: '#7c3aed', background: '#faf5ff', padding: '2px 7px', borderRadius: 4, flexShrink: 0 }}>{t.name}</code>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>{t.description}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '11px 14px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0', fontSize: 12, color: '#15803d' }}>
+          <strong>Example in Claude:</strong> "Create a campaign to find social media managers targeting B2B SaaS companies in Europe, with a friendly tone."
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5 }
+const inputStyle: React.CSSProperties = { width: '100%', padding: '8px 12px', borderRadius: 7, border: '1px solid #e5e7eb', fontSize: 13, fontFamily: 'inherit', color: '#111827', outline: 'none', boxSizing: 'border-box', background: '#fff' }

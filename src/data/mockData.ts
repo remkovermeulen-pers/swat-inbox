@@ -268,6 +268,255 @@ export const customers: Customer[] = [
       { platform: 'instagram', handle: '@aiko.tanaka', followers: 47000 },
     ],
   },
+  {
+    id: 'c13',
+    name: 'Omar Khalil',
+    avatar: 'https://i.pravatar.cc/150?img=68',
+    email: 'omar.khalil@gmail.com',
+    mrr: 1320,
+    sentiment: 'negative',
+    renewalDate: '2026-08-12',
+    totalReach: 234,
+    socialProfiles: [
+      { platform: 'twitter', handle: '@omarkhalil', followers: 11200 },
+      { platform: 'facebook', handle: 'omar.khalil.eg', followers: 8900 },
+    ],
+  },
+  {
+    id: 'c14',
+    name: 'Sofia Ricci',
+    avatar: 'https://i.pravatar.cc/150?img=25',
+    email: 'sofia.ricci@gmail.it',
+    mrr: 3100,
+    sentiment: 'positive',
+    renewalDate: '2026-10-05',
+    totalReach: 5600,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@sofiatravelista', followers: 88400 },
+      { platform: 'tiktok', handle: '@sofiatravelista', followers: 41200 },
+    ],
+  },
+  {
+    id: 'c15',
+    name: 'Noah Bergmann',
+    avatar: 'https://i.pravatar.cc/150?img=51',
+    email: 'noah.bergmann@web.de',
+    mrr: 760,
+    sentiment: 'neutral',
+    renewalDate: '2026-09-20',
+    totalReach: 167,
+    socialProfiles: [
+      { platform: 'twitter', handle: '@noahberg', followers: 5600 },
+    ],
+  },
+  {
+    id: 'c16',
+    name: 'Camille Dubois',
+    avatar: 'https://i.pravatar.cc/150?img=29',
+    email: 'camille.dubois@orange.fr',
+    mrr: 2400,
+    sentiment: 'positive',
+    renewalDate: '2026-11-14',
+    totalReach: 920,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@camillestyledubois', followers: 31400 },
+      { platform: 'linkedin', handle: 'camille-dubois-style', followers: 9800 },
+    ],
+  },
+  {
+    id: 'c17',
+    name: 'Ravi Sharma',
+    avatar: 'https://i.pravatar.cc/150?img=57',
+    email: 'ravi.sharma@outlook.in',
+    mrr: 980,
+    sentiment: 'negative',
+    renewalDate: '2026-07-30',
+    totalReach: 389,
+    socialProfiles: [
+      { platform: 'twitter', handle: '@ravisharma_dev', followers: 14300 },
+      { platform: 'linkedin', handle: 'ravi-sharma-dev', followers: 22100 },
+    ],
+  },
+  {
+    id: 'c18',
+    name: 'Elena Vasquez',
+    avatar: 'https://i.pravatar.cc/150?img=20',
+    email: 'elena.vasquez@gmail.es',
+    mrr: 1780,
+    sentiment: 'neutral',
+    renewalDate: '2026-10-28',
+    totalReach: 740,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@elenavasquez_fit', followers: 27600 },
+      { platform: 'youtube', handle: 'ElenaFit', followers: 18900 },
+    ],
+  },
+  {
+    id: 'c19',
+    name: 'Lucas Petit',
+    avatar: 'https://i.pravatar.cc/150?img=53',
+    email: 'lucas.petit@gmail.com',
+    mrr: 430,
+    sentiment: 'neutral',
+    renewalDate: '2026-08-05',
+    totalReach: 112,
+    socialProfiles: [
+      { platform: 'facebook', handle: 'lucas.petit.31', followers: 820 },
+    ],
+  },
+  {
+    id: 'c20',
+    name: 'Zoe Williams',
+    avatar: 'https://i.pravatar.cc/150?img=16',
+    email: 'zoe.williams@icloud.com',
+    mrr: 5200,
+    sentiment: 'positive',
+    renewalDate: '2026-12-10',
+    totalReach: 4100,
+    socialProfiles: [
+      { platform: 'twitter', handle: '@zoewilliams', followers: 67800 },
+      { platform: 'instagram', handle: '@zoewilliams', followers: 54200 },
+    ],
+  },
+  {
+    id: 'c21',
+    name: 'Kenji Nakamura',
+    avatar: 'https://i.pravatar.cc/150?img=70',
+    email: 'kenji.nakamura@gmail.jp',
+    mrr: 1650,
+    sentiment: 'positive',
+    renewalDate: '2026-09-08',
+    totalReach: 2700,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@kenjiruns', followers: 41600 },
+      { platform: 'youtube', handle: 'KenjiRunsChannel', followers: 28400 },
+    ],
+  },
+  {
+    id: 'c22',
+    name: 'Amara Osei',
+    avatar: 'https://i.pravatar.cc/150?img=26',
+    email: 'amara.osei@gmail.com',
+    mrr: 2200,
+    sentiment: 'positive',
+    renewalDate: '2026-11-01',
+    totalReach: 1850,
+    socialProfiles: [
+      { platform: 'tiktok', handle: '@amaraosei', followers: 73400 },
+      { platform: 'instagram', handle: '@amaraosei', followers: 34200 },
+    ],
+  },
+  {
+    id: 'c23',
+    name: 'Henrik Sørensen',
+    avatar: 'https://i.pravatar.cc/150?img=56',
+    email: 'henrik.sorensen@gmail.dk',
+    mrr: 890,
+    sentiment: 'negative',
+    renewalDate: '2026-07-18',
+    totalReach: 198,
+    socialProfiles: [
+      { platform: 'facebook', handle: 'henrik.sorensen.dk', followers: 4200 },
+      { platform: 'twitter', handle: '@hsorensen', followers: 5800 },
+    ],
+  },
+  {
+    id: 'c24',
+    name: 'Maria Santos',
+    avatar: 'https://i.pravatar.cc/150?img=31',
+    email: 'maria.santos@gmail.com.br',
+    mrr: 3400,
+    sentiment: 'positive',
+    renewalDate: '2026-10-22',
+    totalReach: 6800,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@mariasantosfitness', followers: 112000 },
+      { platform: 'tiktok', handle: '@mariasantosfitness', followers: 89000 },
+    ],
+  },
+  {
+    id: 'c25',
+    name: 'Alex Kowalski',
+    avatar: 'https://i.pravatar.cc/150?img=48',
+    email: 'alex.kowalski@gmail.pl',
+    mrr: 670,
+    sentiment: 'neutral',
+    renewalDate: '2026-08-25',
+    totalReach: 276,
+    socialProfiles: [
+      { platform: 'twitter', handle: '@alexkowalski', followers: 3400 },
+      { platform: 'linkedin', handle: 'alex-kowalski-pl', followers: 8900 },
+    ],
+  },
+  {
+    id: 'c26',
+    name: 'Nadia Petrov',
+    avatar: 'https://i.pravatar.cc/150?img=39',
+    email: 'nadia.petrov@mail.ru',
+    mrr: 1120,
+    sentiment: 'negative',
+    renewalDate: '2026-07-25',
+    totalReach: 341,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@nadiapetrov', followers: 18700 },
+    ],
+  },
+  {
+    id: 'c27',
+    name: 'Patrick O\'Brien',
+    avatar: 'https://i.pravatar.cc/150?img=58',
+    email: 'patrick.obrien@gmail.ie',
+    mrr: 4800,
+    sentiment: 'positive',
+    renewalDate: '2026-12-18',
+    totalReach: 3200,
+    socialProfiles: [
+      { platform: 'twitter', handle: '@patrickobrienfit', followers: 52300 },
+      { platform: 'instagram', handle: '@patrickobrienfit', followers: 41800 },
+    ],
+  },
+  {
+    id: 'c28',
+    name: 'Linh Tran',
+    avatar: 'https://i.pravatar.cc/150?img=62',
+    email: 'linh.tran@gmail.vn',
+    mrr: 1560,
+    sentiment: 'neutral',
+    renewalDate: '2026-09-30',
+    totalReach: 543,
+    socialProfiles: [
+      { platform: 'tiktok', handle: '@linhtranofficial', followers: 29800 },
+      { platform: 'instagram', handle: '@linhtranofficial', followers: 17400 },
+    ],
+  },
+  {
+    id: 'c29',
+    name: 'Tobias Keller',
+    avatar: 'https://i.pravatar.cc/150?img=61',
+    email: 'tobias.keller@gmx.de',
+    mrr: 2050,
+    sentiment: 'neutral',
+    renewalDate: '2026-10-14',
+    totalReach: 418,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@tobiaskeller', followers: 14600 },
+      { platform: 'youtube', handle: 'TobiasKellerDE', followers: 22100 },
+    ],
+  },
+  {
+    id: 'c30',
+    name: 'Chiara Moretti',
+    avatar: 'https://i.pravatar.cc/150?img=21',
+    email: 'chiara.moretti@libero.it',
+    mrr: 730,
+    sentiment: 'positive',
+    renewalDate: '2026-08-18',
+    totalReach: 289,
+    socialProfiles: [
+      { platform: 'instagram', handle: '@chiaramoretti', followers: 9400 },
+      { platform: 'tiktok', handle: '@chiaramoretti', followers: 11200 },
+    ],
+  },
 ]
 
 export const channels: Channel[] = [
@@ -390,7 +639,7 @@ export const brands: Brand[] = [
   },
 ]
 
-export const messages: Message[] = [
+const baseMessages: Message[] = [
   // ─── Nike Europe ─────────────────────────────────────────────────────────────
 
   {
@@ -1105,3 +1354,172 @@ export const messages: Message[] = [
     ],
   },
 ]
+
+// ── Generated messages to reach ~200 total ───────────────────────────────────
+
+type Seed = {
+  id: string; brandId: string; customerId: string; subject: string; preview: string
+  status: MessageStatus; platform: Platform; channel: string; timestamp: string
+  unread: boolean; starred: boolean; assignedTo?: string; ticketNumber: string
+  replyCount: number; newReplies: number; tags: Tag[]
+  aiDraft?: string; reply?: string; customerMsg2?: string
+}
+
+function makeMsg(s: Seed): Message {
+  const timeline: TimelineEvent[] = []
+  const cust = customers.find(c => c.id === s.customerId)!
+  timeline.push({
+    id: s.id + '-a', type: 'message', content: s.preview,
+    author: cust.name, authorAvatar: cust.avatar || undefined,
+    timestamp: s.timestamp, platform: s.platform, isCustomer: true,
+  })
+  if (s.reply) {
+    const h = parseInt(s.timestamp.slice(11, 13))
+    const nextH = String(Math.min(h + 1, 23)).padStart(2, '0')
+    const nextTs = s.timestamp.slice(0, 11) + nextH + s.timestamp.slice(13)
+    timeline.push({
+      id: s.id + '-b', type: 'reply', content: s.reply,
+      author: 'Support Team', timestamp: nextTs,
+      isCustomer: false, platform: s.platform,
+    })
+  }
+  if (s.customerMsg2) {
+    const h = parseInt(s.timestamp.slice(11, 13))
+    const nextH = String(Math.min(h + 2, 23)).padStart(2, '0')
+    const nextTs = s.timestamp.slice(0, 11) + nextH + s.timestamp.slice(13)
+    timeline.push({
+      id: s.id + '-c', type: 'message', content: s.customerMsg2,
+      author: cust.name, authorAvatar: cust.avatar || undefined,
+      timestamp: nextTs, platform: s.platform, isCustomer: true,
+    })
+  }
+  if (s.aiDraft) {
+    timeline.push({
+      id: s.id + '-ai', type: 'ai_suggestion', content: '',
+      aiSuggestion: s.aiDraft, author: 'AI Draft',
+      timestamp: s.timestamp, isCustomer: false,
+    })
+  }
+  return {
+    id: s.id, brandId: s.brandId, customerId: s.customerId, subject: s.subject,
+    preview: s.preview, status: s.status, platform: s.platform, channel: s.channel,
+    timestamp: s.timestamp, unread: s.unread, starred: s.starred, assignedTo: s.assignedTo,
+    ticketNumber: s.ticketNumber, replyCount: s.replyCount, newReplies: s.newReplies,
+    tags: s.tags, aiDraft: s.aiDraft, timeline,
+  }
+}
+
+const seeds: Seed[] = [
+  // ─── Nike Europe ─────────────────────────────────────────────────────────
+  { id:'msg-20', brandId:'brand-1', customerId:'c20', ticketNumber:'#162170', platform:'instagram', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-27T10:00:00Z', tags:[{label:'shipping',color:'#f97316'}], subject:'No tracking update for 5 days', preview:"My order #NK-2847001 hasn't had a tracking update in 5 days. Getting worried.", reply:"Hi Sarah! We checked with DHL — your parcel is at the sorting hub in Amsterdam and will be out for delivery tomorrow. You'll get a text notification. Apologies for the delay!", customerMsg2:"Got it, thank you! 🙏" },
+  { id:'msg-21', brandId:'brand-1', customerId:'c13', ticketNumber:'#162169', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T08:10:00Z', tags:[{label:'billing',color:'#16a34a'}], subject:'Charged for membership I never signed up for', preview:"There's a €14.99 Nike Plus charge on my card and I never signed up for any membership.", aiDraft:"Hey Marcus — that charge should never have appeared without your consent. We've initiated an immediate refund of €14.99 and cancelled the membership. You'll see the money back in 3–5 days. So sorry for the confusion. Keep pushing! 💪" },
+  { id:'msg-22', brandId:'brand-1', customerId:'c27', ticketNumber:'#162168', platform:'facebook', channel:'Nike Europe', status:'answered', unread:false, starred:true, replyCount:3, newReplies:0, timestamp:'2026-06-26T15:30:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'New training streak feature is so motivating', preview:"Just want to say the new training streak feature in NRC is so motivating. Hit a 30-day streak today!", reply:"Priya, 30 days straight is INCREDIBLE!! 🔥 We're so glad the streaks are keeping you motivated. Keep going!", customerMsg2:"Gunning for 60 days now 🏃‍♀️" },
+  { id:'msg-23', brandId:'brand-1', customerId:'c4', ticketNumber:'#162167', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T12:00:00Z', tags:[{label:'stock',color:'#0891b2'}], subject:'Air Jordan 1 Bred — limited drop notification didn\'t fire', preview:"I had notifications enabled for the Bred drop and got nothing. Sold out in seconds.", aiDraft:"James, we're really sorry the notification didn't reach you in time — this was a SNKRS app push issue affecting some users during the Bred drop. Our team will flag you for priority access on the next restock. Just do it! 👟" },
+  { id:'msg-24', brandId:'brand-1', customerId:'c22', ticketNumber:'#162166', platform:'instagram', channel:'Nike Europe', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T09:00:00Z', tags:[{label:'returns',color:'#7c3aed'}], subject:'3 weeks into return with no refund', preview:"I sent my return 3 weeks ago with the prepaid label and still no refund.", aiDraft:"Lena, a 3-week wait for a return refund is way too long — we're escalating this now. Your return was received on June 8 at our Venlo warehouse. The refund of €94.99 has been manually triggered and will appear in your account within 48 hours. Keep going! 💪" },
+  { id:'msg-25', brandId:'brand-1', customerId:'c21', ticketNumber:'#162165', platform:'twitter', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-25T14:00:00Z', tags:[], subject:'Can I exchange size in store if I ordered online?', preview:"I ordered EU43 but need a 44. Can I walk into a Nike store and swap?", reply:"Hi Tom! Yes — bring the shoes (unworn, original box) + your order confirmation to any Nike store and they'll swap the size on the spot. Just do it! 👟", customerMsg2:"Going to the Amsterdam store tomorrow. Thanks!" },
+  { id:'msg-26', brandId:'brand-1', customerId:'c15', ticketNumber:'#162164', platform:'facebook', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T07:00:00Z', tags:[{label:'app',color:'#0891b2'},{label:'bug',color:'#dc2626'}], subject:'NRC heart rate zones not calibrating correctly', preview:"My heart rate zones in Nike Run Club haven't updated after I set my max HR.", aiDraft:"Yasmin, it's a known sync issue with manual HR zone settings in v3.14. Quick fix: force-close NRC, go to Settings → Training → Heart Rate → Reset Zones, then re-enter your max HR. That should recalibrate immediately. 🏃" },
+  { id:'msg-27', brandId:'brand-1', customerId:'c9', ticketNumber:'#162162', platform:'instagram', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-24T11:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Pegasus 41 — best daily trainer I\'ve owned', preview:"Just finished my first month with the Pegasus 41. Best daily trainer I've ever owned.", reply:"Felix, this is exactly the feedback that makes our design team's day! 🙌 The energy return on the Pegasus 41 was 2 years in the making. Keep running!", customerMsg2:"Already eyeing the Vaporfly for my next race 😅" },
+  { id:'msg-28', brandId:'brand-1', customerId:'c24', ticketNumber:'#162161', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:true, replyCount:0, newReplies:0, timestamp:'2026-06-29T10:30:00Z', tags:[{label:'urgent',color:'#dc2626'},{label:'safety',color:'#7c3aed'}], subject:'Shoe lace snapped mid-race', preview:"My Nike lace snapped at km 18 of a marathon. Had to stop mid-race. This could have caused injury.", aiDraft:"Isabelle, first — we're so relieved you weren't injured. A lace failure mid-marathon is unacceptable and we're treating this as a product safety report. Please DM us your shoe model and we'll arrange a full replacement and escalate to our product quality team. 💪" },
+  { id:'msg-29', brandId:'brand-1', customerId:'c16', ticketNumber:'#162160', platform:'instagram', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-23T09:00:00Z', tags:[], subject:'How do I redeem Nike member reward points?', preview:"I have 2,340 Nike member points but can't find where to redeem them in the app.", reply:"Hey Daan! Go to Nike app → Profile → Membership → Rewards. Points can be used at checkout on Nike.com too! 👟", customerMsg2:"Just redeemed for 20% off. Thanks! 🎉" },
+  { id:'msg-30', brandId:'brand-1', customerId:'c14', ticketNumber:'#162159', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T08:30:00Z', tags:[{label:'partnership',color:'#0891b2'}], subject:'TikTok collab proposal — 140k followers', preview:"Hi Nike! I'm a fitness TikToker with 140k followers. Would love to collab on a shoe review.", aiDraft:"Hey Aiko! Love your energy 🔥 Email our creator partnerships team at nike-creators@nike.com — include your handle, engagement stats, and a few videos. Our team reviews all submissions within 2 weeks. Just do it! 💪" },
+  { id:'msg-31', brandId:'brand-1', customerId:'c30', ticketNumber:'#162158', platform:'instagram', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:3, newReplies:0, timestamp:'2026-06-22T16:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'NTC yoga sessions are incredible', preview:"The new yoga and recovery sessions on NTC are incredible. Finally something for rest days.", reply:"Sarah, we're so glad you found the recovery sessions! 🧘 Our NTC team put a lot of love into the new yoga series. Which instructor is your favourite?", customerMsg2:"The Adrienne series hits different after long runs 🙌" },
+  { id:'msg-32', brandId:'brand-1', customerId:'c17', ticketNumber:'#162157', platform:'facebook', channel:'Nike Europe', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T11:45:00Z', tags:[{label:'defect',color:'#dc2626'}], subject:'Flyknit upper tearing after 2 months', preview:"The Flyknit upper on my Zoom Fly 5 is tearing at the toe box after less than 2 months.", aiDraft:"Marcus, tearing in the upper after 2 months is a clear manufacturing defect. Send us your order number and a photo of the damage and we'll send a replacement pair. Keep pushing! 💪" },
+  { id:'msg-33', brandId:'brand-1', customerId:'c18', ticketNumber:'#162156', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T13:00:00Z', tags:[{label:'shipping',color:'#f97316'}], subject:'Express shipping ordered but standard delivered', preview:"I paid €12.99 for express 2-day shipping but it's been 4 days.", aiDraft:"Priya, paying for express and waiting 4 days is unacceptable. We've refunded your €12.99 shipping fee immediately. The carrier delay was outside our control but the cost is yours to keep back. So sorry! 🏃" },
+  { id:'msg-34', brandId:'brand-1', customerId:'c4', ticketNumber:'#162155', platform:'linkedin', channel:'Nike Europe', status:'answered', unread:false, starred:true, replyCount:2, newReplies:0, timestamp:'2026-06-20T10:00:00Z', tags:[{label:'partnership',color:'#0891b2'}], subject:'Follow-up: Creator program application', preview:"Following up on my creator program application from last week. Haven't heard back from Emma yet.", reply:"James! Emma just reached out — she had a system glitch with the email. Check your LinkedIn DMs. So excited to work with you! 💪", customerMsg2:"Got her email! Meeting scheduled for Thursday 🙌" },
+  { id:'msg-35', brandId:'brand-1', customerId:'c29', ticketNumber:'#162154', platform:'instagram', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T17:00:00Z', tags:[{label:'stock',color:'#0891b2'}], subject:'Size 38 Metcon 9 always out of stock', preview:"Every time I check the Metcon 9 in size 38, it's sold out. Do you restock regularly?", aiDraft:"Lena, the Metcon 9 in size 38 is popular! Restocks happen every 2-3 weeks. Enable size notifications on the product page (bell icon) and check the Nike app — members often get 24h early access. Don't give up! 💪" },
+  { id:'msg-36', brandId:'brand-1', customerId:'c25', ticketNumber:'#162153', platform:'twitter', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-21T08:00:00Z', tags:[], subject:'Gift card not working at checkout', preview:"I got a Nike gift card for my birthday but the code isn't working at checkout. Keep getting an error.", reply:"Tom, try entering it in lowercase without spaces. If it still fails, DM us the last 4 digits and we'll manually apply the balance. 🎁", customerMsg2:"It worked in lowercase! Thanks 🙌" },
+  { id:'msg-37', brandId:'brand-1', customerId:'c23', ticketNumber:'#162151', platform:'instagram', channel:'Nike Europe', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T08:00:00Z', tags:[{label:'app',color:'#0891b2'}], subject:'Apple Watch integration broke with watchOS 11', preview:"After updating to watchOS 11, my Nike watch face disappeared and NRC won't start from the watch.", aiDraft:"Yasmin, watchOS 11 broke some Nike complications. Fix: Watch app → Face Gallery → Nike+ Run → re-add the complication. Then NRC → Settings → Watch → Re-pair. Should take 2 minutes. Keep running! 🏃" },
+  { id:'msg-38', brandId:'brand-1', customerId:'c19', ticketNumber:'#162150', platform:'facebook', channel:'Nike Europe', status:'unanswered', unread:false, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-26T14:00:00Z', tags:[{label:'billing',color:'#16a34a'}], subject:'Order total changed after I placed it', preview:"I paid €129 at checkout but my confirmation email shows €134.", aiDraft:"Felix, prices should never change after you place an order. Your total is locked at €129. If your bank statement shows €134, that's a foreign exchange fee on their end — check with your bank. Your order is correct on our side! 💪" },
+  { id:'msg-39', brandId:'brand-1', customerId:'c28', ticketNumber:'#162149', platform:'twitter', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-19T09:00:00Z', tags:[], subject:'When does the Summer Sale start?', preview:"Heard there's a Nike Summer Sale coming. Any dates? Want to buy Vaporfly.", reply:"Isabelle, great news — our Summer Sale starts July 4th! Vaporfly is usually included. Sign in as a Nike Member for early access on July 3rd. 🎉", customerMsg2:"Set my alarm! Thank you! 😍" },
+  { id:'msg-40', brandId:'brand-1', customerId:'c26', ticketNumber:'#162148', platform:'instagram', channel:'Nike Europe', status:'unanswered', unread:true, starred:true, assignedTo:'Remko', replyCount:0, newReplies:0, timestamp:'2026-06-29T13:00:00Z', tags:[{label:'urgent',color:'#dc2626'},{label:'shipping',color:'#f97316'}], subject:'Shoes arrived damaged — box completely crushed', preview:"My new Nike Air Max arrived in a completely crushed box with scuff marks on the shoes.", aiDraft:"Daan, receiving damaged goods is completely unacceptable. We're sending a brand new pair with express shipping immediately — keep the damaged ones, no return needed. New pair will be with you by Friday. Keep moving! 💪" },
+
+  // ─── Spotify ─────────────────────────────────────────────────────────────
+  { id:'msg-41', brandId:'brand-2', customerId:'c13', ticketNumber:'#162147', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-25T10:00:00Z', tags:[], subject:'Can I use Spotify on 2 devices simultaneously?', preview:"Can I listen on my phone and laptop at the same time with one Premium account?", reply:"Hey Sarah! Standard Premium streams on one device at a time. Tap the speaker icon to switch between devices without interruption. For simultaneous streams, Duo or Family plans work great. 🎵", customerMsg2:"The device-switching tip is perfect — thanks!" },
+  { id:'msg-42', brandId:'brand-2', customerId:'c23', ticketNumber:'#162146', platform:'instagram', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T09:00:00Z', tags:[{label:'account',color:'#0891b2'}], subject:'Can\'t log in after resetting password', preview:"I reset my password 10 minutes ago and Spotify says my new password is incorrect. Completely locked out.", aiDraft:"Marcus, password changes take a few minutes to propagate. Clear your browser cookies, wait 5 minutes, then try logging in at open.spotify.com in an incognito window. If it still fails, DM us your account email and we'll manually reset. 🎵" },
+  { id:'msg-43', brandId:'brand-2', customerId:'c16', ticketNumber:'#162145', platform:'facebook', channel:'Spotify', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T09:30:00Z', tags:[{label:'billing',color:'#16a34a'}], subject:'Cancelled Premium but still being charged', preview:"I cancelled Spotify Premium 2 months ago but I've been charged €9.99 every month since.", aiDraft:"Priya, charges after cancellation should never happen. We're processing a full refund for 2 months incorrectly charged (€19.98) immediately. Confirmation email arriving within the hour. Your account shows no active subscription now. 🎵" },
+  { id:'msg-44', brandId:'brand-2', customerId:'c4', ticketNumber:'#162144', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:true, replyCount:3, newReplies:0, timestamp:'2026-06-23T14:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Spotify DJ AI feature is genuinely incredible', preview:"The AI DJ feature has been my daily driver for 2 weeks. Feels like a personal radio station.", reply:"James, this genuinely makes our team happy! 🎉 The DJ took 18 months of training. Any genres you wish it covered more?", customerMsg2:"More instrumental focus music for work would be amazing 😄" },
+  { id:'msg-45', brandId:'brand-2', customerId:'c29', ticketNumber:'#162143', platform:'instagram', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T11:00:00Z', tags:[{label:'bug',color:'#dc2626'},{label:'mobile',color:'#f97316'}], subject:'Shuffle broken — same 10 songs on repeat', preview:"My shuffle only cycles through the same 10 songs from a 200-song playlist. Been like this for weeks.", aiDraft:"Lena, the repeat-shuffle issue has been reported. Quickest fix: tap the three dots on the playlist → Download (even if already downloaded) — forces a re-index and shuffle should work properly. 🎵" },
+  { id:'msg-46', brandId:'brand-2', customerId:'c27', ticketNumber:'#162142', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-21T10:00:00Z', tags:[], subject:'Where did friend activity go in the sidebar?', preview:"I used to see what my friends are listening to but it disappeared from my sidebar.", reply:"Hey Tom! Friend activity is in the right sidebar in the desktop app (person icon top right). On mobile: Home → Friend Activity. Make sure friends have 'Share my listening activity' enabled in Privacy settings. 🎵", customerMsg2:"Found it! My friend listens to Taylor Swift at 2am apparently 😂" },
+  { id:'msg-47', brandId:'brand-2', customerId:'c18', ticketNumber:'#162141', platform:'facebook', channel:'Spotify', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T10:30:00Z', tags:[{label:'account',color:'#0891b2'}], subject:'Merged two accounts accidentally — lost playlists', preview:"I accidentally merged my Facebook login and email login. All playlists from the Facebook account are gone.", aiDraft:"Yasmin, your playlists aren't lost — they're linked to the original Facebook-login account. Our Account team can recover and transfer them. DM us both email addresses and we'll sort this within 24 hours. 🎵" },
+  { id:'msg-48', brandId:'brand-2', customerId:'c25', ticketNumber:'#162140', platform:'instagram', channel:'Spotify', status:'unanswered', unread:false, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-26T08:00:00Z', tags:[], subject:'Student discount — docs uploaded but no confirmation', preview:"I uploaded my student ID for the student discount 5 days ago. Still being charged full price.", aiDraft:"Felix, 5 days without a response is too long. We're escalating your verification now. If approved, we'll credit back the difference for this month. Confirmation by email within 24 hours. 🎵" },
+  { id:'msg-49', brandId:'brand-2', customerId:'c14', ticketNumber:'#162139', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-20T09:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Spotify Blend with my partner is our favourite feature', preview:"We do a Spotify Blend every week and it's the best conversation starter.", reply:"Isabelle, Blend dates sound adorable!! 💕 Any dream feature you'd add to Blend?", customerMsg2:"A monthly recap of songs we both loved would be perfect! Hint hint 😄" },
+  { id:'msg-50', brandId:'brand-2', customerId:'c17', ticketNumber:'#162138', platform:'instagram', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T15:00:00Z', tags:[{label:'bug',color:'#dc2626'}], subject:'Lyrics feature disappeared from my app', preview:"The lyrics button is gone from my player. I'm on the latest version. Premium account.", aiDraft:"Daan, lyrics were temporarily hidden in v8.9.58 due to a rights issue — restored in v8.9.60. Update via your app store and it should be back. Sorry for the disruption! 🎵" },
+  { id:'msg-51', brandId:'brand-2', customerId:'c12', ticketNumber:'#162137', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:true, replyCount:2, newReplies:0, timestamp:'2026-06-22T12:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Made For You playlist was literally perfect today', preview:"I got a 'Made for You' playlist and every single song was a hit. How does the algorithm know me this well??", reply:"Aiko, we'll pass your compliments to our recommendation engine 🤖🎵 Any song that surprised you?", customerMsg2:"'Homesick' by Noah Kahan appeared and I cried 😭 iconic" },
+  { id:'msg-52', brandId:'brand-2', customerId:'c19', ticketNumber:'#162136', platform:'facebook', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T07:30:00Z', tags:[{label:'billing',color:'#16a34a'}], subject:'Premium price increased without notice', preview:"My Spotify Premium went from €9.99 to €11.99 and I was never notified.", aiDraft:"Sarah, we sent price change emails in April but understand they're easy to miss. The new price reflects increased content costs. If budget is tight, our Spotify Mini option at €0.99/day might help. We value you as a listener! 🎵" },
+  { id:'msg-53', brandId:'brand-2', customerId:'c30', ticketNumber:'#162135', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-18T11:00:00Z', tags:[], subject:'Offline downloads limit — how many songs?', preview:"I hit a download limit. Getting an error saying I can't save more songs offline.", reply:"Hey Marcus! Premium allows up to 10,000 songs offline across 5 devices. Removing old downloaded podcasts (they count toward the total) should free up space. 🎵", customerMsg2:"Didn't know podcasts count! Removed some and it worked. Thanks!" },
+  { id:'msg-54', brandId:'brand-2', customerId:'c22', ticketNumber:'#162134', platform:'instagram', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T16:00:00Z', tags:[{label:'bug',color:'#dc2626'},{label:'mobile',color:'#f97316'}], subject:'Spotify not connecting to Android Auto', preview:"Spotify stopped connecting to Android Auto after the last update. Car screen shows 'Connection failed'.", aiDraft:"Priya, Android Auto issues started in v8.9.56. Fix: Spotify Settings → Car → Disable Car Mode → re-enable Android Auto from your car screen. Also make sure USB Debugging is off in developer settings — most common culprit. 🎵" },
+  { id:'msg-55', brandId:'brand-2', customerId:'c21', ticketNumber:'#162133', platform:'facebook', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-17T09:00:00Z', tags:[], subject:'Are podcasts included in Spotify Wrapped?', preview:"I listen to a lot of podcasts. Are they in my Wrapped stats or only music?", reply:"James, starting from 2024 Wrapped, podcasts have their own section — top shows and total hours. 🎙️🎵", customerMsg2:"Oh that's actually really cool. Can't wait to see my stats at year end!" },
+  { id:'msg-56', brandId:'brand-2', customerId:'c5', ticketNumber:'#162132', platform:'twitter', channel:'Spotify', status:'unanswered', unread:true, starred:true, assignedTo:'Remko', replyCount:0, newReplies:0, timestamp:'2026-06-29T11:30:00Z', tags:[{label:'account',color:'#0891b2'},{label:'urgent',color:'#dc2626'}], subject:'Account hacked — email and password changed', preview:"Someone has taken over my Spotify account. They changed the email and password. 7 years of playlists.", aiDraft:"Lena, go to spotify.com/account/recover and use your original email. Our Account Security team has flagged your account for manual review — they'll contact you at your original email within 30 minutes. Do NOT click any links sent via email. We're on it. 🎵" },
+  { id:'msg-57', brandId:'brand-2', customerId:'c6', ticketNumber:'#162131', platform:'twitter', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T12:00:00Z', tags:[{label:'account',color:'#0891b2'}], subject:'Can\'t create account — SMS verification not sending', preview:"Trying to create a Spotify account but the SMS verification code never arrives. Tried 5 times.", aiDraft:"Sorry you're hitting this! Try verifying via email instead: tap 'Send via email' on the verification screen. If you don't see that option, DM us and we'll verify your account manually. 🎵" },
+  { id:'msg-58', brandId:'brand-2', customerId:'c20', ticketNumber:'#162130', platform:'instagram', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-11T10:00:00Z', tags:[], subject:'Is there a sleep timer?', preview:"Is there a sleep timer feature? I fall asleep to podcasts and wake up at 3am.", reply:"Sarah, yes! Three dots on Now Playing → Sleep Timer. Set for 5–45 minutes or 'End of track'. Perfect for bedtime! 🌙🎵", customerMsg2:"I've wanted this for years and it was right there! Thank you!!" },
+  { id:'msg-59', brandId:'brand-2', customerId:'c26', ticketNumber:'#162129', platform:'facebook', channel:'Spotify', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T10:00:00Z', tags:[{label:'bug',color:'#dc2626'}], subject:'Spotify freezes when opening with CarPlay', preview:"Every time I open Spotify via CarPlay, it loads for 10 seconds then freezes my iPhone.", aiDraft:"Marcus, CarPlay freezing is a known conflict with iOS 17.5.1 and Spotify v8.9.60. Fix: iPhone Settings → Spotify → Reset all settings → force-quit Spotify → unplug from CarPlay → wait 30 seconds → reconnect. 🎵" },
+  { id:'msg-60', brandId:'brand-2', customerId:'c15', ticketNumber:'#162128', platform:'twitter', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T08:00:00Z', tags:[], subject:'How do I listen to Spotify on my smart TV?', preview:"Can I get Spotify on my Samsung TV? Can't find the app in the smart TV store.", aiDraft:"Priya! Spotify is available on most Samsung Smart TVs from 2016 onwards. Go to your TV's app store → search 'Spotify' → install. If it's not there, Chromecast or AirPlay from your phone as an alternative. 🎵📺" },
+  { id:'msg-61', brandId:'brand-2', customerId:'c28', ticketNumber:'#162127', platform:'facebook', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-09T14:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Daylist feature is weirdly accurate', preview:"The 'Monday morning indie folk' Daylist this morning was exactly what I wanted to hear.", reply:"James, we'll tell our algorithm it's doing dark magic 🔮🎵 You're clearly an indie folk Monday morning person — and we respect it!", customerMsg2:"'Tuesday afternoon hip-hop with a hint of nostalgia' also nailed it 😂" },
+  { id:'msg-62', brandId:'brand-2', customerId:'c24', ticketNumber:'#162126', platform:'twitter', channel:'Spotify', status:'unanswered', unread:false, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-24T09:00:00Z', tags:[{label:'billing',color:'#16a34a'}], subject:'Family plan member can\'t verify home address', preview:"One of my family members can't verify their home address for the Family plan.", aiDraft:"Lena, make sure the address exactly matches Google Maps format (including apartment number). If it still fails after 2 attempts, DM us both account emails and we'll manually verify. 🎵" },
+  { id:'msg-63', brandId:'brand-2', customerId:'c13', ticketNumber:'#162125', platform:'facebook', channel:'Spotify', status:'answered', unread:false, starred:true, replyCount:3, newReplies:0, timestamp:'2026-06-08T10:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'800 hours of podcasts in a year', preview:"I just checked my Spotify stats and I've listened to 800+ hours of podcasts in the last year 😂", reply:"Tom, 800 hours?? Simultaneously concerned and impressed 🎙️😂 What's your all-time favourite show?", customerMsg2:"Serial Season 1 changed my life. Everything else is measured against it." },
+  { id:'msg-64', brandId:'brand-2', customerId:'c16', ticketNumber:'#162124', platform:'twitter', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T15:00:00Z', tags:[{label:'bug',color:'#dc2626'},{label:'mobile',color:'#f97316'}], subject:'Search results showing songs in wrong language', preview:"When I search in English, results show Dutch/German versions of songs instead of the originals.", aiDraft:"Yasmin, go to Settings → Language → set your preferred content language to 'English' and restart the app. This tells our catalog which version to prioritize. Should fix immediately after the restart. 🎵" },
+  { id:'msg-65', brandId:'brand-2', customerId:'c19', ticketNumber:'#162123', platform:'instagram', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-07T09:00:00Z', tags:[], subject:'How do I turn on the crossfade feature?', preview:"I want songs to blend into each other. Is there a crossfade option on mobile?", reply:"Felix! Settings → Playback → Crossfade. Drag the slider up to 12 seconds. Great for DJ playlists or workout mixes! 🎵🎧", customerMsg2:"12 seconds of crossfade for my gym playlist is *chef's kiss* 🙌" },
+  { id:'msg-66', brandId:'brand-2', customerId:'c30', ticketNumber:'#162122', platform:'facebook', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T12:00:00Z', tags:[{label:'account',color:'#0891b2'}], subject:'How do I permanently delete my Spotify account?', preview:"I want to permanently delete my Spotify account and all my data.", aiDraft:"Isabelle, go to spotify.com/account → Privacy Settings → Close Account. This permanently deletes all playlists and history. If there's something we can fix to keep you, we'd love the chance! 🎵" },
+  { id:'msg-67', brandId:'brand-2', customerId:'c25', ticketNumber:'#162121', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-06T11:00:00Z', tags:[], subject:'Can I import my Apple Music library?', preview:"I'm switching from Apple Music and have 3,000 songs saved. Is there an import tool?", reply:"Daan, try Soundiiz (soundiiz.com) — it transfers Apple Music playlists and liked songs to Spotify in under 5 minutes. Free tier works great! 🎵", customerMsg2:"Used Soundiiz and it worked perfectly! Every playlist transferred. Thank you!!" },
+  { id:'msg-68', brandId:'brand-2', customerId:'c12', ticketNumber:'#162120', platform:'instagram', channel:'Spotify', status:'unanswered', unread:true, starred:true, replyCount:0, newReplies:0, timestamp:'2026-06-29T08:30:00Z', tags:[{label:'feedback',color:'#16a34a'},{label:'partnership',color:'#0891b2'}], subject:'My lo-fi playlist has 40k Spotify followers from TikTok', preview:"I made a 'study with me lo-fi' playlist that has 40k followers on Spotify from my TikTok. Can we collab?", aiDraft:"Aiko, a 40k-follower playlist is seriously impressive! Submit for editorial consideration at artists.spotify.com/playlists — include your TikTok audience stats. Our editorial team actively looks for creator-driven playlists. 🎵" },
+
+  // ─── Airbnb ───────────────────────────────────────────────────────────────
+  { id:'msg-69', brandId:'brand-3', customerId:'c14', ticketNumber:'#162119', platform:'facebook', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-05T10:00:00Z', tags:[], subject:'Can I get VAT receipts for business expenses?', preview:"I use Airbnb for work travel. Can I download proper VAT invoices for expense reports?", reply:"Sarah, yes! airbnb.com/account/payments → Receipts → any booking → 'Download Receipt'. For EU VAT invoices: Account → Business Travel → Tax Documents. 🧾", customerMsg2:"The tax documents section was exactly what I needed. Thank you!" },
+  { id:'msg-70', brandId:'brand-3', customerId:'c17', ticketNumber:'#162118', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T07:00:00Z', tags:[{label:'booking',color:'#0891b2'}], subject:'Double-charged for a booking', preview:"I was charged twice for the same booking. My bank shows two identical charges of €347 on the same day.", aiDraft:"Marcus, we've reviewed your account and confirmed the duplicate — the second €347 charge is being refunded immediately. You'll see it reversed within 3–5 business days. Sincere apologies for the alarm this caused." },
+  { id:'msg-71', brandId:'brand-3', customerId:'c22', ticketNumber:'#162117', platform:'instagram', channel:'Airbnb', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T04:00:00Z', tags:[{label:'safety',color:'#7c3aed'}], subject:'Host entered apartment without notice at 11pm', preview:"My host knocked and then entered my apartment at 11pm without permission while I was there.", aiDraft:"Priya, an unauthorized entry is a serious violation. We've suspended this host pending investigation. You can check out immediately — we will provide a full refund and free alternative accommodation tonight. Please call +1-844-234-2500 if you need immediate assistance." },
+  { id:'msg-72', brandId:'brand-3', customerId:'c20', ticketNumber:'#162116', platform:'facebook', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-04T14:00:00Z', tags:[], subject:'Long-term stay discount for 28+ nights?', preview:"Considering a 4-week stay in Lisbon. Do longer bookings come with a discount?", reply:"James! Most hosts offer 20–50% monthly discount for 28+ nights — applied automatically at checkout. Filter by 'Monthly stay' to find listings with this enabled. 🌍", customerMsg2:"Just found a place for 35% off the weekly rate. Booking now!" },
+  { id:'msg-73', brandId:'brand-3', customerId:'c26', ticketNumber:'#162115', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:false, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-25T09:00:00Z', tags:[{label:'refund',color:'#dc2626'}], subject:'€150 cleaning fee for a studio — is this normal?', preview:"A studio apartment in Berlin is charging a €150 cleaning fee. Almost as much as one night.", aiDraft:"Lena, cleaning fees are set by individual hosts and we can't cap them. We do show the fee clearly before booking. Try filtering for 'No cleaning fee' or listings with fees under €50 as alternatives. Happy to help! 🏠" },
+  { id:'msg-74', brandId:'brand-3', customerId:'c21', ticketNumber:'#162114', platform:'instagram', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-03T10:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'3 years hosting — met people from 47 countries', preview:"I started hosting 3 years ago to cover my mortgage. Now it's my main income and I've met people from 47 countries.", reply:"Tom, this is what hosting is all about 🏠🌍 47 countries! We'd love to feature you in our Superhost spotlight. Would you be open to it?", customerMsg2:"Absolutely! A guest from Bhutan just left yesterday — each one is a story 🙏" },
+  { id:'msg-75', brandId:'brand-3', customerId:'c13', ticketNumber:'#162113', platform:'facebook', channel:'Airbnb', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T09:00:00Z', tags:[{label:'refund',color:'#dc2626'},{label:'listing',color:'#f97316'}], subject:'No hot water for entire 4-night stay', preview:"There was no hot water for the entire 4 nights. Host kept saying 'it'll be fixed tomorrow'. Never was.", aiDraft:"Yasmin, no hot water for 4 nights is completely unacceptable. Under our Rebooking and Refund Policy, you're entitled to a significant partial refund. We're processing 75% of your booking cost (€284) immediately — in your account within 5 days." },
+  { id:'msg-76', brandId:'brand-3', customerId:'c29', ticketNumber:'#162112', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:false, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-25T14:00:00Z', tags:[], subject:'Can I leave a review after the 14-day window?', preview:"I forgot to leave a review for my last stay and it's been 16 days. Can I still submit one?", aiDraft:"Felix, the 14-day review window is a firm policy on both sides — once it closes, neither guest nor host can submit for that stay. For your next stay, set a reminder right after check-out. 🏠" },
+  { id:'msg-77', brandId:'brand-3', customerId:'c18', ticketNumber:'#162111', platform:'instagram', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-19T10:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Airbnb Plus in Barcelona was magazine-worthy', preview:"The Airbnb Plus apartment in Barcelona (Booking #AIR-7831002) was stunning. Every detail was perfect.", reply:"Isabelle, this made our curation team smile so wide 😍 Airbnb Plus properties go through a 100-point inspection. We've passed your message to the host. Buen viaje! 🌞", customerMsg2:"Already looking at returning next summer. The host left us a bottle of cava — 10/10! 🥂" },
+  { id:'msg-78', brandId:'brand-3', customerId:'c15', ticketNumber:'#162110', platform:'instagram', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T18:00:00Z', tags:[{label:'booking',color:'#0891b2'}], subject:'Can I extend my stay during check-in?', preview:"I'm checking in tomorrow. Can I extend my stay by 2 extra nights if I like it?", aiDraft:"Daan, request an extension through the Airbnb app — go to your trip → Modify Reservation → Add nights. The host needs to approve, but most are happy if they don't have another booking. Do this as soon as you arrive! 🏠" },
+  { id:'msg-79', brandId:'brand-3', customerId:'c12', ticketNumber:'#162109', platform:'twitter', channel:'Airbnb', status:'answered', unread:false, starred:true, replyCount:2, newReplies:0, timestamp:'2026-06-21T15:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Solo travel in Japan — every Airbnb host was incredible', preview:"Did a 3-week solo trip through Japan. Every single Airbnb host was incredible. Felt completely safe.", reply:"Aiko, your solo Japan adventure sounds absolutely incredible 🇯🇵 So glad you felt safe and welcomed. Where was your favourite stay?", customerMsg2:"A tiny cabin in Kyoto with a cedar wood onsen. I cried when I left 😭✨" },
+  { id:'msg-80', brandId:'brand-3', customerId:'c27', ticketNumber:'#162108', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T10:00:00Z', tags:[{label:'urgent',color:'#dc2626'}], subject:'Host asking me to pay €200 cash — is this a scam?', preview:"My host is messaging me on WhatsApp asking me to pay a €200 'security deposit' in cash. This feels wrong.", aiDraft:"James, this is a scam attempt — do NOT pay any money outside of the Airbnb platform. All security deposits are handled by Airbnb. We've flagged this host's account. Screenshot and forward the WhatsApp messages to trust@airbnb.com. Your booking is fully secure." },
+  { id:'msg-81', brandId:'brand-3', customerId:'c24', ticketNumber:'#162107', platform:'twitter', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-24T10:00:00Z', tags:[], subject:'What extra benefits do Superhost stays have?', preview:"What benefits do I get booking a Superhost listing compared to a regular one?", reply:"Hi Sarah! Superhost listings have hosts with 4.8+ ratings, <1h response time, and 10+ stays/year. More reliable check-ins and descriptions that match reality. Worth the filter! 🌟", customerMsg2:"Didn't know about that filter — using it from now on. Thanks!" },
+  { id:'msg-82', brandId:'brand-3', customerId:'c23', ticketNumber:'#162106', platform:'instagram', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T14:00:00Z', tags:[{label:'refund',color:'#dc2626'}], subject:'Host refuses refund despite written cancellation policy', preview:"The listing said free cancellation up to 48h before. I cancelled 72h before and the host refuses my refund.", aiDraft:"Marcus, if the listing clearly stated free cancellation up to 48 hours and you cancelled 72 hours in advance, you're entitled to a full refund — the host cannot override this. We've opened case CS-2026-048812. Your refund will be processed within 5 business days." },
+  { id:'msg-83', brandId:'brand-3', customerId:'c28', ticketNumber:'#162105', platform:'instagram', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T17:00:00Z', tags:[{label:'listing',color:'#f97316'}], subject:'Listing says WiFi but there is none — I work remotely', preview:"The listing listed WiFi as an amenity. There's no WiFi and the host says 'use your data'.", aiDraft:"Lena, listing WiFi as an amenity when none exists is a policy violation. You're eligible for a €50 daily credit under our Listing Accuracy Policy. We've opened case CS-2026-048891 and are reviewing the host's listing. So sorry this disrupted your remote work." },
+  { id:'msg-84', brandId:'brand-3', customerId:'c16', ticketNumber:'#162104', platform:'twitter', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-20T08:00:00Z', tags:[], subject:'How do I block dates for personal use?', preview:"I want to block 2 weeks in August for personal use of my listing. How do I do this quickly?", reply:"Hey Tom! Host Dashboard → Calendar → click and drag across any dates to block them. Blocked dates won't appear in search. 📅", customerMsg2:"Done in 30 seconds. Thanks 🙏" },
+  { id:'msg-85', brandId:'brand-3', customerId:'c19', ticketNumber:'#162103', platform:'facebook', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-28T11:00:00Z', tags:[], subject:'Pet-friendly filter showing non-pet listings', preview:"I filtered for pet-friendly listings but search still shows listings that say 'no pets' in the rules.", reply:"Yasmin, some hosts add 'no pets' in house rules as extra precaution — those should be hidden but are slipping through. We've logged this as a priority filter bug. In the meantime, always check House Rules before booking. Fix rolling out next week. 🏠", customerMsg2:"Thanks! Found a great dog-friendly place after checking manually." },
+  { id:'msg-86', brandId:'brand-3', customerId:'c9', ticketNumber:'#162102', platform:'twitter', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-02T09:00:00Z', tags:[], subject:'What does AirCover actually cover?', preview:"I see 'AirCover for Hosts' mentioned everywhere. What does it actually cover and how do I claim?", reply:"Felix, AirCover for Hosts covers up to €3M in property damage. Claim via Resolution Centre within 14 days of checkout → Request money from guest. Photo documentation is key! 🏠", customerMsg2:"Good to know. Had a guest break a lamp — will submit now. Thanks!" },
+  { id:'msg-87', brandId:'brand-3', customerId:'c30', ticketNumber:'#162101', platform:'instagram', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T08:00:00Z', tags:[{label:'booking',color:'#0891b2'}], subject:'Can I add a co-host while I\'m travelling?', preview:"I'm travelling for 3 weeks and need someone to manage my Airbnb listing. Can I add a co-host?", aiDraft:"Isabelle! Yes — Your Listings → Edit → Co-Hosts → Add Co-host and enter their email. Co-hosts can manage reservations, message guests, and update the calendar. You control the permissions. Perfect for travel! 🏠" },
+  { id:'msg-88', brandId:'brand-3', customerId:'c25', ticketNumber:'#162100', platform:'facebook', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-06-01T10:00:00Z', tags:[], subject:'How do I become an Airbnb Experiences host?', preview:"I'm a professional chef and want to host cooking classes as an Airbnb Experience. How do I apply?", reply:"Daan, apply at airbnb.com/host/experiences — our team reviews in 2–3 weeks. Cooking classes are one of the most popular categories. 🍳🌟", customerMsg2:"Applied! Teaching Dutch stroopwafel making. Fingers crossed 🤞" },
+  { id:'msg-89', brandId:'brand-3', customerId:'c12', ticketNumber:'#162099', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:true, starred:true, replyCount:0, newReplies:0, timestamp:'2026-06-29T09:30:00Z', tags:[{label:'feedback',color:'#16a34a'},{label:'partnership',color:'#0891b2'}], subject:'My Kyoto Airbnb vlog got 2M views — can we collab?', preview:"My Airbnb stay in Kyoto went viral — 2M views and 400 comments asking about the listing. Can we collab?", aiDraft:"Aiko, 2M views is incredible 😄🇯🇵 Email creators@airbnb.com with your video link, channel stats and contact info. Our team will be in touch within 5 business days." },
+  { id:'msg-90', brandId:'brand-3', customerId:'c3', ticketNumber:'#162098', platform:'facebook', channel:'Airbnb', status:'ai_pending', unread:true, starred:false, replyCount:1, newReplies:1, timestamp:'2026-06-29T03:00:00Z', tags:[{label:'safety',color:'#7c3aed'},{label:'urgent',color:'#dc2626'}], subject:'Smoke alarm not working — host not responding', preview:"I tested the smoke alarm in my Airbnb and it's dead. No battery. Asked host 3 times, no response.", aiDraft:"Priya, a non-functional smoke alarm is a serious safety issue. We've escalated to Trust & Safety — a specialist will call you within 20 minutes. If you feel unsafe, please leave and call local authorities — we will cover your accommodation tonight. Safety first, always." },
+  { id:'msg-91', brandId:'brand-3', customerId:'c4', ticketNumber:'#162097', platform:'twitter', channel:'Airbnb', status:'answered', unread:false, starred:true, replyCount:3, newReplies:0, timestamp:'2026-06-22T11:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Best Airbnb stay ever — host in Tuscany went above and beyond', preview:"2-week stay in Tuscany — host left local wine, handwritten restaurant recs, and arranged a private cooking class.", reply:"James, your host Giulia has been nominated for a Superhost Spotlight based on your feedback 🥂🌿 Hope Tuscany treated you beautifully!", customerMsg2:"Please tell Giulia she was incredible! Already looking for our next long-stay. 🙏" },
+  { id:'msg-92', brandId:'brand-3', customerId:'c9', ticketNumber:'#162096', platform:'instagram', channel:'Airbnb', status:'unanswered', unread:false, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-26T14:00:00Z', tags:[{label:'booking',color:'#0891b2'}], subject:'Airbnb listing in wrong city in search results', preview:"My listing is in Amsterdam Noord but Airbnb shows it as Amsterdam Centrum in search results.", aiDraft:"Felix, go to Your Listings → Edit → Location → drag the map pin to the exact location and save. That overrides the automatic classification. If still incorrect after 24 hours, DM us your listing ID and we'll manually adjust. 🏠" },
+
+  // ─── More mixed ───────────────────────────────────────────────────────────
+  { id:'msg-93', brandId:'brand-1', customerId:'c17', ticketNumber:'#162095', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T07:00:00Z', tags:[{label:'shipping',color:'#f97316'}], subject:'Click & Collect ready email but store has no record', preview:"Got an email saying my Click & Collect is ready at the Amsterdam store but they have no record of my order.", aiDraft:"Marcus, a Click & Collect sync error is frustrating — especially when you've made the trip. Check your order confirmation for the exact store address. If it's correct, call the store and quote your order number — the manager can pull it from our back end. Sorry for the inconvenience! 💪" },
+  { id:'msg-94', brandId:'brand-2', customerId:'c18', ticketNumber:'#162094', platform:'instagram', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-30T10:00:00Z', tags:[], subject:'Can I see my full listening history?', preview:"Is there a way to see everything I've listened to? Not just Wrapped but the full log.", reply:"Priya! Go to spotify.com/account/privacy → Request your data. Within 30 days you'll get your complete streaming history as a JSON file. 🎵", customerMsg2:"Requested it! Can't wait to see 6 years of terrible decisions 😂" },
+  { id:'msg-95', brandId:'brand-1', customerId:'c22', ticketNumber:'#162093', platform:'facebook', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-29T09:00:00Z', tags:[], subject:'NRC vs NTC — what\'s the difference?', preview:"I keep confusing these two Nike apps. What does each one do?", reply:"Lena, easy breakdown: NRC is for running (GPS, training plans, audio coaching). NTC is for strength, yoga, HIIT — everything not running. Both free with Nike membership! 🏃‍♀️💪", customerMsg2:"Downloaded both. Starting a 6-week strength plan today! 🙌" },
+  { id:'msg-96', brandId:'brand-2', customerId:'c21', ticketNumber:'#162092', platform:'twitter', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T14:00:00Z', tags:[{label:'bug',color:'#dc2626'}], subject:'Spotify Greenroom / Live — where did it go?', preview:"I used to use Spotify Greenroom for live audio. Can't find it anywhere in the app anymore.", aiDraft:"Tom, Spotify Greenroom was discontinued in 2024 as we shifted our live audio strategy. Live content is now through podcasts and shows. If you're looking for live audio alternatives, live content through anchor.fm is the closest current option. 🎵" },
+  { id:'msg-97', brandId:'brand-1', customerId:'c29', ticketNumber:'#162091', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T08:30:00Z', tags:[{label:'returns',color:'#7c3aed'}], subject:'Return QR code won\'t scan at DHL', preview:"The return QR code Nike sent won't scan at the DHL drop-off point. Three locations have tried.", aiDraft:"Felix, a QR code that won't scan is most likely corrupted in transit. DM us your order number and we'll generate a new return label immediately in PDF format. Sorry for the hassle! 💪" },
+  { id:'msg-98', brandId:'brand-2', customerId:'c20', ticketNumber:'#162090', platform:'facebook', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-27T10:00:00Z', tags:[], subject:'How do I switch playback to my TV?', preview:"I'm playing music on my phone and want to move playback to my Sony TV without restarting the song.", reply:"Isabelle! Tap the speaker icon at the bottom of Now Playing. You'll see all Spotify Connect devices — tap your Sony TV to transfer instantly. 🎵📺", customerMsg2:"Worked perfectly! Had no idea this feature existed!" },
+  { id:'msg-99', brandId:'brand-3', customerId:'c11', ticketNumber:'#162089', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T09:00:00Z', tags:[{label:'booking',color:'#0891b2'}], subject:'How do I message a host before booking?', preview:"I want to ask the host a few questions before committing to a booking.", aiDraft:"Daan, on any listing page, click 'Contact host' (below the price) to send a message before booking. Hosts typically respond within a few hours — great for confirming pet policies or early check-in. 🏠" },
+  { id:'msg-100', brandId:'brand-1', customerId:'c30', ticketNumber:'#162088', platform:'facebook', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-26T09:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Love the minimal eco packaging', preview:"I noticed my last 3 Nike orders came in recycled cardboard with no plastic. Small thing but I appreciate it.", reply:"Aiko, this genuinely matters to us 🌱 We've moved to 100% recycled packaging across Europe as part of Move to Zero. Thank you for caring! 👟", customerMsg2:"The tissue paper is recycled too right? Because it even smells better 😄" },
+  { id:'msg-101', brandId:'brand-2', customerId:'c13', ticketNumber:'#162087', platform:'twitter', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T11:00:00Z', tags:[{label:'bug',color:'#dc2626'},{label:'mobile',color:'#f97316'}], subject:'Spotify widget disappeared from iPhone lock screen', preview:"My Spotify lock screen widget stopped showing after I updated to iOS 17.5.1.", aiDraft:"Sarah, the lock screen widget disappears on iOS 17.5.1 if Spotify isn't set as default media app. Long press your lock screen → Customize → add the Spotify widget back. If it's missing from the picker, enable Background App Refresh in iPhone Settings → Spotify first. 🎵" },
+  { id:'msg-102', brandId:'brand-3', customerId:'c26', ticketNumber:'#162086', platform:'instagram', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-25T14:00:00Z', tags:[], subject:'Is it safe to share my passport for Airbnb verification?', preview:"The app is asking me to upload my passport for identity verification. Is this secure?", reply:"Marcus, all document uploads are encrypted with AES-256 and processed by Stripe Identity (EU GDPR-compliant). We never store the raw document after verification. Same technology banks use. 🔒", customerMsg2:"Completed the verification. Feels much more trustworthy now." },
+  { id:'msg-103', brandId:'brand-1', customerId:'c15', ticketNumber:'#162085', platform:'instagram', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T08:00:00Z', tags:[{label:'app',color:'#0891b2'}], subject:'NRC not counting elevation on hilly routes', preview:"I run a hilly route with 150m elevation but Nike Run Club shows 0m elevation gain every time.", aiDraft:"Priya, elevation tracking requires the barometric altimeter and needs location permission set to 'Always'. Go to Settings → Privacy → Location Services → Nike Run Club → set to 'Always'. That should fix elevation tracking immediately. 🏃" },
+  { id:'msg-104', brandId:'brand-2', customerId:'c27', ticketNumber:'#162084', platform:'facebook', channel:'Spotify', status:'answered', unread:false, starred:true, replyCount:3, newReplies:0, timestamp:'2026-05-24T10:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Podcast recommendations better than YouTube suggestions', preview:"Spotify's podcast algorithm has sent me down the best rabbit holes. Educational content specifically.", reply:"James, we'll take that comparison as the highest possible compliment 😄🎙️ Any specific shows that knocked your socks off?", customerMsg2:"Huberman Lab, 99% Invisible, and Darknet Diaries in one week. My brain expanded 3 sizes." },
+  { id:'msg-105', brandId:'brand-3', customerId:'c24', ticketNumber:'#162083', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T16:00:00Z', tags:[{label:'listing',color:'#f97316'}], subject:'Pool in listing photos is shared — wasn\'t disclosed', preview:"The listing showed a pool in the photos. It's a shared building pool, not private. Felt misled.", aiDraft:"Lena, listing amenities must accurately reflect whether they are private or shared. If the listing implied a private pool and it's shared, that's a disclosure failure. You may be eligible for a partial refund under our Listing Accuracy Policy. DM us your booking number and we'll review and compensate appropriately. 🏠" },
+  { id:'msg-106', brandId:'brand-1', customerId:'c28', ticketNumber:'#162082', platform:'instagram', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-23T09:00:00Z', tags:[], subject:'Alphafly 3 runs small — size guide issue?', preview:"I always wear EU44 in Nike but the Alphafly 3 in 44 is definitely more like a 43.", reply:"Tom, the Alphafly 3 does run narrow — our guide notes 'go half a size up' for this model. Exchange a 44.5 and it should feel perfect. Exchange is free. 🏃", customerMsg2:"The 44.5 fits perfectly. Thanks for the honest answer!" },
+  { id:'msg-107', brandId:'brand-2', customerId:'c8', ticketNumber:'#162081', platform:'twitter', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T10:00:00Z', tags:[{label:'billing',color:'#16a34a'}], subject:'Why am I being charged in USD instead of EUR?', preview:"I'm in the Netherlands and my Spotify is charging me in USD. I want EUR.", aiDraft:"Yasmin, USD charges happen when the App Store or Google Play handles the subscription. To switch to EUR: cancel the subscription through App Store/Play Store, then re-subscribe at spotify.com/premium — that routes through our EU payment system. 🎵" },
+  { id:'msg-108', brandId:'brand-3', customerId:'c9', ticketNumber:'#162080', platform:'instagram', channel:'Airbnb', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-22T10:00:00Z', tags:[], subject:'What happens if a host cancels my booking?', preview:"My host just sent a message hinting they might need to cancel. What are my rights if they do?", reply:"Felix, if a host cancels, Airbnb automatically covers your rebooking — we'll find you an equivalent or better listing, or issue a full refund. Host cancellations also affect their standing on the platform. You're fully protected! 🏠", customerMsg2:"Good to know. Will keep communicating with them but reassured either way." },
+  { id:'msg-109', brandId:'brand-1', customerId:'c14', ticketNumber:'#162079', platform:'facebook', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T07:30:00Z', tags:[{label:'shipping',color:'#f97316'}], subject:'Order stuck in customs for 12 days', preview:"My order has been stuck in Dutch customs for 12 days. Tracking says 'Customs clearance in progress'.", aiDraft:"Isabelle, 12 days in customs is well outside the norm and we're escalating with DHL right now. If not released within 48 hours, we'll send a replacement at no cost. We'll email you an update by tomorrow morning. Keep moving! 💪" },
+  { id:'msg-110', brandId:'brand-2', customerId:'c16', ticketNumber:'#162078', platform:'instagram', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-21T11:00:00Z', tags:[], subject:'Can I import my Apple Music library?', preview:"I'm switching from Apple Music and have 3,000 songs. Is there an import tool?", reply:"Daan, try Soundiiz (soundiiz.com) — transfers Apple Music playlists to Spotify in under 5 minutes. Free tier works great! 🎵", customerMsg2:"Used Soundiiz and it worked perfectly! Every playlist transferred. Thank you!!" },
+  { id:'msg-111', brandId:'brand-3', customerId:'c12', ticketNumber:'#162077', platform:'twitter', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T11:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'My TikTok Airbnb video went viral — want to collab', preview:"I featured an Airbnb in my travel vlog and got 2M views. 400 comments asking about the listing. Can we collab?", aiDraft:"Aiko, 2M views is incredible! Email creators@airbnb.com with your video link, channel stats and contact details. Our team reviews within 5 business days." },
+  { id:'msg-112', brandId:'brand-1', customerId:'c11', ticketNumber:'#162076', platform:'twitter', channel:'Nike Europe', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-20T10:00:00Z', tags:[], subject:'Nike By You — when will more base models be added?', preview:"Love Nike By You but the base model options feel limited. Any new models coming?", reply:"Daan, the Nike By You catalog expands every quarter — keep an eye on Nike.com/nikebyyou in July. Big things coming! 👟✨", customerMsg2:"July noted! Please add the Pegasus 41 to the builder 🙏" },
+  { id:'msg-113', brandId:'brand-2', customerId:'c12', ticketNumber:'#162075', platform:'instagram', channel:'Spotify', status:'answered', unread:false, starred:true, replyCount:2, newReplies:0, timestamp:'2026-05-19T12:00:00Z', tags:[{label:'feedback',color:'#16a34a'}], subject:'Spotify playlist with 40k followers from TikTok', preview:"Made a study lo-fi playlist that has 40k Spotify followers from my TikTok. Can we work together?", reply:"Aiko, submit at artists.spotify.com/playlists with your TikTok stats — our editorial team actively looks for creator-driven playlists. 🎵", customerMsg2:"Submitted! This would be a dream collab 🙏" },
+  { id:'msg-114', brandId:'brand-1', customerId:'c19', ticketNumber:'#162074', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T06:30:00Z', tags:[{label:'app',color:'#0891b2'},{label:'bug',color:'#dc2626'}], subject:'NRC challenge progress reset overnight', preview:"I was on Day 19 of the 30-day challenge and this morning my progress shows Day 1. Everything gone.", aiDraft:"Sarah, losing 19 days of challenge progress is awful and we're so sorry. Our team has restored your streak data — you're back to Day 19. This was a server sync bug in v3.14.2 fixed in today's update. Keep going — Day 30 is yours! 🏃‍♀️" },
+  { id:'msg-115', brandId:'brand-3', customerId:'c23', ticketNumber:'#162073', platform:'facebook', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T13:00:00Z', tags:[{label:'refund',color:'#dc2626'}], subject:'Refund promised by host but not received after 2 weeks', preview:"My host agreed to refund the cleaning fee (€80) 2 weeks ago but I've never received it.", aiDraft:"Marcus, if a host agreed to a refund but hasn't processed it, Airbnb can step in. Go to Resolution Centre → Case #AIR-{booking} → 'Request money from Airbnb' — our team will process the €80 directly to you within 3–5 days. We'll also follow up with the host." },
+  { id:'msg-116', brandId:'brand-2', customerId:'c30', ticketNumber:'#162072', platform:'twitter', channel:'Spotify', status:'answered', unread:false, starred:false, replyCount:2, newReplies:0, timestamp:'2026-05-18T09:00:00Z', tags:[], subject:'How does Spotify handle artist royalties?', preview:"I'm a musician and curious how Spotify pays artists. Is there a minimum threshold before payout?", reply:"Priya, great question! Artists are paid per stream based on their share of total streams. Payouts go to rights holders (labels/distributors) who then pay artists per their contracts. Direct artists using DistroKid etc. are paid monthly with no minimum threshold. 🎵", customerMsg2:"Thanks for the honest breakdown. Uploading my first single next month!" },
+  { id:'msg-117', brandId:'brand-1', customerId:'c4', ticketNumber:'#162071', platform:'instagram', channel:'Nike Europe', status:'ai_pending', unread:true, starred:true, replyCount:1, newReplies:1, timestamp:'2026-06-29T10:00:00Z', tags:[{label:'partnership',color:'#0891b2'},{label:'urgent',color:'#dc2626'}], subject:'Creator contract question — urgent before 5pm deadline', preview:"I have a question about exclusivity clauses in the creator contract Emma sent. Need to respond by 5pm today.", aiDraft:"James, for contract questions please reply directly to Emma at emma.creator@nike.com and CC partnerships@nike.com — they can answer exclusivity questions and adjust terms. Emma is available until 6pm today. Go get it! 💪" },
+  { id:'msg-118', brandId:'brand-3', customerId:'c25', ticketNumber:'#162070', platform:'instagram', channel:'Airbnb', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T10:00:00Z', tags:[{label:'listing',color:'#f97316'}], subject:'Listing says "central location" but it\'s 45 min from city', preview:"The listing describes itself as 'central location, 5 min walk to everything'. It's 45 minutes from the city centre.", aiDraft:"Lena, a listing claiming 'central location' that is 45 minutes from the city centre is a clear misrepresentation. Under our Listing Accuracy Policy you're entitled to a partial refund. DM us your booking number and we'll open a case immediately. We're also reviewing the listing description. 🏠" },
+  { id:'msg-119', brandId:'brand-2', customerId:'c6', ticketNumber:'#162069', platform:'facebook', channel:'Spotify', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-28T12:00:00Z', tags:[{label:'account',color:'#0891b2'}], subject:'Can\'t create account — SMS verification never arrives', preview:"Trying to create a Spotify account but the SMS code never arrives. Tried 5 times on different phones.", aiDraft:"Sorry you're hitting this! Try verifying via email instead: tap 'Send via email' on the verification screen. If you don't see that option, DM us and we'll verify your account manually — usually done within an hour. 🎵" },
+  { id:'msg-120', brandId:'brand-1', customerId:'c6', ticketNumber:'#162068', platform:'twitter', channel:'Nike Europe', status:'unanswered', unread:true, starred:false, replyCount:0, newReplies:0, timestamp:'2026-06-29T06:00:00Z', tags:[{label:'shipping',color:'#f97316'}], subject:'Package delivered to wrong address', preview:"Your courier delivered my package to the wrong address. Tracking says delivered but I have nothing.", aiDraft:"We're so sorry your package wasn't delivered correctly. Share your order number via DM and we'll open a carrier investigation immediately — if not resolved within 24 hours, we'll send a replacement at no cost. Keep moving! 💪" },
+]
+
+const generatedMessages: Message[] = seeds.map(makeMsg)
+
+export const messages: Message[] = [...baseMessages, ...generatedMessages]
