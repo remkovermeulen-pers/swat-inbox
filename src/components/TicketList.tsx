@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import { messages, customers, brands, channels } from '../data/mockData'
-import type { Message, InboxFilter, Tag } from '../data/mockData'
+import type { Message, InboxFilter, Tag, Sentiment, Platform } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
-import { AGENTS, getPriorityScore, messageMatchesView, priorityTier, type CustomView, type SortCol, type SortDir } from '../lib/inboxScale'
+import { AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, type CustomView, type SortCol, type SortDir } from '../lib/inboxScale'
 import {
   Search,
   Download,
@@ -18,7 +18,12 @@ import {
   Archive,
   BookmarkPlus,
   Columns3,
+  SlidersHorizontal,
+  X,
 } from 'lucide-react'
+
+const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
+const SENTIMENTS: Sentiment[] = ['negative', 'neutral', 'positive']
 
 interface Props {
   brandId: string | null
@@ -70,6 +75,21 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
   const [toast, setToast] = useState<string | null>(null)
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => loadVisibleCols())
   const [showColumnMenu, setShowColumnMenu] = useState(false)
+  const [searchText, setSearchText] = useState('')
+  const [filterTags, setFilterTags] = useState<Set<string>>(new Set())
+  const [filterSentiments, setFilterSentiments] = useState<Set<Sentiment>>(new Set())
+  const [filterPlatforms, setFilterPlatforms] = useState<Set<Platform>>(new Set())
+  const [showFilterMenu, setShowFilterMenu] = useState(false)
+
+  function toggleSetValue<T>(setFn: React.Dispatch<React.SetStateAction<Set<T>>>, value: T) {
+    setFn((prev) => {
+      const next = new Set(prev)
+      next.has(value) ? next.delete(value) : next.add(value)
+      return next
+    })
+  }
+
+  const activeFilterCount = filterTags.size + filterSentiments.size + filterPlatforms.size
 
   useEffect(() => {
     localStorage.setItem(VISIBLE_COLS_KEY, JSON.stringify(Array.from(visibleCols)))
@@ -138,6 +158,20 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
       if (sortFilter === 'Unanswered') return m.status === 'unanswered'
       if (sortFilter === 'AI pending') return m.status === 'ai_pending'
       if (sortFilter === 'Answered') return m.status === 'answered'
+      return true
+    })
+    .filter((m) => {
+      if (!searchText.trim()) return true
+      const cust = customers.find((c) => c.id === m.customerId)
+      const haystack = `${m.subject} ${m.preview} ${cust?.name ?? ''} ${m.ticketNumber}`.toLowerCase()
+      return haystack.includes(searchText.trim().toLowerCase())
+    })
+    .filter((m) => {
+      if (activeFilterCount === 0) return true
+      const cust = customers.find((c) => c.id === m.customerId)
+      if (filterTags.size > 0 && !m.tags.some((t) => filterTags.has(t.label))) return false
+      if (filterSentiments.size > 0 && (!cust || !filterSentiments.has(cust.sentiment))) return false
+      if (filterPlatforms.size > 0 && !filterPlatforms.has(m.platform)) return false
       return true
     })
     .sort((a, b) => {
@@ -307,7 +341,114 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
 
         {/* Right controls */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Search size={18} style={{ color: '#9ca3af', cursor: 'pointer' }} />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={14} style={{ color: '#9ca3af', position: 'absolute', left: 9 }} />
+            <input
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search…"
+              style={{
+                width: 150, fontSize: 12, padding: '5px 10px 5px 28px', borderRadius: 6,
+                border: '1px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', color: '#111827',
+              }}
+            />
+            {searchText && (
+              <button onClick={() => setSearchText('')} style={{ position: 'absolute', right: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex' }}>
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowFilterMenu((v) => !v)} style={saveViewBtnStyle}>
+              <SlidersHorizontal size={13} /> Filter
+              {activeFilterCount > 0 && (
+                <span style={{ background: '#5e6ad2', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {showFilterMenu && (
+              <>
+                <div onClick={() => setShowFilterMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+                <div
+                  style={{
+                    position: 'absolute', top: '110%', right: 0, zIndex: 10,
+                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 220,
+                    display: 'flex', flexDirection: 'column', gap: 12,
+                  }}
+                >
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Sentiment</p>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      {SENTIMENTS.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => toggleSetValue(setFilterSentiments, s)}
+                          style={{
+                            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', fontFamily: 'inherit',
+                            border: `1px solid ${filterSentiments.has(s) ? '#5e6ad2' : '#e5e7eb'}`,
+                            background: filterSentiments.has(s) ? '#eef2ff' : '#fff',
+                            color: filterSentiments.has(s) ? '#4338ca' : '#6b7280',
+                          }}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Platform</p>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      {PLATFORMS.map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => toggleSetValue(setFilterPlatforms, p)}
+                          style={{
+                            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', fontFamily: 'inherit',
+                            border: `1px solid ${filterPlatforms.has(p) ? '#5e6ad2' : '#e5e7eb'}`,
+                            background: filterPlatforms.has(p) ? '#eef2ff' : '#fff',
+                            color: filterPlatforms.has(p) ? '#4338ca' : '#6b7280',
+                          }}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Tags</p>
+                    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                      {KNOWN_TAGS.map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => toggleSetValue(setFilterTags, t)}
+                          style={{
+                            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+                            border: `1px solid ${filterTags.has(t) ? '#5e6ad2' : '#e5e7eb'}`,
+                            background: filterTags.has(t) ? '#eef2ff' : '#fff',
+                            color: filterTags.has(t) ? '#4338ca' : '#6b7280',
+                          }}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {activeFilterCount > 0 && (
+                    <button
+                      onClick={() => { setFilterTags(new Set()); setFilterSentiments(new Set()); setFilterPlatforms(new Set()) }}
+                      style={{ fontSize: 12, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', fontFamily: 'inherit' }}
+                    >
+                      Clear all filters
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+
           <Download size={18} style={{ color: '#9ca3af', cursor: 'pointer' }} />
           <span style={{ fontSize: 13, color: '#6b7280', fontWeight: 500 }}>
             Sort by: {sortCol === 'time' ? 'Time' : sortCol === 'name' ? 'Name' : sortCol === 'ticket' ? 'Ticket #' : sortCol === 'replies' ? 'Replies' : sortCol === 'reach' ? 'Reach' : sortCol === 'priority' ? 'Priority' : 'Channel'} {sortDir === 'asc' ? '↑' : '↓'}
