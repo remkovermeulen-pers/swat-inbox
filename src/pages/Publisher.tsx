@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import {
-  Sparkles, ChevronRight, ChevronLeft, CheckCheck,
-  Megaphone, MessageSquare, GitBranch, Clock, Mail,
-  Edit3, Play, Pause, MoreHorizontal, Users, BarChart2,
+  Sparkles, ChevronRight, CheckCheck,
+  Clock, Mail,
+  Edit3, Play,
   ArrowRight, Bot, Zap, Copy, Terminal, Send, Wand2,
 } from 'lucide-react'
 
