@@ -1,5 +1,6 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { messages } from '../data/mockData'
+import type { CustomView } from '../lib/inboxScale'
 import {
   Home,
   Inbox,
@@ -17,10 +18,27 @@ import {
 // Comments reuses the same mock message data as Inbox in this prototype, so both counts are identical for now.
 const newItemsCount = messages.filter((m) => m.unread && !m.archived).length
 
-export function Sidebar() {
+export function Sidebar({
+  customViews,
+  pinnedViewIds,
+  activeViewId,
+  onSelectView,
+}: {
+  customViews: CustomView[]
+  pinnedViewIds: Set<string>
+  activeViewId: string | null
+  onSelectView: (id: string) => void
+}) {
   const location = useLocation()
+  const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
   const isComments = location.pathname.startsWith('/comments')
+  const pinnedViews = customViews.filter((v) => pinnedViewIds.has(v.id))
+
+  function goToView(id: string) {
+    onSelectView(id)
+    navigate('/inbox')
+  }
 
   return (
     <aside
@@ -138,6 +156,33 @@ export function Sidebar() {
           active={false}
           onClick={() => {}}
         />
+
+        {pinnedViews.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 4px', padding: '0 10px' }}>
+              Views
+            </p>
+            {pinnedViews.map((view) => {
+              const active = isInbox && activeViewId === view.id
+              return (
+                <button
+                  key={view.id}
+                  onClick={() => goToView(view.id)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: active ? '#f0fdf4' : 'transparent',
+                    color: active ? '#15803d' : '#374151',
+                    fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>{view.icon}</span>
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{view.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Brand settings */}
         <div style={{ marginTop: 8 }}>

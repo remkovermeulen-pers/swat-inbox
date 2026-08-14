@@ -249,3 +249,19 @@ export function loadCustomViews(): CustomView[] {
 export function saveCustomViews(views: CustomView[]) {
   localStorage.setItem(VIEWS_KEY, JSON.stringify(views))
 }
+
+const PINNED_VIEWS_KEY = 'inbox-pinned-views'
+
+export function loadPinnedViewIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(PINNED_VIEWS_KEY)
+    if (!raw) return new Set()
+    return new Set(JSON.parse(raw) as string[])
+  } catch {
+    return new Set()
+  }
+}
+
+export function savePinnedViewIds(ids: Set<string>) {
+  localStorage.setItem(PINNED_VIEWS_KEY, JSON.stringify(Array.from(ids)))
+}

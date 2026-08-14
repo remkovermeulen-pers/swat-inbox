@@ -7,7 +7,7 @@ import { BrandSettings } from './pages/BrandSettings'
 import { Publisher } from './pages/Publisher'
 import type { InboxFilter } from './data/mockData'
 import type { CustomView } from './lib/inboxScale'
-import { loadCustomViews, saveCustomViews } from './lib/inboxScale'
+import { loadCustomViews, saveCustomViews, loadPinnedViewIds, savePinnedViewIds } from './lib/inboxScale'
 
 const SPLIT_KEY = 'inbox-split-pct'
 const DEFAULT_SPLIT = 50
@@ -23,6 +23,8 @@ function InboxShell({
   onViewChange,
   onDeleteView,
   onUpdateView,
+  pinnedViewIds,
+  onTogglePinView,
   mode = 'inbox',
 }: {
   brandId: string | null
@@ -35,6 +37,8 @@ function InboxShell({
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
+  pinnedViewIds: Set<string>
+  onTogglePinView: (id: string) => void
   mode?: 'inbox' | 'comments'
 }) {
   const { messageId } = useParams()
@@ -92,6 +96,8 @@ function InboxShell({
           onViewChange={onViewChange}
           onDeleteView={onDeleteView}
           onUpdateView={onUpdateView}
+          pinnedViewIds={pinnedViewIds}
+          onTogglePinView={onTogglePinView}
           mode={mode}
         />
       </div>
@@ -135,6 +141,8 @@ function InboxRoutes({
   onViewChange,
   onDeleteView,
   onUpdateView,
+  pinnedViewIds,
+  onTogglePinView,
 }: {
   brandId: string | null
   channelId: string | null
@@ -146,6 +154,8 @@ function InboxRoutes({
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
+  pinnedViewIds: Set<string>
+  onTogglePinView: (id: string) => void
 }) {
   const shell = (
     <InboxShell
@@ -159,6 +169,8 @@ function InboxRoutes({
       onViewChange={onViewChange}
       onDeleteView={onDeleteView}
       onUpdateView={onUpdateView}
+      pinnedViewIds={pinnedViewIds}
+      onTogglePinView={onTogglePinView}
     />
   )
   const commentsShell = (
@@ -173,6 +185,8 @@ function InboxRoutes({
       onViewChange={onViewChange}
       onDeleteView={onDeleteView}
       onUpdateView={onUpdateView}
+      pinnedViewIds={pinnedViewIds}
+      onTogglePinView={onTogglePinView}
       mode="comments"
     />
   )
@@ -196,18 +210,26 @@ export default function App() {
   const activeChannelId: string | null = null
   const [customViews, setCustomViews] = useState<CustomView[]>(() => loadCustomViews())
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
+  const [pinnedViewIds, setPinnedViewIds] = useState<Set<string>>(() => loadPinnedViewIds())
 
   useEffect(() => { saveCustomViews(customViews) }, [customViews])
+  useEffect(() => { savePinnedViewIds(pinnedViewIds) }, [pinnedViewIds])
 
   function activateView(view: CustomView | null) {
     setActiveViewId(view?.id ?? null)
     if (view) {
       setActiveBrandId(view.brandId ?? null)
+      setActiveFilter('all')
     }
   }
 
   function handleViewChange(id: string | null) {
     activateView(id ? customViews.find((v) => v.id === id) ?? null : null)
+  }
+
+  function handleFilterChange(filter: InboxFilter) {
+    setActiveFilter(filter)
+    setActiveViewId(null)
   }
 
   function addCustomView(view: CustomView) {
@@ -224,22 +246,42 @@ export default function App() {
     setCustomViews((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)))
   }
 
+  function togglePinView(id: string) {
+    setPinnedViewIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectViewFromSidebar(id: string) {
+    activateView(customViews.find((v) => v.id === id) ?? null)
+  }
+
   return (
     <HashRouter>
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-        <Sidebar />
+        <Sidebar
+          customViews={customViews}
+          pinnedViewIds={pinnedViewIds}
+          activeViewId={activeViewId}
+          onSelectView={selectViewFromSidebar}
+        />
         <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <InboxRoutes
             brandId={activeBrandId}
             channelId={activeChannelId}
             filter={activeFilter}
-            onFilterChange={setActiveFilter}
+            onFilterChange={handleFilterChange}
             customViews={customViews}
             activeViewId={activeViewId}
             onAddView={addCustomView}
             onViewChange={handleViewChange}
             onDeleteView={deleteCustomView}
             onUpdateView={updateCustomView}
+            pinnedViewIds={pinnedViewIds}
+            onTogglePinView={togglePinView}
           />
         </main>
       </div>
