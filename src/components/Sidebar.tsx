@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { channels, messages, customers } from '../data/mockData'
+import { channels, messages } from '../data/mockData'
 import type { InboxFilter } from '../data/mockData'
-import { messageMatchesView, type CustomView } from '../lib/inboxScale'
-import { CreateViewModal } from './CreateViewModal'
 import {
   Home,
   Inbox,
@@ -20,8 +18,6 @@ import {
   Archive,
   Sparkles,
   Bell,
-  Plus,
-  X,
   Pin,
   AlertCircle,
   Eye,
@@ -50,11 +46,6 @@ interface Props {
   onFilterChange: (f: InboxFilter) => void
   activeChannelId: string | null
   onChannelChange: (id: string | null) => void
-  customViews: CustomView[]
-  activeViewId: string | null
-  onViewChange: (id: string | null) => void
-  onAddView: (view: CustomView) => void
-  onDeleteView: (id: string) => void
 }
 
 export function Sidebar({
@@ -62,16 +53,10 @@ export function Sidebar({
   onFilterChange,
   activeChannelId,
   onChannelChange,
-  customViews,
-  activeViewId,
-  onViewChange,
-  onAddView,
-  onDeleteView,
 }: Props) {
   const [inboxOpen, setInboxOpen] = useState(true)
   const [commentsOpen, setCommentsOpen] = useState(false)
   const [channelsOpen, setChannelsOpen] = useState(true)
-  const [showCreateView, setShowCreateView] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
@@ -233,75 +218,6 @@ export function Sidebar({
                   )}
                 </button>
               )})}
-
-              {/* Smart Views — nested under Inbox */}
-              <div style={{ marginTop: 8 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 2px', padding: '0 10px' }}>
-                  Smart Views
-                </p>
-                {customViews.map((view) => {
-                  const active = activeViewId === view.id
-                  const count = messages.filter((m) => messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
-                  return (
-                    <button
-                      key={view.id}
-                      onClick={() => onViewChange(active ? null : view.id)}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 7,
-                        padding: '5px 10px',
-                        borderRadius: 6,
-                        border: 'none',
-                        cursor: 'pointer',
-                        background: active ? '#eef2ff' : 'transparent',
-                        color: active ? '#4338ca' : '#374151',
-                        fontFamily: 'inherit',
-                        fontSize: 13,
-                        fontWeight: active ? 600 : 500,
-                        textAlign: 'left',
-                      }}
-                    >
-                      <span style={{ fontSize: 13 }}>{view.icon}</span>
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {view.name}
-                      </span>
-                      <span style={{ fontSize: 11, color: active ? '#4338ca' : '#9ca3af', fontWeight: 600 }}>
-                        {count}
-                      </span>
-                      <span
-                        onClick={(e) => { e.stopPropagation(); onDeleteView(view.id) }}
-                        style={{ display: 'flex', color: '#d1d5db', cursor: 'pointer' }}
-                      >
-                        <X size={12} />
-                      </span>
-                    </button>
-                  )
-                })}
-
-                <button
-                  onClick={() => setShowCreateView(true)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 7,
-                    padding: '5px 10px',
-                    borderRadius: 6,
-                    border: 'none',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                    fontSize: 12,
-                    color: '#9ca3af',
-                    textAlign: 'left',
-                  }}
-                >
-                  <Plus size={13} />
-                  New view
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -548,13 +464,6 @@ export function Sidebar({
           </button>
         </div>
       </div>
-
-      {showCreateView && (
-        <CreateViewModal
-          onClose={() => setShowCreateView(false)}
-          onCreate={(view) => { onAddView(view); setShowCreateView(false) }}
-        />
-      )}
     </aside>
   )
 }
