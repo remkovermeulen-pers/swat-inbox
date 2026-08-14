@@ -27,14 +27,13 @@ import {
   X,
   Sparkles,
   UserCheck,
-  Users,
   AtSign,
   Eye,
   Rows3,
   Calendar,
   List,
   LayoutList,
-  Pin,
+  Plus,
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
@@ -51,8 +50,6 @@ interface Props {
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
-  pinnedViewIds: Set<string>
-  onTogglePinView: (id: string) => void
   mode?: 'inbox' | 'comments'
 }
 
@@ -121,7 +118,7 @@ const inboxFilterCounts: Record<InboxFilter, number> = {
   archive: 999,
 }
 
-export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, pinnedViewIds, onTogglePinView, mode = 'inbox' }: Props) {
+export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, mode = 'inbox' }: Props) {
   const navigate = useNavigate()
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -782,7 +779,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         </div>
       </div>
 
-      {/* Row 2: All / New / Starred / Assigned to me / Assigned to others / Archive — never wraps, scrolls horizontally instead */}
+      {/* Row 2: one unified list of views — All, New, Assigned to me, Starred, custom views, + Add view. Draggable onto the sidebar (except All). */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 20px 14px', flexWrap: 'nowrap', overflowX: 'auto' }}>
         <button
           onClick={() => onFilterChange('all')}
@@ -801,13 +798,19 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         {(
           [
             { f: 'new' as InboxFilter, icon: <Sparkles size={13} />, label: 'New', count: inboxFilterCounts.new },
-            { f: 'starred' as InboxFilter, icon: <Star size={13} />, label: 'Starred', count: inboxFilterCounts.starred },
             { f: 'assigned_me' as InboxFilter, icon: <UserCheck size={13} />, label: 'Assigned to me', count: 0 },
-            { f: 'assigned_others' as InboxFilter, icon: <Users size={13} />, label: 'Assigned to others', count: inboxFilterCounts.assigned_others },
-            { f: 'archive' as InboxFilter, icon: <Archive size={13} />, label: 'Archive', count: inboxFilterCounts.archive },
+            { f: 'starred' as InboxFilter, icon: <Star size={13} />, label: 'Starred', count: inboxFilterCounts.starred },
           ] as const
         ).filter(({ f }) => !hiddenInboxFilters.has(f)).map(({ f, icon, label, count }) => (
-          <div key={f} style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <div
+            key={f}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData('application/json', JSON.stringify({ kind: 'filter', key: f, label }))
+              e.dataTransfer.effectAllowed = 'copy'
+            }}
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'grab' }}
+          >
             <button
               onClick={() => onFilterChange(f)}
               style={{
@@ -857,10 +860,17 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         {customViews.map((view) => {
           const active = activeViewId === view.id
           const showUpdate = active && hasUnsavedFilterChanges
-          const pinned = pinnedViewIds.has(view.id)
-          const iconCount = (showUpdate ? 1 : 0) + 2
+          const iconCount = (showUpdate ? 1 : 0) + 1
           return (
-            <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <div
+              key={view.id}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('application/json', JSON.stringify({ kind: 'view', id: view.id, label: view.name }))
+                e.dataTransfer.effectAllowed = 'copy'
+              }}
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'grab' }}
+            >
               <button
                 onClick={() => onViewChange(active ? null : view.id)}
                 style={{
@@ -895,17 +905,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                   </button>
                 )}
                 <button
-                  onClick={() => onTogglePinView(view.id)}
-                  title={pinned ? 'Unpin from sidebar' : 'Pin to sidebar'}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 15, height: 15, border: 'none', borderRadius: '50%',
-                    background: 'none', color: active ? 'rgba(255,255,255,0.85)' : pinned ? '#5e6ad2' : '#9ca3af', cursor: 'pointer',
-                  }}
-                >
-                  <Pin size={10} fill={pinned ? 'currentColor' : 'none'} />
-                </button>
-                <button
                   onClick={() => { if (window.confirm(`Remove the "${view.name}" view?`)) onDeleteView(view.id) }}
                   title="Remove view"
                   style={{
@@ -920,6 +919,18 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
             </div>
           )
         })}
+
+        <button
+          onClick={() => setShowCreateView(true)}
+          title="Add a view"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+            padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+            border: '1px dashed #d1d5db', background: 'none', color: '#6b7280', fontSize: 13, fontWeight: 500,
+          }}
+        >
+          <Plus size={13} /> Add view
+        </button>
       </div>
 
       {/* Row 3: Channels / Visibility / Status / Sentiment / Platform / Tags (responsive — overflow collapses into "Filter") ... Group by / Columns */}

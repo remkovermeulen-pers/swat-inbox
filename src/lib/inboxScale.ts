@@ -250,11 +250,9 @@ export function saveCustomViews(views: CustomView[]) {
   localStorage.setItem(VIEWS_KEY, JSON.stringify(views))
 }
 
-const PINNED_VIEWS_KEY = 'inbox-pinned-views'
-
-export function loadPinnedViewIds(): Set<string> {
+function loadStringSet(key: string): Set<string> {
   try {
-    const raw = localStorage.getItem(PINNED_VIEWS_KEY)
+    const raw = localStorage.getItem(key)
     if (!raw) return new Set()
     return new Set(JSON.parse(raw) as string[])
   } catch {
@@ -262,6 +260,26 @@ export function loadPinnedViewIds(): Set<string> {
   }
 }
 
+function saveStringSet(key: string, ids: Set<string>) {
+  localStorage.setItem(key, JSON.stringify(Array.from(ids)))
+}
+
+const PINNED_VIEWS_KEY = 'inbox-pinned-views'
+
+export function loadPinnedViewIds(): Set<string> {
+  return loadStringSet(PINNED_VIEWS_KEY)
+}
+
 export function savePinnedViewIds(ids: Set<string>) {
-  localStorage.setItem(PINNED_VIEWS_KEY, JSON.stringify(Array.from(ids)))
+  saveStringSet(PINNED_VIEWS_KEY, ids)
+}
+
+const PINNED_FILTERS_KEY = 'inbox-pinned-filters'
+
+export function loadPinnedFilters(): Set<string> {
+  return loadStringSet(PINNED_FILTERS_KEY)
+}
+
+export function savePinnedFilters(ids: Set<string>) {
+  saveStringSet(PINNED_FILTERS_KEY, ids)
 }

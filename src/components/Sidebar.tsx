@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { messages } from '../data/mockData'
+import type { InboxFilter } from '../data/mockData'
 import type { CustomView } from '../lib/inboxScale'
 import {
   Home,
@@ -12,31 +14,78 @@ import {
   GraduationCap,
   ChevronDown,
   Bell,
+  Sparkles,
+  UserCheck,
+  Star,
+  X,
 } from 'lucide-react'
 
 // Comments reuses the same mock message data as Inbox in this prototype, so both counts are identical for now.
 const newItemsCount = messages.filter((m) => m.unread && !m.archived).length
+
+const FILTER_META: Record<string, { icon: React.ReactNode; label: string }> = {
+  new: { icon: <Sparkles size={14} />, label: 'New' },
+  assigned_me: { icon: <UserCheck size={14} />, label: 'Assigned to me' },
+  starred: { icon: <Star size={14} />, label: 'Starred' },
+}
+
+type DragPayload = { kind: 'filter'; key: InboxFilter; label: string } | { kind: 'view'; id: string; label: string }
 
 export function Sidebar({
   customViews,
   pinnedViewIds,
   activeViewId,
   onSelectView,
+  onPinView,
+  onUnpinView,
+  activeFilter,
+  pinnedFilters,
+  onSelectFilter,
+  onPinFilter,
+  onUnpinFilter,
 }: {
   customViews: CustomView[]
   pinnedViewIds: Set<string>
   activeViewId: string | null
   onSelectView: (id: string) => void
+  onPinView: (id: string) => void
+  onUnpinView: (id: string) => void
+  activeFilter: InboxFilter
+  pinnedFilters: Set<InboxFilter>
+  onSelectFilter: (f: InboxFilter) => void
+  onPinFilter: (f: InboxFilter) => void
+  onUnpinFilter: (f: InboxFilter) => void
 }) {
   const location = useLocation()
   const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
   const isComments = location.pathname.startsWith('/comments')
   const pinnedViews = customViews.filter((v) => pinnedViewIds.has(v.id))
+  const pinnedFilterList = Array.from(pinnedFilters).filter((f) => FILTER_META[f])
+  const [dragOver, setDragOver] = useState(false)
 
   function goToView(id: string) {
     onSelectView(id)
     navigate('/inbox')
+  }
+
+  function goToFilter(f: InboxFilter) {
+    onSelectFilter(f)
+    navigate('/inbox')
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragOver(false)
+    const raw = e.dataTransfer.getData('application/json')
+    if (!raw) return
+    try {
+      const payload = JSON.parse(raw) as DragPayload
+      if (payload.kind === 'filter') onPinFilter(payload.key)
+      else onPinView(payload.id)
+    } catch {
+      // ignore malformed drag payloads
+    }
   }
 
   return (
@@ -156,20 +205,67 @@ export function Sidebar({
           onClick={() => {}}
         />
 
-        {pinnedViews.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 4px', padding: '0 10px' }}>
-              Views
+        <div
+          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setDragOver(true) }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          style={{
+            marginTop: 12, borderRadius: 8,
+            border: dragOver ? '1.5px dashed #5e6ad2' : '1.5px dashed transparent',
+            background: dragOver ? '#eef2ff' : 'transparent',
+            padding: '4px 2px',
+          }}
+        >
+          <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 4px', padding: '0 10px' }}>
+            Views
+          </p>
+          {pinnedFilterList.length === 0 && pinnedViews.length === 0 && (
+            <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, padding: '4px 10px' }}>
+              Drag a view here to pin it
             </p>
-            {pinnedViews.map((view) => {
-              const active = isInbox && activeViewId === view.id
-              return (
+          )}
+          {pinnedFilterList.map((f) => {
+            const meta = FILTER_META[f]
+            const active = isInbox && activeFilter === f
+            return (
+              <div key={f} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <button
-                  key={view.id}
+                  onClick={() => goToFilter(f)}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '7px 28px 7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: active ? '#f0fdf4' : 'transparent',
+                    color: active ? '#15803d' : '#374151',
+                    fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
+                  }}
+                >
+                  <span style={{ color: '#6b7280', display: 'flex' }}>{meta.icon}</span>
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta.label}</span>
+                </button>
+                <button
+                  onClick={() => onUnpinFilter(f)}
+                  title="Unpin from sidebar"
+                  style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 16, height: 16, border: 'none', borderRadius: '50%',
+                    background: 'none', color: '#9ca3af', cursor: 'pointer',
+                  }}
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            )
+          })}
+          {pinnedViews.map((view) => {
+            const active = isInbox && activeViewId === view.id
+            return (
+              <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <button
                   onClick={() => goToView(view.id)}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    padding: '7px 28px 7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
                     background: active ? '#f0fdf4' : 'transparent',
                     color: active ? '#15803d' : '#374151',
                     fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
@@ -178,11 +274,22 @@ export function Sidebar({
                   <span style={{ fontSize: 14 }}>{view.icon}</span>
                   <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{view.name}</span>
                 </button>
-              )
-            })}
-          </div>
-        )}
-
+                <button
+                  onClick={() => onUnpinView(view.id)}
+                  title="Unpin from sidebar"
+                  style={{
+                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 16, height: 16, border: 'none', borderRadius: '50%',
+                    background: 'none', color: '#9ca3af', cursor: 'pointer',
+                  }}
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            )
+          })}
+        </div>
       </nav>
 
       {/* Bottom */}
