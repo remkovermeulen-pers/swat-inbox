@@ -7,7 +7,11 @@ import { BrandSettings } from './pages/BrandSettings'
 import { Publisher } from './pages/Publisher'
 import type { InboxFilter } from './data/mockData'
 import type { CustomView } from './lib/inboxScale'
-import { loadCustomViews, saveCustomViews, loadPinnedViewIds, savePinnedViewIds } from './lib/inboxScale'
+import {
+  loadCustomViews, saveCustomViews,
+  loadPinnedViewIds, savePinnedViewIds,
+  loadPinnedFilters, savePinnedFilters,
+} from './lib/inboxScale'
 
 const SPLIT_KEY = 'inbox-split-pct'
 const DEFAULT_SPLIT = 50
@@ -23,8 +27,6 @@ function InboxShell({
   onViewChange,
   onDeleteView,
   onUpdateView,
-  pinnedViewIds,
-  onTogglePinView,
   mode = 'inbox',
 }: {
   brandId: string | null
@@ -37,8 +39,6 @@ function InboxShell({
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
-  pinnedViewIds: Set<string>
-  onTogglePinView: (id: string) => void
   mode?: 'inbox' | 'comments'
 }) {
   const { messageId } = useParams()
@@ -96,8 +96,6 @@ function InboxShell({
           onViewChange={onViewChange}
           onDeleteView={onDeleteView}
           onUpdateView={onUpdateView}
-          pinnedViewIds={pinnedViewIds}
-          onTogglePinView={onTogglePinView}
           mode={mode}
         />
       </div>
@@ -141,8 +139,6 @@ function InboxRoutes({
   onViewChange,
   onDeleteView,
   onUpdateView,
-  pinnedViewIds,
-  onTogglePinView,
 }: {
   brandId: string | null
   channelId: string | null
@@ -154,8 +150,6 @@ function InboxRoutes({
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
-  pinnedViewIds: Set<string>
-  onTogglePinView: (id: string) => void
 }) {
   const shell = (
     <InboxShell
@@ -169,8 +163,6 @@ function InboxRoutes({
       onViewChange={onViewChange}
       onDeleteView={onDeleteView}
       onUpdateView={onUpdateView}
-      pinnedViewIds={pinnedViewIds}
-      onTogglePinView={onTogglePinView}
     />
   )
   const commentsShell = (
@@ -185,8 +177,6 @@ function InboxRoutes({
       onViewChange={onViewChange}
       onDeleteView={onDeleteView}
       onUpdateView={onUpdateView}
-      pinnedViewIds={pinnedViewIds}
-      onTogglePinView={onTogglePinView}
       mode="comments"
     />
   )
@@ -211,9 +201,11 @@ export default function App() {
   const [customViews, setCustomViews] = useState<CustomView[]>(() => loadCustomViews())
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
   const [pinnedViewIds, setPinnedViewIds] = useState<Set<string>>(() => loadPinnedViewIds())
+  const [pinnedFilters, setPinnedFilters] = useState<Set<InboxFilter>>(() => loadPinnedFilters() as Set<InboxFilter>)
 
   useEffect(() => { saveCustomViews(customViews) }, [customViews])
   useEffect(() => { savePinnedViewIds(pinnedViewIds) }, [pinnedViewIds])
+  useEffect(() => { savePinnedFilters(pinnedFilters) }, [pinnedFilters])
 
   function activateView(view: CustomView | null) {
     setActiveViewId(view?.id ?? null)
@@ -246,17 +238,28 @@ export default function App() {
     setCustomViews((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)))
   }
 
-  function togglePinView(id: string) {
-    setPinnedViewIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  function pinView(id: string) {
+    setPinnedViewIds((prev) => new Set(prev).add(id))
+  }
+
+  function unpinView(id: string) {
+    setPinnedViewIds((prev) => { const next = new Set(prev); next.delete(id); return next })
+  }
+
+  function pinFilter(f: InboxFilter) {
+    setPinnedFilters((prev) => new Set(prev).add(f))
+  }
+
+  function unpinFilter(f: InboxFilter) {
+    setPinnedFilters((prev) => { const next = new Set(prev); next.delete(f); return next })
   }
 
   function selectViewFromSidebar(id: string) {
     activateView(customViews.find((v) => v.id === id) ?? null)
+  }
+
+  function selectFilterFromSidebar(f: InboxFilter) {
+    handleFilterChange(f)
   }
 
   return (
@@ -267,6 +270,13 @@ export default function App() {
           pinnedViewIds={pinnedViewIds}
           activeViewId={activeViewId}
           onSelectView={selectViewFromSidebar}
+          onPinView={pinView}
+          onUnpinView={unpinView}
+          activeFilter={activeFilter}
+          pinnedFilters={pinnedFilters}
+          onSelectFilter={selectFilterFromSidebar}
+          onPinFilter={pinFilter}
+          onUnpinFilter={unpinFilter}
         />
         <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <InboxRoutes
@@ -280,8 +290,6 @@ export default function App() {
             onViewChange={handleViewChange}
             onDeleteView={deleteCustomView}
             onUpdateView={updateCustomView}
-            pinnedViewIds={pinnedViewIds}
-            onTogglePinView={togglePinView}
           />
         </main>
       </div>
