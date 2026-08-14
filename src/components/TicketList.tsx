@@ -5,7 +5,11 @@ import { messages, customers, brands, channels } from '../data/mockData'
 import type { Message, InboxFilter, Tag, Sentiment, Platform, MessageStatus } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
-import { AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, type CustomView, type FilterCondition, type SortCol, type SortDir } from '../lib/inboxScale'
+import {
+  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier,
+  FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition,
+  type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir,
+} from '../lib/inboxScale'
 import {
   Search,
   Download,
@@ -27,6 +31,7 @@ import {
   AtSign,
   Eye,
   Rows3,
+  Calendar,
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
@@ -50,6 +55,14 @@ const STATUS_LABELS: Record<MessageStatus, string> = {
   unanswered: 'Unanswered',
   ai_pending: 'AI pending',
   answered: 'Answered',
+}
+
+const COLUMN_FILTER_FIELDS = ['customerName', 'priority', 'ticketNumber', 'replies', 'reach'] as const
+
+type TimeRangePreset = 'all' | 'today' | '7d' | '30d' | 'custom'
+
+const TIME_RANGE_LABELS: Record<TimeRangePreset, string> = {
+  all: 'All time', today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', custom: 'Custom range',
 }
 
 type GroupField = 'platform' | 'status' | 'sentiment' | 'channel'
@@ -120,13 +133,20 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [filterPlatforms, setFilterPlatforms] = useState<Set<Platform>>(new Set())
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
+  const [showFilterActionsMenu, setShowFilterActionsMenu] = useState(false)
   const [showCreateView, setShowCreateView] = useState(false)
   const [showChannelsMenu, setShowChannelsMenu] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
   const [showSentimentMenu, setShowSentimentMenu] = useState(false)
   const [showPlatformMenu, setShowPlatformMenu] = useState(false)
   const [showTagsMenu, setShowTagsMenu] = useState(false)
-  const [visibleFilterSlots, setVisibleFilterSlots] = useState(6)
+  const [showTimeRangeMenu, setShowTimeRangeMenu] = useState(false)
+  const [timeRange, setTimeRange] = useState<TimeRangePreset>('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+  const [colFilters, setColFilters] = useState<Partial<Record<FilterField, { operator: string; value: string }>>>({})
+  const [colFilterMenus, setColFilterMenus] = useState<Partial<Record<FilterField, boolean>>>({})
+  const [visibleFilterSlots, setVisibleFilterSlots] = useState(COLUMN_FILTER_FIELDS.length + 7)
   const [hiddenInboxFilters, setHiddenInboxFilters] = useState<Set<InboxFilter>>(() => loadHiddenFilters())
   const filterRowRef = useRef<HTMLDivElement>(null)
   const [groupBy, setGroupBy] = useState<GroupField | null>(null)
@@ -140,7 +160,25 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     })
   }
 
-  const activeFilterCount = filterTags.size + filterSentiments.size + filterPlatforms.size + filterChannels.size + filterStatuses.size
+  function setColFilterOperator(field: FilterField, operator: string) {
+    setColFilters((prev) => ({ ...prev, [field]: { operator, value: prev[field]?.value ?? '' } }))
+  }
+
+  function setColFilterValue(field: FilterField, value: string) {
+    setColFilters((prev) => ({ ...prev, [field]: { operator: prev[field]?.operator ?? defaultOperatorForField(field), value } }))
+  }
+
+  function clearColFilter(field: FilterField) {
+    setColFilters((prev) => {
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
+  }
+
+  const activeColFilterCount = Object.values(colFilters).filter((c) => c && c.value.trim()).length
+
+  const activeFilterCount = filterTags.size + filterSentiments.size + filterPlatforms.size + filterChannels.size + filterStatuses.size + activeColFilterCount
 
   useEffect(() => {
     localStorage.setItem(VISIBLE_COLS_KEY, JSON.stringify(Array.from(visibleCols)))
@@ -155,13 +193,10 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     if (!el) return
     function measure() {
       const w = el!.clientWidth
-      if (w < 250) setVisibleFilterSlots(0)
-      else if (w < 450) setVisibleFilterSlots(1)
-      else if (w < 600) setVisibleFilterSlots(2)
-      else if (w < 750) setVisibleFilterSlots(3)
-      else if (w < 850) setVisibleFilterSlots(4)
-      else if (w < 950) setVisibleFilterSlots(5)
-      else setVisibleFilterSlots(6)
+      // ~115px per pill on average, minus space reserved for the always-present
+      // Group by / Columns / (More Filters + actions when they appear) controls.
+      const fit = Math.max(0, Math.floor((w - 300) / 115))
+      setVisibleFilterSlots(fit)
     }
     measure()
     const ro = new ResizeObserver(measure)
@@ -242,7 +277,24 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         if (!matchesChannel) return false
       }
       if (filterStatuses.size > 0 && !filterStatuses.has(m.status)) return false
+      for (const field of COLUMN_FILTER_FIELDS) {
+        const cond = colFilters[field]
+        if (!cond || !cond.value.trim()) continue
+        if (!evaluateCondition({ field, operator: cond.operator, value: cond.value }, m, cust)) return false
+      }
       return true
+    })
+    .filter((m) => {
+      if (timeRange === 'all') return true
+      const ts = new Date(m.timestamp).getTime()
+      if (timeRange === 'custom') {
+        const from = customFrom ? new Date(customFrom).getTime() : -Infinity
+        const to = customTo ? new Date(customTo).getTime() + 24 * 3600 * 1000 : Infinity
+        return ts >= from && ts < to
+      }
+      const days = timeRange === 'today' ? 1 : timeRange === '7d' ? 7 : 30
+      const cutoff = Date.now() - days * 24 * 3600 * 1000
+      return ts >= cutoff
     })
     .sort((a, b) => {
       const custA = customers.find((c) => c.id === a.customerId)
@@ -342,6 +394,10 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     if (filterTags.size > 0) conditions.push({ field: 'tag', operator: 'is', value: Array.from(filterTags) })
     if (filterSentiments.size > 0) conditions.push({ field: 'sentiment', operator: 'is', value: Array.from(filterSentiments) })
     if (filterPlatforms.size > 0) conditions.push({ field: 'platform', operator: 'is', value: Array.from(filterPlatforms) })
+    for (const field of COLUMN_FILTER_FIELDS) {
+      const cond = colFilters[field]
+      if (cond && cond.value.trim()) conditions.push({ field, operator: cond.operator, value: cond.value })
+    }
     return {
       statuses,
       conditions: conditions.length ? conditions : activeView?.conditions,
@@ -360,19 +416,19 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       color: activeView?.color ?? '#5e6ad2',
       ...currentFiltersAsPatch(),
     })
-    setShowFilterMenu(false)
+    setShowFilterActionsMenu(false)
     setToast(`Saved view "${name.trim()}"`)
   }
 
   function updateFiltersOnView() {
     if (!activeView) return
     onUpdateView(activeView.id, currentFiltersAsPatch())
-    setShowFilterMenu(false)
+    setShowFilterActionsMenu(false)
     setToast(`Updated view "${activeView.name}"`)
   }
 
   const hasUnsavedFilterChanges = Boolean(
-    activeView && (filterTags.size > 0 || filterSentiments.size > 0 || filterPlatforms.size > 0 || filterStatuses.size > 0)
+    activeView && (filterTags.size > 0 || filterSentiments.size > 0 || filterPlatforms.size > 0 || filterStatuses.size > 0 || activeColFilterCount > 0)
   )
 
   const headerLabel = activeView
@@ -418,6 +474,49 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
   const visibilityContent = (
     <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>All (decorative in this prototype)</p>
+  )
+
+  const timeRangeContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        {(Object.keys(TIME_RANGE_LABELS) as TimeRangePreset[]).map((tr) => (
+          <button
+            key={tr}
+            onClick={() => setTimeRange(tr)}
+            style={{
+              padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+              border: `1px solid ${timeRange === tr ? '#5e6ad2' : '#e5e7eb'}`,
+              background: timeRange === tr ? '#eef2ff' : '#fff',
+              color: timeRange === tr ? '#4338ca' : '#6b7280',
+            }}
+          >
+            {TIME_RANGE_LABELS[tr]}
+          </button>
+        ))}
+      </div>
+      {timeRange === 'custom' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11, color: '#6b7280' }}>
+            From
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit' }}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: 3, fontSize: 11, color: '#6b7280' }}>
+            To
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit' }}
+            />
+          </label>
+        </div>
+      )}
+    </div>
   )
 
   const statusContent = (
@@ -498,9 +597,9 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
   const filterActionsContent = (
     <>
-      {filterFacetCount > 0 && (
+      {(filterFacetCount > 0 || activeColFilterCount > 0) && (
         <button
-          onClick={() => { setFilterTags(new Set()); setFilterSentiments(new Set()); setFilterPlatforms(new Set()); setFilterStatuses(new Set()) }}
+          onClick={() => { setFilterTags(new Set()); setFilterSentiments(new Set()); setFilterPlatforms(new Set()); setFilterStatuses(new Set()); setColFilters({}) }}
           style={{ fontSize: 12, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', fontFamily: 'inherit' }}
         >
           Clear all filters
@@ -533,6 +632,38 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     </>
   )
 
+  function colFilterContent(field: FilterField) {
+    const def = FIELD_DEFS[field]
+    const cond = colFilters[field] ?? { operator: defaultOperatorForField(field), value: '' }
+    const ops = operatorsForField(field)
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <select
+          value={cond.operator}
+          onChange={(e) => setColFilterOperator(field, e.target.value)}
+          style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', background: '#fff' }}
+        >
+          {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
+        </select>
+        <input
+          type={def.type === 'number' ? 'number' : 'text'}
+          value={cond.value}
+          onChange={(e) => setColFilterValue(field, e.target.value)}
+          placeholder={def.type === 'number' ? 'e.g. 5000' : 'value'}
+          style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+        />
+        {cond.value.trim() && (
+          <button
+            onClick={() => clearColFilter(field)}
+            style={{ fontSize: 12, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', fontFamily: 'inherit' }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    )
+  }
+
   type Facet = {
     key: string
     label: string
@@ -554,6 +685,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       show: false, setShow: () => {}, content: visibilityContent, panelWidth: 200,
     },
     {
+      key: 'timerange', icon: <Calendar size={13} />,
+      label: timeRange === 'all' ? 'Timeframe' : `Timeframe: ${TIME_RANGE_LABELS[timeRange]}`,
+      show: showTimeRangeMenu, setShow: setShowTimeRangeMenu, content: timeRangeContent, panelWidth: 200,
+    },
+    {
       key: 'status', icon: <SlidersHorizontal size={13} />,
       label: `Status${filterStatuses.size > 0 ? `: ${filterStatuses.size}` : ''}`,
       show: showStatusMenu, setShow: setShowStatusMenu, content: statusContent, panelWidth: 200,
@@ -573,6 +709,19 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       label: `Tags${filterTags.size > 0 ? `: ${filterTags.size}` : ''}`,
       show: showTagsMenu, setShow: setShowTagsMenu, content: tagsContent, panelWidth: 240,
     },
+    ...COLUMN_FILTER_FIELDS.map((field): Facet => {
+      const cond = colFilters[field]
+      const active = Boolean(cond?.value.trim())
+      return {
+        key: field,
+        icon: <SlidersHorizontal size={13} />,
+        label: `${FIELD_DEFS[field].label}${active ? `: ${cond!.value}` : ''}`,
+        show: Boolean(colFilterMenus[field]),
+        setShow: (v: boolean) => setColFilterMenus((prev) => ({ ...prev, [field]: v })),
+        content: colFilterContent(field),
+        panelWidth: 180,
+      }
+    }),
   ]
 
   const visibleFacets = facets.slice(0, visibleFilterSlots)
@@ -732,13 +881,13 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
               <button
                 onClick={() => onViewChange(active ? null : view.id)}
                 style={{
-                  padding: '6px 22px 6px 10px',
+                  padding: '6px 26px 6px 12px',
                   borderRadius: 8,
-                  border: 'none',
+                  border: `1px solid ${active ? '#111827' : '#e5e7eb'}`,
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  background: active ? '#4338ca' : '#f3f4f6',
+                  background: active ? '#111827' : '#fff',
                   color: active ? '#fff' : '#374151',
                   display: 'flex',
                   alignItems: 'center',
@@ -781,45 +930,63 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       <div ref={filterRowRef} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px 12px', borderBottom: '1px solid #f3f4f6' }}>
         {visibleFacets.map(renderFacetPill)}
 
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowFilterMenu((v) => !v)} style={pillBtnStyle}>
-            <SlidersHorizontal size={13} /> Filter
-            {filterFacetCount > 0 && (
-              <span style={{ background: '#5e6ad2', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
-                {filterFacetCount}
-              </span>
-            )}
-          </button>
-          {showFilterMenu && (
-            <>
-              <div onClick={() => setShowFilterMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
-              <div
-                style={{
-                  position: 'absolute', top: '110%', left: 0, zIndex: 10,
-                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 240,
-                  display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 460, overflowY: 'auto',
-                }}
-              >
-                {overflowFacets.length === 0 ? (
-                  <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>All filters fit in the row above.</p>
-                ) : (
-                  overflowFacets.map((f, i) => (
+        {overflowFacets.length > 0 && (
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowFilterMenu((v) => !v)} style={pillBtnStyle}>
+              <SlidersHorizontal size={13} /> More Filters
+            </button>
+            {showFilterMenu && (
+              <>
+                <div onClick={() => setShowFilterMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+                <div
+                  style={{
+                    position: 'absolute', top: '110%', left: 0, zIndex: 10,
+                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 240,
+                    display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 460, overflowY: 'auto',
+                  }}
+                >
+                  {overflowFacets.map((f, i) => (
                     <div key={f.key} style={i > 0 ? { borderTop: '1px solid #f3f4f6', paddingTop: 10 } : undefined}>
                       <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>
                         {f.key === 'channels' ? 'Channels' : f.key === 'visibility' ? 'Visibility' : f.key}
                       </p>
                       {f.content}
                     </div>
-                  ))
-                )}
-                <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 10 }}>
-                  {filterActionsContent}
+                  ))}
                 </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {overflowFacets.length > 0 && (
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => setShowFilterActionsMenu((v) => !v)} style={{ ...pillBtnStyle, padding: '6px 8px' }} title="Save, update, or clear filters">
+            <BookmarkPlus size={14} />
+            {filterFacetCount > 0 && (
+              <span style={{ background: '#5e6ad2', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
+                {filterFacetCount}
+              </span>
+            )}
+          </button>
+          {showFilterActionsMenu && (
+            <>
+              <div onClick={() => setShowFilterActionsMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+              <div
+                style={{
+                  position: 'absolute', top: '110%', left: 0, zIndex: 10,
+                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 220,
+                  display: 'flex', flexDirection: 'column', gap: 10,
+                }}
+              >
+                {filterActionsContent}
               </div>
             </>
           )}
         </div>
+        )}
 
         <div style={{ flex: 1 }} />
 
@@ -867,41 +1034,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           )}
         </div>
 
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowColumnMenu((v) => !v)} style={pillBtnStyle}>
-            <Columns3 size={13} /> Columns
-          </button>
-          {showColumnMenu && (
-            <>
-              <div
-                onClick={() => setShowColumnMenu(false)}
-                style={{ position: 'fixed', inset: 0, zIndex: 9 }}
-              />
-              <div
-                style={{
-                  position: 'absolute', top: '110%', right: 0, zIndex: 10,
-                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 8, width: 160,
-                }}
-              >
-                {TOGGLEABLE_COLUMNS.map((col) => (
-                  <label
-                    key={col.key}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={visibleCols.has(col.key)}
-                      onChange={() => toggleColumn(col.key)}
-                      style={{ cursor: 'pointer', accentColor: '#5e6ad2' }}
-                    />
-                    {col.label}
-                  </label>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
 
@@ -993,6 +1125,47 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         <div style={{ width: 28, flexShrink: 0 }} />
         {/* Time */}
         {visibleCols.has('time') && <ColHeader label="Time" col="time" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={56} />}
+
+        {/* Column visibility toggle */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowColumnMenu((v) => !v)}
+            title="Choose columns"
+            style={{ display: 'flex', alignItems: 'center', padding: '3px', borderRadius: 5, border: 'none', background: 'none', cursor: 'pointer', color: '#9ca3af' }}
+          >
+            <Columns3 size={14} />
+          </button>
+          {showColumnMenu && (
+            <>
+              <div
+                onClick={() => setShowColumnMenu(false)}
+                style={{ position: 'fixed', inset: 0, zIndex: 9 }}
+              />
+              <div
+                style={{
+                  position: 'absolute', top: '110%', right: 0, zIndex: 10,
+                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 8, width: 160,
+                }}
+              >
+                {TOGGLEABLE_COLUMNS.map((col) => (
+                  <label
+                    key={col.key}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: '#374151' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={visibleCols.has(col.key)}
+                      onChange={() => toggleColumn(col.key)}
+                      style={{ cursor: 'pointer', accentColor: '#5e6ad2' }}
+                    />
+                    {col.label}
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Ticket rows */}
