@@ -16,20 +16,26 @@ function InboxShell({
   brandId,
   channelId,
   filter,
+  onFilterChange,
   customViews,
   activeViewId,
   onAddView,
   onViewChange,
   onDeleteView,
+  onUpdateView,
+  mode = 'inbox',
 }: {
   brandId: string | null
   channelId: string | null
   filter: InboxFilter
+  onFilterChange: (f: InboxFilter) => void
   customViews: CustomView[]
   activeViewId: string | null
   onAddView: (view: CustomView) => void
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
+  onUpdateView: (id: string, patch: Partial<CustomView>) => void
+  mode?: 'inbox' | 'comments'
 }) {
   const { messageId } = useParams()
   const hasMessage = Boolean(messageId)
@@ -79,11 +85,14 @@ function InboxShell({
           brandId={brandId}
           channelId={channelId}
           filter={filter}
+          onFilterChange={onFilterChange}
           customViews={customViews}
           activeViewId={activeViewId}
           onAddView={onAddView}
           onViewChange={onViewChange}
           onDeleteView={onDeleteView}
+          onUpdateView={onUpdateView}
+          mode={mode}
         />
       </div>
 
@@ -119,31 +128,52 @@ function InboxRoutes({
   brandId,
   channelId,
   filter,
+  onFilterChange,
   customViews,
   activeViewId,
   onAddView,
   onViewChange,
   onDeleteView,
+  onUpdateView,
 }: {
   brandId: string | null
   channelId: string | null
   filter: InboxFilter
+  onFilterChange: (f: InboxFilter) => void
   customViews: CustomView[]
   activeViewId: string | null
   onAddView: (view: CustomView) => void
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
+  onUpdateView: (id: string, patch: Partial<CustomView>) => void
 }) {
   const shell = (
     <InboxShell
       brandId={brandId}
       channelId={channelId}
       filter={filter}
+      onFilterChange={onFilterChange}
       customViews={customViews}
       activeViewId={activeViewId}
       onAddView={onAddView}
       onViewChange={onViewChange}
       onDeleteView={onDeleteView}
+      onUpdateView={onUpdateView}
+    />
+  )
+  const commentsShell = (
+    <InboxShell
+      brandId={null}
+      channelId={null}
+      filter={filter}
+      onFilterChange={onFilterChange}
+      customViews={customViews}
+      activeViewId={activeViewId}
+      onAddView={onAddView}
+      onViewChange={onViewChange}
+      onDeleteView={onDeleteView}
+      onUpdateView={onUpdateView}
+      mode="comments"
     />
   )
   return (
@@ -154,6 +184,8 @@ function InboxRoutes({
       <Route path="/inbox" element={shell} />
       <Route path="/inbox/:brandId" element={shell} />
       <Route path="/inbox/:brandId/:messageId" element={shell} />
+      <Route path="/comments" element={commentsShell} />
+      <Route path="/comments/:messageId" element={commentsShell} />
     </Routes>
   )
 }
@@ -188,23 +220,26 @@ export default function App() {
     if (activeViewId === id) setActiveViewId(null)
   }
 
+  function updateCustomView(id: string, patch: Partial<CustomView>) {
+    setCustomViews((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)))
+  }
+
   return (
     <HashRouter>
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-        <Sidebar
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-        />
+        <Sidebar />
         <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <InboxRoutes
             brandId={activeBrandId}
             channelId={activeChannelId}
             filter={activeFilter}
+            onFilterChange={setActiveFilter}
             customViews={customViews}
             activeViewId={activeViewId}
             onAddView={addCustomView}
             onViewChange={handleViewChange}
             onDeleteView={deleteCustomView}
+            onUpdateView={updateCustomView}
           />
         </main>
       </div>
