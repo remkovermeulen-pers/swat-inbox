@@ -3,30 +3,6 @@ import type { Customer, Message, MessageStatus, Sentiment } from '../data/mockDa
 export type SortCol = 'name' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time' | 'priority'
 export type SortDir = 'asc' | 'desc'
 
-export interface CustomView {
-  id: string
-  name: string
-  icon: string
-  color: string
-  /** OR-matched against subject/preview text */
-  keywords?: string[]
-  /** OR-matched against message tag labels */
-  tags?: string[]
-  /** AND-narrowing: customer sentiment must be one of these */
-  sentiments?: Sentiment[]
-  /** AND-narrowing: customer.totalReach must be >= this */
-  minReach?: number
-  /** AND-narrowing: message status must be one of these */
-  statuses?: MessageStatus[]
-  /** AND-narrowing: restrict this view to one brand */
-  brandId?: string
-  /** AND-narrowing: restrict this view to one channel */
-  channelId?: string
-  /** Ordering to apply automatically when this view is selected */
-  sortCol?: SortCol
-  sortDir?: SortDir
-}
-
 export const AGENTS = ['Remko', 'Emma', 'Jonas', 'Mei']
 
 export const KNOWN_TAGS = [
@@ -34,6 +10,159 @@ export const KNOWN_TAGS = [
   'listing', 'mobile', 'partnership', 'refund', 'returns', 'review', 'safety',
   'shipping', 'stock', 'urgent', 'warranty',
 ]
+
+/* ── Generic per-column filter conditions (used by the "New custom view" builder) ── */
+
+export type FilterField =
+  | 'customerName' | 'subject' | 'preview' | 'ticketNumber' | 'channel'
+  | 'replies' | 'reach' | 'priority'
+  | 'platform' | 'status' | 'sentiment' | 'tag'
+
+export type FieldType = 'text' | 'number' | 'select'
+
+export const FIELD_DEFS: Record<FilterField, { label: string; type: FieldType; options?: string[] }> = {
+  customerName: { label: 'Name', type: 'text' },
+  subject: { label: 'Subject', type: 'text' },
+  preview: { label: 'Message', type: 'text' },
+  ticketNumber: { label: 'Ticket #', type: 'text' },
+  channel: { label: 'Channel', type: 'text' },
+  replies: { label: 'Replies', type: 'number' },
+  reach: { label: 'Reach', type: 'number' },
+  priority: { label: 'Priority score', type: 'number' },
+  platform: { label: 'Platform', type: 'select', options: ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube'] },
+  status: { label: 'Status', type: 'select', options: ['unanswered', 'answered', 'ai_pending'] },
+  sentiment: { label: 'Sentiment', type: 'select', options: ['negative', 'neutral', 'positive'] },
+  tag: { label: 'Tag', type: 'select', options: KNOWN_TAGS },
+}
+
+export const FILTER_FIELDS = Object.keys(FIELD_DEFS) as FilterField[]
+
+export const TEXT_OPERATORS = [
+  { value: 'is', label: 'is' },
+  { value: 'is_not', label: 'is not' },
+  { value: 'contains', label: 'contains' },
+  { value: 'not_contains', label: 'does not contain' },
+]
+
+export const NUMBER_OPERATORS = [
+  { value: 'eq', label: '=' },
+  { value: 'neq', label: '≠' },
+  { value: 'gt', label: '>' },
+  { value: 'lt', label: '<' },
+  { value: 'gte', label: '≥' },
+  { value: 'lte', label: '≤' },
+]
+
+export const SELECT_OPERATORS = [
+  { value: 'is', label: 'is' },
+  { value: 'is_not', label: 'is not' },
+]
+
+export function operatorsForField(field: FilterField) {
+  const type = FIELD_DEFS[field].type
+  return type === 'number' ? NUMBER_OPERATORS : type === 'select' ? SELECT_OPERATORS : TEXT_OPERATORS
+}
+
+export function defaultOperatorForField(field: FilterField) {
+  return operatorsForField(field)[0].value
+}
+
+export interface FilterCondition {
+  field: FilterField
+  operator: string
+  /** string for text/number fields, string[] for select fields (multi-value "is any of") */
+  value: string | string[]
+}
+
+function getFieldValue(field: FilterField, msg: Message, customer: Customer | undefined): string | number {
+  switch (field) {
+    case 'customerName': return customer?.name ?? ''
+    case 'subject': return msg.subject
+    case 'preview': return msg.preview
+    case 'ticketNumber': return msg.ticketNumber
+    case 'channel': return msg.channel
+    case 'replies': return msg.replyCount
+    case 'reach': return customer?.totalReach ?? 0
+    case 'priority': return getPriorityScore(msg, customer)
+    case 'platform': return msg.platform
+    case 'status': return msg.status
+    case 'sentiment': return customer?.sentiment ?? ''
+    default: return ''
+  }
+}
+
+export function evaluateCondition(cond: FilterCondition, msg: Message, customer: Customer | undefined): boolean {
+  const def = FIELD_DEFS[cond.field]
+  const values = (Array.isArray(cond.value) ? cond.value : [cond.value]).filter((v) => v !== '').map((v) => v.toLowerCase())
+
+  if (cond.field === 'tag') {
+    if (values.length === 0) return true
+    const tagLabels = msg.tags.map((t) => t.label.toLowerCase())
+    const has = values.some((v) => tagLabels.includes(v))
+    return cond.operator === 'is_not' ? !has : has
+  }
+
+  if (def.type === 'select') {
+    if (values.length === 0) return true
+    const raw = String(getFieldValue(cond.field, msg, customer)).toLowerCase()
+    const is = values.includes(raw)
+    return cond.operator === 'is_not' ? !is : is
+  }
+
+  if (def.type === 'number') {
+    const valueStr = Array.isArray(cond.value) ? cond.value[0] : cond.value
+    if (!valueStr || valueStr === '') return true
+    const num = Number(getFieldValue(cond.field, msg, customer))
+    const val = Number(valueStr)
+    if (Number.isNaN(val)) return true
+    switch (cond.operator) {
+      case 'eq': return num === val
+      case 'neq': return num !== val
+      case 'gt': return num > val
+      case 'lt': return num < val
+      case 'gte': return num >= val
+      case 'lte': return num <= val
+      default: return true
+    }
+  }
+
+  // text field
+  const valueStr = Array.isArray(cond.value) ? cond.value[0] : cond.value
+  if (!valueStr || !valueStr.trim()) return true
+  const a = String(getFieldValue(cond.field, msg, customer)).toLowerCase()
+  const v = valueStr.toLowerCase()
+  switch (cond.operator) {
+    case 'is': return a === v
+    case 'is_not': return a !== v
+    case 'contains': return a.includes(v)
+    case 'not_contains': return !a.includes(v)
+    default: return true
+  }
+}
+
+export interface CustomView {
+  id: string
+  name: string
+  icon: string
+  color: string
+  /** OR-matched against subject/preview text — legacy shorthand, still used by the seeded default views */
+  keywords?: string[]
+  /** OR-matched against message tag labels — legacy shorthand */
+  tags?: string[]
+  /** AND-narrowing: customer sentiment must be one of these — legacy shorthand */
+  sentiments?: Sentiment[]
+  /** AND-narrowing: customer.totalReach must be >= this — legacy shorthand */
+  minReach?: number
+  /** AND-narrowing: message status must be one of these — legacy shorthand */
+  statuses?: MessageStatus[]
+  /** AND-narrowing: restrict this view to one brand — legacy shorthand */
+  brandId?: string
+  /** Generic per-column conditions built by the "New custom view" filter builder — ANDed together */
+  conditions?: FilterCondition[]
+  /** Ordering to apply automatically when this view is selected */
+  sortCol?: SortCol
+  sortDir?: SortDir
+}
 
 export const DEFAULT_CUSTOM_VIEWS: CustomView[] = [
   {
@@ -74,6 +203,7 @@ export function messageMatchesView(msg: Message, customer: Customer | undefined,
   if (view.minReach != null && (!customer || customer.totalReach < view.minReach)) return false
   if (view.statuses?.length && !view.statuses.includes(msg.status)) return false
   if (view.brandId && msg.brandId !== view.brandId) return false
+  if (view.conditions?.length && !view.conditions.every((c) => evaluateCondition(c, msg, customer))) return false
   return true
 }
 
