@@ -8,7 +8,7 @@ import { CreateViewModal } from './CreateViewModal'
 import { CommentCard } from './CommentCard'
 import {
   AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier,
-  FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition,
+  FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition, RANGE_SEPARATOR,
   type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir,
 } from '../lib/inboxScale'
 import {
@@ -38,6 +38,11 @@ import {
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
 const SENTIMENTS: Sentiment[] = ['negative', 'neutral', 'positive']
+
+// Matches the colors priorityTier() uses for each label, so the Priority filter's pills look like the column badges.
+const PRIORITY_TIER_COLORS: Record<string, string> = {
+  Critical: '#dc2626', High: '#f59e0b', Normal: '#6b7280', Low: '#d1d5db',
+}
 
 interface Props {
   brandId: string | null
@@ -83,6 +88,28 @@ const TOGGLEABLE_COLUMNS: { key: ColKey; label: string; width: number }[] = [
   { key: 'channel', label: 'Channel', width: 130 },
   { key: 'time', label: 'Time', width: 56 },
 ]
+
+type ColWidthKey = 'name' | 'tags' | ColKey
+
+const DEFAULT_COL_WIDTHS: Record<ColWidthKey, number> = {
+  name: 140, tags: 200, priority: 72, ticket: 80, replies: 60, reach: 70, channel: 130, time: 56,
+}
+
+const COL_WIDTHS_KEY = 'inbox-col-widths'
+
+function loadColWidths(): Record<ColWidthKey, number> {
+  try {
+    const raw = localStorage.getItem(COL_WIDTHS_KEY)
+    if (!raw) return { ...DEFAULT_COL_WIDTHS }
+    return { ...DEFAULT_COL_WIDTHS, ...JSON.parse(raw) }
+  } catch {
+    return { ...DEFAULT_COL_WIDTHS }
+  }
+}
+
+function saveColWidths(widths: Record<ColWidthKey, number>) {
+  localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(widths))
+}
 
 const VISIBLE_COLS_KEY = 'inbox-visible-columns'
 
@@ -132,6 +159,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [overrides, setOverrides] = useState<Record<string, Partial<Message>>>({})
   const [toast, setToast] = useState<string | null>(null)
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => loadVisibleCols())
+  const [colWidths, setColWidths] = useState<Record<ColWidthKey, number>>(() => loadColWidths())
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [filterTags, setFilterTags] = useState<Set<string>>(new Set())
@@ -218,7 +246,16 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     })
   }
 
+  function resizeCol(key: ColWidthKey, newWidth: number) {
+    setColWidths((prev) => {
+      const next = { ...prev, [key]: Math.max(40, newWidth) }
+      saveColWidths(next)
+      return next
+    })
+  }
+
   const activeView = customViews.find((v) => v.id === activeViewId) ?? null
+  const allActive = filter === 'all' && !activeViewId
 
   useEffect(() => {
     if (!activeViewId) return
@@ -422,9 +459,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     activeView && (filterTags.size > 0 || filterSentiments.size > 0 || filterPlatforms.size > 0 || filterStatuses.size > 0 || activeColFilterCount > 0)
   )
 
-  const headerLabel = activeView
-    ? `${activeView.icon} ${activeView.name}`
-    : brandId
+  const headerLabel = brandId
     ? brands.find((b) => b.id === brandId)?.name ?? 'Inbox'
     : channel
     ? channel.name
@@ -597,13 +632,61 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         >
           {ops.map((op) => <option key={op.value} value={op.value}>{op.label}</option>)}
         </select>
-        <input
-          type={def.type === 'number' ? 'number' : 'text'}
-          value={cond.value}
-          onChange={(e) => setColFilterValue(field, e.target.value)}
-          placeholder={def.type === 'number' ? 'e.g. 5000' : 'value'}
-          style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
-        />
+        {cond.operator === 'between' ? (
+          (() => {
+            const [minVal, maxVal] = cond.value.split(RANGE_SEPARATOR)
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  type="number"
+                  value={minVal ?? ''}
+                  onChange={(e) => setColFilterValue(field, `${e.target.value}${RANGE_SEPARATOR}${maxVal ?? ''}`)}
+                  placeholder="min"
+                  style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', width: 0, flex: 1 }}
+                />
+                <span style={{ fontSize: 12, color: '#9ca3af' }}>and</span>
+                <input
+                  type="number"
+                  value={maxVal ?? ''}
+                  onChange={(e) => setColFilterValue(field, `${minVal ?? ''}${RANGE_SEPARATOR}${e.target.value}`)}
+                  placeholder="max"
+                  style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', width: 0, flex: 1 }}
+                />
+              </div>
+            )
+          })()
+        ) : def.type === 'select' ? (
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+            {def.options?.map((opt) => {
+              const selected = cond.value === opt
+              const dotColor = PRIORITY_TIER_COLORS[opt]
+              return (
+                <button
+                  key={opt}
+                  onClick={() => setColFilterValue(field, selected ? '' : opt)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 5,
+                    padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+                    border: `1px solid ${selected ? '#5e6ad2' : '#e5e7eb'}`,
+                    background: selected ? '#eef2ff' : '#fff',
+                    color: selected ? '#4338ca' : '#6b7280',
+                  }}
+                >
+                  {dotColor && <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />}
+                  {opt}
+                </button>
+              )
+            })}
+          </div>
+        ) : (
+          <input
+            type={def.type === 'number' ? 'number' : 'text'}
+            value={cond.value}
+            onChange={(e) => setColFilterValue(field, e.target.value)}
+            placeholder={def.type === 'number' ? 'e.g. 5000' : 'value'}
+            style={{ fontSize: 12, padding: '5px 7px', borderRadius: 6, border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+          />
+        )}
         {cond.value.trim() && (
           <button
             onClick={() => clearColFilter(field)}
@@ -632,10 +715,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     ...COLUMN_FILTER_FIELDS.map((field): Facet => {
       const cond = colFilters[field]
       const active = Boolean(cond?.value.trim())
+      const displayValue = cond?.value.includes(RANGE_SEPARATOR) ? cond.value.split(RANGE_SEPARATOR).join(' - ') : cond?.value
       return {
         key: field,
         icon: <SlidersHorizontal size={13} />,
-        label: `${FIELD_DEFS[field].label}${active ? `: ${cond!.value}` : ''}`,
+        label: `${FIELD_DEFS[field].label}${active ? `: ${displayValue}` : ''}`,
         show: Boolean(colFilterMenus[field]),
         setShow: (v: boolean) => setColFilterMenus((prev) => ({ ...prev, [field]: v })),
         content: colFilterContent(field),
@@ -723,12 +807,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           {headerLabel}
         </h1>
 
-        {activeView && (
-          <span style={{ fontSize: 12, color: '#6b7280', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 99, padding: '3px 10px' }}>
-            View · across all brands &amp; channels, sorted by priority
-          </span>
-        )}
-
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             title="Download"
@@ -746,17 +824,17 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           style={{
             display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
             padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-            border: `1px solid ${filter === 'all' ? '#111827' : '#e5e7eb'}`,
-            background: filter === 'all' ? '#111827' : '#fff',
-            color: filter === 'all' ? '#fff' : '#374151',
+            border: `1px solid ${allActive ? '#4b5563' : '#e5e7eb'}`,
+            background: allActive ? '#4b5563' : '#fff',
+            color: allActive ? '#fff' : '#374151',
             fontSize: 13, fontWeight: 500,
           }}
         >
           All
           <span style={{
             fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
-            background: filter === 'all' ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
-            color: filter === 'all' ? '#fff' : '#6b7280',
+            background: allActive ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
+            color: allActive ? '#fff' : '#6b7280',
           }}>
             {inboxFilterCounts.all > 999 ? '999+' : inboxFilterCounts.all}
           </span>
@@ -783,8 +861,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '6px 26px 6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                border: `1px solid ${filter === f ? '#111827' : '#e5e7eb'}`,
-                background: filter === f ? '#111827' : '#fff',
+                border: `1px solid ${filter === f ? '#4b5563' : '#e5e7eb'}`,
+                background: filter === f ? '#4b5563' : '#fff',
                 color: filter === f ? '#fff' : '#374151',
                 fontSize: 13, fontWeight: 500,
               }}
@@ -839,11 +917,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                 style={{
                   padding: `6px ${12 + iconCount * 18}px 6px 12px`,
                   borderRadius: 8,
-                  border: `1px solid ${active ? '#111827' : '#e5e7eb'}`,
+                  border: `1px solid ${active ? '#4b5563' : '#e5e7eb'}`,
                   fontSize: 13,
                   fontWeight: 500,
                   cursor: 'pointer',
-                  background: active ? '#111827' : '#fff',
+                  background: active ? '#4b5563' : '#fff',
                   color: active ? '#fff' : '#374151',
                   display: 'flex',
                   alignItems: 'center',
@@ -1105,25 +1183,28 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         <div style={{ width: 39, flexShrink: 0 }} />
 
         {/* Name */}
-        <ColHeader label="Name" col="name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={140} />
+        <ColHeader label="Name" col="name" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.name} onResize={(w) => resizeCol('name', w)} />
 
         {/* Preview — not sortable, flex spacer */}
         <div style={{ flex: 1 }} />
 
+        {/* Tags */}
+        <PlainColHeader label="Tags" width={colWidths.tags} onResize={(w) => resizeCol('tags', w)} />
+
         {/* Priority */}
-        {visibleCols.has('priority') && <ColHeader label="Priority" col="priority" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={72} />}
+        {visibleCols.has('priority') && <ColHeader label="Priority" col="priority" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.priority} onResize={(w) => resizeCol('priority', w)} />}
         {/* Ticket # */}
-        {visibleCols.has('ticket') && <ColHeader label="Ticket #" col="ticket" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={80} />}
+        {visibleCols.has('ticket') && <ColHeader label="Ticket #" col="ticket" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.ticket} onResize={(w) => resizeCol('ticket', w)} />}
         {/* Replies */}
-        {visibleCols.has('replies') && <ColHeader label="Replies" col="replies" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={60} />}
+        {visibleCols.has('replies') && <ColHeader label="Replies" col="replies" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.replies} onResize={(w) => resizeCol('replies', w)} />}
         {/* Reach */}
-        {visibleCols.has('reach') && <ColHeader label="Reach" col="reach" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={70} />}
+        {visibleCols.has('reach') && <ColHeader label="Reach" col="reach" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.reach} onResize={(w) => resizeCol('reach', w)} />}
         {/* Channel */}
-        {visibleCols.has('channel') && <ColHeader label="Channel" col="channel" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={130} />}
+        {visibleCols.has('channel') && <ColHeader label="Channel" col="channel" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.channel} onResize={(w) => resizeCol('channel', w)} />}
         {/* Assignee spacer */}
         <div style={{ width: 28, flexShrink: 0 }} />
         {/* Time */}
-        {visibleCols.has('time') && <ColHeader label="Time" col="time" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={56} />}
+        {visibleCols.has('time') && <ColHeader label="Time" col="time" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.time} onResize={(w) => resizeCol('time', w)} />}
 
         {/* Column visibility toggle */}
         <div style={{ position: 'relative' }}>
@@ -1223,6 +1304,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                       active={msg.id === messageId}
                       onClick={() => navigate(mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`)}
                       visibleCols={visibleCols}
+                      colWidths={colWidths}
                     />
                   ))}
                 </div>
@@ -1237,6 +1319,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                   active={msg.id === messageId}
                   onClick={() => navigate(mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`)}
                   visibleCols={visibleCols}
+                  colWidths={colWidths}
                 />
               ))
             )}
@@ -1277,37 +1360,78 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   )
 }
 
+function ColResizeHandle({ width, onResize }: { width: number; onResize: (newWidth: number) => void }) {
+  return (
+    <div
+      onMouseDown={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        const startX = e.clientX
+        const startWidth = width
+        function onMove(ev: MouseEvent) {
+          onResize(startWidth + (ev.clientX - startX))
+        }
+        function onUp() {
+          window.removeEventListener('mousemove', onMove)
+          window.removeEventListener('mouseup', onUp)
+        }
+        window.addEventListener('mousemove', onMove)
+        window.addEventListener('mouseup', onUp)
+      }}
+      style={{ position: 'absolute', right: -5, top: 0, bottom: 0, width: 10, cursor: 'col-resize' }}
+    />
+  )
+}
+
+function PlainColHeader({ label, width, onResize }: { label: string; width: number; onResize: (newWidth: number) => void }) {
+  return (
+    <div style={{ position: 'relative', width, flexShrink: 0 }}>
+      <span
+        style={{
+          fontSize: 11, fontWeight: 500, color: '#9ca3af', fontFamily: 'inherit',
+          textTransform: 'uppercase', letterSpacing: '0.04em',
+        }}
+      >
+        {label}
+      </span>
+      <ColResizeHandle width={width} onResize={onResize} />
+    </div>
+  )
+}
+
 function ColHeader({
-  label, col, sortCol, sortDir, onSort, width,
+  label, col, sortCol, sortDir, onSort, width, onResize,
 }: {
   label: string; col: SortCol; sortCol: SortCol; sortDir: SortDir
-  onSort: (col: SortCol) => void; width: number
+  onSort: (col: SortCol) => void; width: number; onResize: (newWidth: number) => void
 }) {
   const active = sortCol === col
   return (
-    <button
-      onClick={() => onSort(col)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 3,
-        width,
-        flexShrink: 0,
-        background: 'none',
-        border: 'none',
-        padding: '2px 0',
-        cursor: 'pointer',
-        fontSize: 11,
-        fontWeight: active ? 700 : 500,
-        color: active ? '#111827' : '#9ca3af',
-        fontFamily: 'inherit',
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-      }}
-    >
-      {label}
-      {active ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : null}
-    </button>
+    <div style={{ position: 'relative', width, flexShrink: 0 }}>
+      <button
+        onClick={() => onSort(col)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 3,
+          width: '100%',
+          background: 'none',
+          border: 'none',
+          padding: '2px 0',
+          cursor: 'pointer',
+          fontSize: 11,
+          fontWeight: active ? 700 : 500,
+          color: active ? '#111827' : '#9ca3af',
+          fontFamily: 'inherit',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+        }}
+      >
+        {label}
+        {active ? (sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />) : null}
+      </button>
+      <ColResizeHandle width={width} onResize={onResize} />
+    </div>
   )
 }
 
@@ -1318,6 +1442,7 @@ function TicketRow({
   active,
   onClick,
   visibleCols,
+  colWidths,
 }: {
   msg: Message
   selected: boolean
@@ -1325,6 +1450,7 @@ function TicketRow({
   active: boolean
   onClick: () => void
   visibleCols: Set<ColKey>
+  colWidths: Record<ColWidthKey, number>
 }) {
   const customer = customers.find((c) => c.id === msg.customerId)
   const timeStr = format(new Date(msg.timestamp), 'MMM d')
@@ -1390,7 +1516,7 @@ function TicketRow({
       </div>
 
       {/* User name */}
-      <div style={{ width: 140, flexShrink: 0 }}>
+      <div style={{ width: colWidths.name, flexShrink: 0 }}>
         <span
           style={{
             fontSize: 13,
@@ -1406,8 +1532,8 @@ function TicketRow({
         </span>
       </div>
 
-      {/* Preview + tags */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Preview */}
+      <div style={{ flex: 1, minWidth: 0 }}>
         <span
           style={{
             fontSize: 13,
@@ -1416,11 +1542,15 @@ function TicketRow({
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            flex: 1,
+            display: 'block',
           }}
         >
           {msg.preview}
         </span>
+      </div>
+
+      {/* Tags */}
+      <div style={{ width: colWidths.tags, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', overflow: 'hidden' }}>
         {msg.tags.map((tag) => (
           <span
             key={tag.label}
@@ -1442,7 +1572,7 @@ function TicketRow({
 
       {/* Priority */}
       {visibleCols.has('priority') && (
-        <div style={{ width: 72, flexShrink: 0 }}>
+        <div style={{ width: colWidths.priority, flexShrink: 0 }}>
           <span
             style={{
               display: 'inline-flex',
@@ -1464,14 +1594,14 @@ function TicketRow({
 
       {/* Ticket # */}
       {visibleCols.has('ticket') && (
-        <div style={{ width: 80, flexShrink: 0 }}>
+        <div style={{ width: colWidths.ticket, flexShrink: 0 }}>
           <span style={{ fontSize: 12, color: '#9ca3af' }}>{msg.ticketNumber}</span>
         </div>
       )}
 
       {/* Reply count */}
       {visibleCols.has('replies') && (
-        <div style={{ width: 60, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ width: colWidths.replies, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ fontSize: 13, color: '#6b7280' }}>{msg.replyCount}</span>
           {msg.newReplies > 0 && (
             <span
@@ -1496,7 +1626,7 @@ function TicketRow({
 
       {/* Reach */}
       {visibleCols.has('reach') && (
-        <div style={{ width: 70, flexShrink: 0, textAlign: 'right' }}>
+        <div style={{ width: colWidths.reach, flexShrink: 0, textAlign: 'right' }}>
           {customer?.totalReach ? (
             <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
               <TrendingUp size={11} style={{ color: customer.totalReach >= 10000 ? '#f59e0b' : '#d1d5db' }} />
@@ -1514,7 +1644,7 @@ function TicketRow({
 
       {/* Channel */}
       {visibleCols.has('channel') && (
-        <div style={{ width: 130, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ width: colWidths.channel, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
           <PlatformIcon platform={msg.platform} size={15} />
           <span
             style={{
@@ -1564,7 +1694,7 @@ function TicketRow({
 
       {/* Time */}
       {visibleCols.has('time') && (
-        <div style={{ width: 56, flexShrink: 0, textAlign: 'right' }}>
+        <div style={{ width: colWidths.time, flexShrink: 0, textAlign: 'right' }}>
           <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: msg.unread ? 600 : 400 }}>
             {timeStr}
           </span>

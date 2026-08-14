@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { messages } from '../data/mockData'
 import type { InboxFilter } from '../data/mockData'
-import type { CustomView } from '../lib/inboxScale'
+import type { CustomView, PinnedItem } from '../lib/inboxScale'
+import { samePinnedItem } from '../lib/inboxScale'
 import {
   Home,
   Inbox,
@@ -29,60 +30,84 @@ const FILTER_META: Record<string, { icon: React.ReactNode; label: string }> = {
   starred: { icon: <Star size={14} />, label: 'Starred' },
 }
 
-type DragPayload = { kind: 'filter'; key: InboxFilter; label: string } | { kind: 'view'; id: string; label: string }
-
 export function Sidebar({
   customViews,
-  pinnedViewIds,
   activeViewId,
-  onSelectView,
-  onPinView,
-  onUnpinView,
   activeFilter,
-  pinnedFilters,
-  onSelectFilter,
-  onPinFilter,
-  onUnpinFilter,
+  pinnedItems,
+  onSelectItem,
+  onDropItem,
+  onRemoveItem,
 }: {
   customViews: CustomView[]
-  pinnedViewIds: Set<string>
   activeViewId: string | null
-  onSelectView: (id: string) => void
-  onPinView: (id: string) => void
-  onUnpinView: (id: string) => void
   activeFilter: InboxFilter
-  pinnedFilters: Set<InboxFilter>
-  onSelectFilter: (f: InboxFilter) => void
-  onPinFilter: (f: InboxFilter) => void
-  onUnpinFilter: (f: InboxFilter) => void
+  pinnedItems: PinnedItem[]
+  onSelectItem: (item: PinnedItem) => void
+  onDropItem: (item: PinnedItem, atIndex: number) => void
+  onRemoveItem: (item: PinnedItem) => void
 }) {
   const location = useLocation()
   const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
   const isComments = location.pathname.startsWith('/comments')
-  const pinnedViews = customViews.filter((v) => pinnedViewIds.has(v.id))
-  const pinnedFilterList = Array.from(pinnedFilters).filter((f) => FILTER_META[f])
-  const [dragOver, setDragOver] = useState(false)
+  const [dropIndex, setDropIndex] = useState<number | null>(null)
 
-  function goToView(id: string) {
-    onSelectView(id)
+  function itemKey(item: PinnedItem) {
+    return item.kind === 'filter' ? `f:${item.key}` : `v:${item.id}`
+  }
+
+  function itemMeta(item: PinnedItem): { icon: React.ReactNode; label: string } | null {
+    if (item.kind === 'filter') return FILTER_META[item.key] ?? null
+    const view = customViews.find((v) => v.id === item.id)
+    return view ? { icon: <span style={{ fontSize: 14 }}>{view.icon}</span>, label: view.name } : null
+  }
+
+  const visibleItems = pinnedItems.filter((item) => itemMeta(item) !== null)
+
+  function isActive(item: PinnedItem) {
+    if (!isInbox) return false
+    return item.kind === 'filter' ? activeFilter === item.key : activeViewId === item.id
+  }
+
+  function goToItem(item: PinnedItem) {
+    onSelectItem(item)
     navigate('/inbox')
   }
 
-  function goToFilter(f: InboxFilter) {
-    onSelectFilter(f)
-    navigate('/inbox')
+  function computeDropIndex(e: React.DragEvent<HTMLDivElement>): number {
+    const rows = Array.from(e.currentTarget.querySelectorAll('[data-pinned-row]'))
+    for (let i = 0; i < rows.length; i++) {
+      const rect = rows[i].getBoundingClientRect()
+      if (e.clientY < rect.top + rect.height / 2) return i
+    }
+    return rows.length
   }
 
-  function handleDrop(e: React.DragEvent) {
+  function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault()
-    setDragOver(false)
+    e.dataTransfer.dropEffect = 'copy'
+    setDropIndex(computeDropIndex(e))
+  }
+
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropIndex(null)
+  }
+
+  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    let atIndex = computeDropIndex(e)
+    setDropIndex(null)
     const raw = e.dataTransfer.getData('application/json')
     if (!raw) return
     try {
-      const payload = JSON.parse(raw) as DragPayload
-      if (payload.kind === 'filter') onPinFilter(payload.key)
-      else onPinView(payload.id)
+      const payload = JSON.parse(raw) as PinnedItem
+      // Reordering an already-pinned item: computeDropIndex is measured against the list that still
+      // includes the dragged row, so dropping it after its own original slot needs a -1 correction
+      // once that row is removed and re-inserted.
+      const fromIndex = visibleItems.findIndex((p) => samePinnedItem(p, payload))
+      if (fromIndex !== -1 && fromIndex < atIndex) atIndex -= 1
+      onDropItem(payload, atIndex)
     } catch {
       // ignore malformed drag payloads
     }
@@ -206,89 +231,68 @@ export function Sidebar({
         />
 
         <div
-          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; setDragOver(true) }}
-          onDragLeave={() => setDragOver(false)}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           style={{
             marginTop: 12, borderRadius: 8,
-            border: dragOver ? '1.5px dashed #5e6ad2' : '1.5px dashed transparent',
-            background: dragOver ? '#eef2ff' : 'transparent',
+            border: dropIndex !== null ? '1.5px dashed #5e6ad2' : '1.5px dashed transparent',
+            background: dropIndex !== null ? '#eef2ff' : 'transparent',
             padding: '4px 2px',
           }}
         >
           <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 4px', padding: '0 10px' }}>
             Views
           </p>
-          {pinnedFilterList.length === 0 && pinnedViews.length === 0 && (
+          {visibleItems.length === 0 && dropIndex === null && (
             <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, padding: '4px 10px' }}>
               Drag a view here to pin it
             </p>
           )}
-          {pinnedFilterList.map((f) => {
-            const meta = FILTER_META[f]
-            const active = isInbox && activeFilter === f
+          {visibleItems.map((item, i) => {
+            const meta = itemMeta(item)!
+            const active = isActive(item)
             return (
-              <div key={f} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <button
-                  onClick={() => goToFilter(f)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 28px 7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: active ? '#f0fdf4' : 'transparent',
-                    color: active ? '#15803d' : '#374151',
-                    fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
+              <div key={itemKey(item)} data-pinned-row style={{ position: 'relative' }}>
+                {dropIndex === i && <DropIndicator />}
+                <div
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('application/json', JSON.stringify(item))
+                    e.dataTransfer.effectAllowed = 'move'
                   }}
+                  style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'grab' }}
                 >
-                  <span style={{ color: '#6b7280', display: 'flex' }}>{meta.icon}</span>
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta.label}</span>
-                </button>
-                <button
-                  onClick={() => onUnpinFilter(f)}
-                  title="Unpin from sidebar"
-                  style={{
-                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 16, height: 16, border: 'none', borderRadius: '50%',
-                    background: 'none', color: '#9ca3af', cursor: 'pointer',
-                  }}
-                >
-                  <X size={11} />
-                </button>
+                  <button
+                    onClick={() => goToItem(item)}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '7px 28px 7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                      background: active ? '#f0fdf4' : 'transparent',
+                      color: active ? '#15803d' : '#374151',
+                      fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ color: '#6b7280', display: 'flex' }}>{meta.icon}</span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta.label}</span>
+                  </button>
+                  <button
+                    onClick={() => onRemoveItem(item)}
+                    title="Unpin from sidebar"
+                    style={{
+                      position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 16, height: 16, border: 'none', borderRadius: '50%',
+                      background: 'none', color: '#9ca3af', cursor: 'pointer',
+                    }}
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
               </div>
             )
           })}
-          {pinnedViews.map((view) => {
-            const active = isInbox && activeViewId === view.id
-            return (
-              <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <button
-                  onClick={() => goToView(view.id)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 28px 7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: active ? '#f0fdf4' : 'transparent',
-                    color: active ? '#15803d' : '#374151',
-                    fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
-                  }}
-                >
-                  <span style={{ fontSize: 14 }}>{view.icon}</span>
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{view.name}</span>
-                </button>
-                <button
-                  onClick={() => onUnpinView(view.id)}
-                  title="Unpin from sidebar"
-                  style={{
-                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 16, height: 16, border: 'none', borderRadius: '50%',
-                    background: 'none', color: '#9ca3af', cursor: 'pointer',
-                  }}
-                >
-                  <X size={11} />
-                </button>
-              </div>
-            )
-          })}
+          {dropIndex === visibleItems.length && <DropIndicator />}
         </div>
       </nav>
 
@@ -325,6 +329,10 @@ export function Sidebar({
       </div>
     </aside>
   )
+}
+
+function DropIndicator() {
+  return <div style={{ height: 2, borderRadius: 1, background: '#5e6ad2', margin: '2px 10px' }} />
 }
 
 function CountBadge({ count, active }: { count: number; active: boolean }) {

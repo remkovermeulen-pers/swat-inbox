@@ -1,4 +1,4 @@
-import type { Customer, Message, MessageStatus, Sentiment } from '../data/mockData'
+import type { Customer, InboxFilter, Message, MessageStatus, Sentiment } from '../data/mockData'
 
 export type SortCol = 'name' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time' | 'priority'
 export type SortDir = 'asc' | 'desc'
@@ -7,7 +7,7 @@ export const AGENTS = ['Remko', 'Emma', 'Jonas', 'Mei']
 
 export const KNOWN_TAGS = [
   'account', 'app', 'billing', 'booking', 'bug', 'defect', 'feedback', 'host',
-  'listing', 'mobile', 'partnership', 'refund', 'returns', 'review', 'safety',
+  'listing', 'mobile', 'partnership', 'profanity', 'refund', 'returns', 'review', 'safety',
   'shipping', 'stock', 'urgent', 'warranty',
 ]
 
@@ -24,11 +24,11 @@ export const FIELD_DEFS: Record<FilterField, { label: string; type: FieldType; o
   customerName: { label: 'Name', type: 'text' },
   subject: { label: 'Subject', type: 'text' },
   preview: { label: 'Message', type: 'text' },
-  ticketNumber: { label: 'Ticket #', type: 'text' },
+  ticketNumber: { label: 'Ticket #', type: 'number' },
   channel: { label: 'Channel', type: 'text' },
   replies: { label: 'Replies', type: 'number' },
   reach: { label: 'Reach', type: 'number' },
-  priority: { label: 'Priority score', type: 'number' },
+  priority: { label: 'Priority', type: 'select', options: ['Critical', 'High', 'Normal', 'Low'] },
   platform: { label: 'Platform', type: 'select', options: ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube'] },
   status: { label: 'Status', type: 'select', options: ['unanswered', 'answered', 'ai_pending'] },
   sentiment: { label: 'Sentiment', type: 'select', options: ['negative', 'neutral', 'positive'] },
@@ -51,7 +51,11 @@ export const NUMBER_OPERATORS = [
   { value: 'lt', label: '<' },
   { value: 'gte', label: '≥' },
   { value: 'lte', label: '≤' },
+  { value: 'between', label: 'between' },
 ]
+
+/** Separator used to pack a "between" range's two numbers into a single FilterCondition value string. */
+export const RANGE_SEPARATOR = '~'
 
 export const SELECT_OPERATORS = [
   { value: 'is', label: 'is' },
@@ -79,11 +83,11 @@ function getFieldValue(field: FilterField, msg: Message, customer: Customer | un
     case 'customerName': return customer?.name ?? ''
     case 'subject': return msg.subject
     case 'preview': return msg.preview
-    case 'ticketNumber': return msg.ticketNumber
+    case 'ticketNumber': return Number(msg.ticketNumber.replace(/\D/g, ''))
     case 'channel': return msg.channel
     case 'replies': return msg.replyCount
     case 'reach': return customer?.totalReach ?? 0
-    case 'priority': return getPriorityScore(msg, customer)
+    case 'priority': return priorityTier(getPriorityScore(msg, customer)).label
     case 'platform': return msg.platform
     case 'status': return msg.status
     case 'sentiment': return customer?.sentiment ?? ''
@@ -113,6 +117,15 @@ export function evaluateCondition(cond: FilterCondition, msg: Message, customer:
     const valueStr = Array.isArray(cond.value) ? cond.value[0] : cond.value
     if (!valueStr || valueStr === '') return true
     const num = Number(getFieldValue(cond.field, msg, customer))
+
+    if (cond.operator === 'between') {
+      const [minStr, maxStr] = valueStr.split(RANGE_SEPARATOR)
+      const min = minStr ? Number(minStr) : -Infinity
+      const max = maxStr ? Number(maxStr) : Infinity
+      if (Number.isNaN(min) || Number.isNaN(max)) return true
+      return num >= min && num <= max
+    }
+
     const val = Number(valueStr)
     if (Number.isNaN(val)) return true
     switch (cond.operator) {
@@ -250,36 +263,27 @@ export function saveCustomViews(views: CustomView[]) {
   localStorage.setItem(VIEWS_KEY, JSON.stringify(views))
 }
 
-function loadStringSet(key: string): Set<string> {
+/** A view pinned to the sidebar nav — either a built-in Inbox filter or a custom/smart view, in display order. */
+export type PinnedItem = { kind: 'filter'; key: InboxFilter } | { kind: 'view'; id: string }
+
+export function samePinnedItem(a: PinnedItem, b: PinnedItem): boolean {
+  if (a.kind !== b.kind) return false
+  return a.kind === 'filter' && b.kind === 'filter' ? a.key === b.key : a.kind === 'view' && b.kind === 'view' ? a.id === b.id : false
+}
+
+const PINNED_ITEMS_KEY = 'inbox-pinned-items'
+
+export function loadPinnedItems(): PinnedItem[] {
   try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return new Set()
-    return new Set(JSON.parse(raw) as string[])
+    const raw = localStorage.getItem(PINNED_ITEMS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as PinnedItem[]) : []
   } catch {
-    return new Set()
+    return []
   }
 }
 
-function saveStringSet(key: string, ids: Set<string>) {
-  localStorage.setItem(key, JSON.stringify(Array.from(ids)))
-}
-
-const PINNED_VIEWS_KEY = 'inbox-pinned-views'
-
-export function loadPinnedViewIds(): Set<string> {
-  return loadStringSet(PINNED_VIEWS_KEY)
-}
-
-export function savePinnedViewIds(ids: Set<string>) {
-  saveStringSet(PINNED_VIEWS_KEY, ids)
-}
-
-const PINNED_FILTERS_KEY = 'inbox-pinned-filters'
-
-export function loadPinnedFilters(): Set<string> {
-  return loadStringSet(PINNED_FILTERS_KEY)
-}
-
-export function savePinnedFilters(ids: Set<string>) {
-  saveStringSet(PINNED_FILTERS_KEY, ids)
+export function savePinnedItems(items: PinnedItem[]) {
+  localStorage.setItem(PINNED_ITEMS_KEY, JSON.stringify(items))
 }
