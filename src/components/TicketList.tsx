@@ -54,6 +54,10 @@ function ViewDropIndicator() {
   return <div style={{ width: 2, height: 28, borderRadius: 1, background: '#5e6ad2', flexShrink: 0 }} />
 }
 
+function ColDropIndicator() {
+  return <div style={{ width: 2, height: 16, borderRadius: 1, background: '#5e6ad2', flexShrink: 0 }} />
+}
+
 interface Props {
   brandId: string | null
   channelId: string | null
@@ -123,6 +127,33 @@ function saveColWidths(widths: Record<ColWidthKey, number>) {
   localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(widths))
 }
 
+type ReorderableCol = 'tags' | ColKey
+
+const DEFAULT_COL_ORDER: ReorderableCol[] = ['tags', 'priority', 'ticket', 'replies', 'reach', 'channel', 'time']
+
+const COL_ORDER_KEY = 'inbox-col-order'
+
+function loadColOrder(): ReorderableCol[] {
+  try {
+    const raw = localStorage.getItem(COL_ORDER_KEY)
+    if (!raw) return [...DEFAULT_COL_ORDER]
+    const parsed = JSON.parse(raw) as ReorderableCol[]
+    const valid = parsed.filter((k) => DEFAULT_COL_ORDER.includes(k))
+    const missing = DEFAULT_COL_ORDER.filter((k) => !valid.includes(k))
+    return [...valid, ...missing]
+  } catch {
+    return [...DEFAULT_COL_ORDER]
+  }
+}
+
+function saveColOrder(order: ReorderableCol[]) {
+  localStorage.setItem(COL_ORDER_KEY, JSON.stringify(order))
+}
+
+const REORDERABLE_COL_LABELS: Record<ReorderableCol, string> = {
+  tags: 'Tags', priority: 'Priority', ticket: 'Ticket #', replies: 'Replies', reach: 'Reach', channel: 'Channel', time: 'Time',
+}
+
 const VISIBLE_COLS_KEY = 'inbox-visible-columns'
 
 function loadVisibleCols(): Set<ColKey> {
@@ -172,6 +203,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [toast, setToast] = useState<string | null>(null)
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(() => loadVisibleCols())
   const [colWidths, setColWidths] = useState<Record<ColWidthKey, number>>(() => loadColWidths())
+  const [colOrder, setColOrder] = useState<ReorderableCol[]>(() => loadColOrder())
+  const [colDropIndex, setColDropIndex] = useState<number | null>(null)
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [filterTags, setFilterTags] = useState<Set<string>>(new Set())
@@ -265,6 +298,48 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       saveColWidths(next)
       return next
     })
+  }
+
+  const visibleColOrder = colOrder.filter((k) => k === 'tags' || visibleCols.has(k))
+
+  function reorderCol(key: ReorderableCol, atIndex: number) {
+    setColOrder((prev) => {
+      const withoutDragged = prev.filter((k) => k !== key)
+      const visibleWithoutDragged = withoutDragged.filter((k) => k === 'tags' || visibleCols.has(k))
+      const anchorKey = visibleWithoutDragged[atIndex]
+      const insertAt = anchorKey ? withoutDragged.indexOf(anchorKey) : withoutDragged.length
+      const next = [...withoutDragged.slice(0, insertAt), key, ...withoutDragged.slice(insertAt)]
+      saveColOrder(next)
+      return next
+    })
+  }
+
+  function computeColDropIndex(e: React.DragEvent<HTMLDivElement>): number {
+    const items = Array.from(e.currentTarget.querySelectorAll('[data-col-header]'))
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect()
+      if (e.clientX < rect.left + rect.width / 2) return i
+    }
+    return items.length
+  }
+
+  function handleColHeaderDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setColDropIndex(computeColDropIndex(e))
+  }
+
+  function handleColHeaderDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setColDropIndex(null)
+  }
+
+  function handleColHeaderDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const atIndex = computeColDropIndex(e)
+    setColDropIndex(null)
+    const key = e.dataTransfer.getData('text/plain') as ReorderableCol
+    if (!DEFAULT_COL_ORDER.includes(key)) return
+    reorderCol(key, atIndex)
   }
 
   const activeView = customViews.find((v) => v.id === activeViewId) ?? null
@@ -1257,23 +1332,31 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         {/* Preview — not sortable, flex spacer */}
         <div style={{ flex: 1 }} />
 
-        {/* Tags */}
-        <PlainColHeader label="Tags" width={colWidths.tags} onResize={(w) => resizeCol('tags', w)} />
+        {/* Reorderable columns — drag a header left/right to change its position */}
+        <div
+          onDragOver={handleColHeaderDragOver}
+          onDragLeave={handleColHeaderDragLeave}
+          onDrop={handleColHeaderDrop}
+          style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+        >
+          {visibleColOrder.map((key, i) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {colDropIndex === i && <ColDropIndicator />}
+              {key === 'tags' ? (
+                <PlainColHeader label="Tags" width={colWidths.tags} onResize={(w) => resizeCol('tags', w)} reorderKey="tags" />
+              ) : (
+                <ColHeader
+                  label={REORDERABLE_COL_LABELS[key]} col={key} sortCol={sortCol} sortDir={sortDir} onSort={handleSort}
+                  width={colWidths[key]} onResize={(w) => resizeCol(key, w)} reorderKey={key}
+                />
+              )}
+            </div>
+          ))}
+          {colDropIndex === visibleColOrder.length && <ColDropIndicator />}
+        </div>
 
-        {/* Priority */}
-        {visibleCols.has('priority') && <ColHeader label="Priority" col="priority" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.priority} onResize={(w) => resizeCol('priority', w)} />}
-        {/* Ticket # */}
-        {visibleCols.has('ticket') && <ColHeader label="Ticket #" col="ticket" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.ticket} onResize={(w) => resizeCol('ticket', w)} />}
-        {/* Replies */}
-        {visibleCols.has('replies') && <ColHeader label="Replies" col="replies" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.replies} onResize={(w) => resizeCol('replies', w)} />}
-        {/* Reach */}
-        {visibleCols.has('reach') && <ColHeader label="Reach" col="reach" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.reach} onResize={(w) => resizeCol('reach', w)} />}
-        {/* Channel */}
-        {visibleCols.has('channel') && <ColHeader label="Channel" col="channel" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.channel} onResize={(w) => resizeCol('channel', w)} />}
         {/* Assignee spacer */}
         <div style={{ width: 28, flexShrink: 0 }} />
-        {/* Time */}
-        {visibleCols.has('time') && <ColHeader label="Time" col="time" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} width={colWidths.time} onResize={(w) => resizeCol('time', w)} />}
 
         {/* Column visibility toggle */}
         <div style={{ position: 'relative' }}>
@@ -1374,6 +1457,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                       onClick={() => navigate(mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`)}
                       visibleCols={visibleCols}
                       colWidths={colWidths}
+                      colOrder={colOrder}
                     />
                   ))}
                 </div>
@@ -1389,6 +1473,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                   onClick={() => navigate(mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`)}
                   visibleCols={visibleCols}
                   colWidths={colWidths}
+                  colOrder={colOrder}
                 />
               ))
             )}
@@ -1448,13 +1533,23 @@ function ColResizeHandle({ width, onResize }: { width: number; onResize: (newWid
         window.addEventListener('mouseup', onUp)
       }}
       style={{ position: 'absolute', right: -5, top: 0, bottom: 0, width: 10, cursor: 'col-resize' }}
+      draggable={false}
     />
   )
 }
 
-function PlainColHeader({ label, width, onResize }: { label: string; width: number; onResize: (newWidth: number) => void }) {
+function PlainColHeader({
+  label, width, onResize, reorderKey,
+}: {
+  label: string; width: number; onResize: (newWidth: number) => void; reorderKey?: string
+}) {
   return (
-    <div style={{ position: 'relative', width, flexShrink: 0 }}>
+    <div
+      data-col-header={reorderKey ? '' : undefined}
+      draggable={Boolean(reorderKey)}
+      onDragStart={reorderKey ? (e) => { e.dataTransfer.setData('text/plain', reorderKey); e.dataTransfer.effectAllowed = 'move' } : undefined}
+      style={{ position: 'relative', width, flexShrink: 0, cursor: reorderKey ? 'grab' : 'default' }}
+    >
       <span
         style={{
           fontSize: 11, fontWeight: 500, color: '#9ca3af', fontFamily: 'inherit',
@@ -1469,14 +1564,19 @@ function PlainColHeader({ label, width, onResize }: { label: string; width: numb
 }
 
 function ColHeader({
-  label, col, sortCol, sortDir, onSort, width, onResize,
+  label, col, sortCol, sortDir, onSort, width, onResize, reorderKey,
 }: {
   label: string; col: SortCol; sortCol: SortCol; sortDir: SortDir
-  onSort: (col: SortCol) => void; width: number; onResize: (newWidth: number) => void
+  onSort: (col: SortCol) => void; width: number; onResize: (newWidth: number) => void; reorderKey?: string
 }) {
   const active = sortCol === col
   return (
-    <div style={{ position: 'relative', width, flexShrink: 0 }}>
+    <div
+      data-col-header={reorderKey ? '' : undefined}
+      draggable={Boolean(reorderKey)}
+      onDragStart={reorderKey ? (e) => { e.dataTransfer.setData('text/plain', reorderKey); e.dataTransfer.effectAllowed = 'move' } : undefined}
+      style={{ position: 'relative', width, flexShrink: 0, cursor: reorderKey ? 'grab' : 'default' }}
+    >
       <button
         onClick={() => onSort(col)}
         style={{
@@ -1512,6 +1612,7 @@ function TicketRow({
   onClick,
   visibleCols,
   colWidths,
+  colOrder,
 }: {
   msg: Message
   selected: boolean
@@ -1520,11 +1621,135 @@ function TicketRow({
   onClick: () => void
   visibleCols: Set<ColKey>
   colWidths: Record<ColWidthKey, number>
+  colOrder: ReorderableCol[]
 }) {
   const customer = customers.find((c) => c.id === msg.customerId)
   const timeStr = format(new Date(msg.timestamp), 'MMM d')
   const score = getPriorityScore(msg, customer)
   const tier = priorityTier(score)
+  const visibleColOrder = colOrder.filter((k) => k === 'tags' || visibleCols.has(k))
+
+  function renderCell(key: ReorderableCol) {
+    switch (key) {
+      case 'tags':
+        return (
+          <div key="tags" style={{ width: colWidths.tags, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', overflow: 'hidden' }}>
+            {msg.tags.map((tag) => (
+              <span
+                key={tag.label}
+                style={{
+                  padding: '2px 9px',
+                  borderRadius: 99,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  background: tag.color + '20',
+                  color: tag.color,
+                  flexShrink: 0,
+                  border: `1px solid ${tag.color}40`,
+                }}
+              >
+                {tag.label}
+              </span>
+            ))}
+          </div>
+        )
+      case 'priority':
+        return (
+          <div key="priority" style={{ width: colWidths.priority, flexShrink: 0 }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '2px 8px',
+                borderRadius: 99,
+                fontSize: 11,
+                fontWeight: 500,
+                background: tier.color + '15',
+                color: tier.color,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: tier.color, flexShrink: 0 }} />
+              {tier.label}
+            </span>
+          </div>
+        )
+      case 'ticket':
+        return (
+          <div key="ticket" style={{ width: colWidths.ticket, flexShrink: 0 }}>
+            <span style={{ fontSize: 12, color: '#9ca3af' }}>{msg.ticketNumber}</span>
+          </div>
+        )
+      case 'replies':
+        return (
+          <div key="replies" style={{ width: colWidths.replies, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>{msg.replyCount}</span>
+            {msg.newReplies > 0 && (
+              <span
+                style={{
+                  background: '#3b82f6',
+                  color: '#fff',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  width: 18,
+                  height: 18,
+                  borderRadius: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {msg.newReplies}
+              </span>
+            )}
+          </div>
+        )
+      case 'reach':
+        return (
+          <div key="reach" style={{ width: colWidths.reach, flexShrink: 0, textAlign: 'right' }}>
+            {customer?.totalReach ? (
+              <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
+                <TrendingUp size={11} style={{ color: customer.totalReach >= 10000 ? '#f59e0b' : '#d1d5db' }} />
+                {customer.totalReach >= 1_000_000
+                  ? `${(customer.totalReach / 1_000_000).toFixed(1)}M`
+                  : customer.totalReach >= 1_000
+                  ? `${(customer.totalReach / 1_000).toFixed(1)}K`
+                  : customer.totalReach}
+              </span>
+            ) : (
+              <span style={{ fontSize: 12, color: '#e5e7eb' }}>—</span>
+            )}
+          </div>
+        )
+      case 'channel':
+        return (
+          <div key="channel" style={{ width: colWidths.channel, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <PlatformIcon platform={msg.platform} size={15} />
+            <span
+              style={{
+                fontSize: 12,
+                color: '#6b7280',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {msg.channel}
+            </span>
+          </div>
+        )
+      case 'time':
+        return (
+          <div key="time" style={{ width: colWidths.time, flexShrink: 0, textAlign: 'right' }}>
+            <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: msg.unread ? 600 : 400 }}>
+              {timeStr}
+            </span>
+          </div>
+        )
+      default:
+        return null
+    }
+  }
 
   return (
     <div
@@ -1618,116 +1843,7 @@ function TicketRow({
         </span>
       </div>
 
-      {/* Tags */}
-      <div style={{ width: colWidths.tags, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', overflow: 'hidden' }}>
-        {msg.tags.map((tag) => (
-          <span
-            key={tag.label}
-            style={{
-              padding: '2px 9px',
-              borderRadius: 99,
-              fontSize: 11,
-              fontWeight: 500,
-              background: tag.color + '20',
-              color: tag.color,
-              flexShrink: 0,
-              border: `1px solid ${tag.color}40`,
-            }}
-          >
-            {tag.label}
-          </span>
-        ))}
-      </div>
-
-      {/* Priority */}
-      {visibleCols.has('priority') && (
-        <div style={{ width: colWidths.priority, flexShrink: 0 }}>
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '2px 8px',
-              borderRadius: 99,
-              fontSize: 11,
-              fontWeight: 500,
-              background: tier.color + '15',
-              color: tier.color,
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: tier.color, flexShrink: 0 }} />
-            {tier.label}
-          </span>
-        </div>
-      )}
-
-      {/* Ticket # */}
-      {visibleCols.has('ticket') && (
-        <div style={{ width: colWidths.ticket, flexShrink: 0 }}>
-          <span style={{ fontSize: 12, color: '#9ca3af' }}>{msg.ticketNumber}</span>
-        </div>
-      )}
-
-      {/* Reply count */}
-      {visibleCols.has('replies') && (
-        <div style={{ width: colWidths.replies, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ fontSize: 13, color: '#6b7280' }}>{msg.replyCount}</span>
-          {msg.newReplies > 0 && (
-            <span
-              style={{
-                background: '#3b82f6',
-                color: '#fff',
-                fontSize: 10,
-                fontWeight: 700,
-                width: 18,
-                height: 18,
-                borderRadius: 4,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {msg.newReplies}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Reach */}
-      {visibleCols.has('reach') && (
-        <div style={{ width: colWidths.reach, flexShrink: 0, textAlign: 'right' }}>
-          {customer?.totalReach ? (
-            <span style={{ fontSize: 12, color: '#6b7280', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 3 }}>
-              <TrendingUp size={11} style={{ color: customer.totalReach >= 10000 ? '#f59e0b' : '#d1d5db' }} />
-              {customer.totalReach >= 1_000_000
-                ? `${(customer.totalReach / 1_000_000).toFixed(1)}M`
-                : customer.totalReach >= 1_000
-                ? `${(customer.totalReach / 1_000).toFixed(1)}K`
-                : customer.totalReach}
-            </span>
-          ) : (
-            <span style={{ fontSize: 12, color: '#e5e7eb' }}>—</span>
-          )}
-        </div>
-      )}
-
-      {/* Channel */}
-      {visibleCols.has('channel') && (
-        <div style={{ width: colWidths.channel, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <PlatformIcon platform={msg.platform} size={15} />
-          <span
-            style={{
-              fontSize: 12,
-              color: '#6b7280',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {msg.channel}
-          </span>
-        </div>
-      )}
+      {visibleColOrder.map((key) => renderCell(key))}
 
       {/* Assignee avatar */}
       <div style={{ width: 28, flexShrink: 0 }}>
@@ -1760,15 +1876,6 @@ function TicketRow({
           />
         )}
       </div>
-
-      {/* Time */}
-      {visibleCols.has('time') && (
-        <div style={{ width: colWidths.time, flexShrink: 0, textAlign: 'right' }}>
-          <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: msg.unread ? 600 : 400 }}>
-            {timeStr}
-          </span>
-        </div>
-      )}
     </div>
   )
 }
