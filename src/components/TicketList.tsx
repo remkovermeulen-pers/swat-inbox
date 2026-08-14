@@ -110,12 +110,16 @@ function loadHiddenFilters(): Set<InboxFilter> {
 }
 
 const inboxFilterCounts: Record<InboxFilter, number> = {
-  all: messages.length,
-  new: messages.filter((m) => m.unread).length,
-  starred: messages.filter((m) => m.starred).length,
-  assigned_me: messages.filter((m) => m.assignedTo === 'Remko').length,
-  assigned_others: messages.filter((m) => m.assignedTo && m.assignedTo !== 'Remko').length,
-  archive: 999,
+  all: messages.filter((m) => !m.archived).length,
+  new: messages.filter((m) => m.unread && !m.archived).length,
+  starred: messages.filter((m) => m.starred && !m.archived).length,
+  assigned_me: messages.filter((m) => m.assignedTo === 'Remko' && !m.archived).length,
+  assigned_others: messages.filter((m) => m.assignedTo && m.assignedTo !== 'Remko' && !m.archived).length,
+  archive: messages.filter((m) => m.archived).length,
+}
+
+function customViewCount(view: CustomView): number {
+  return messages.filter((m) => !m.archived && messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
 }
 
 export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, mode = 'inbox' }: Props) {
@@ -135,7 +139,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [filterPlatforms, setFilterPlatforms] = useState<Set<Platform>>(new Set())
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
-  const [showFilterActionsMenu, setShowFilterActionsMenu] = useState(false)
   const [showCreateView, setShowCreateView] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards')
   const [showChannelsMenu, setShowChannelsMenu] = useState(false)
@@ -409,15 +412,9 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     }
   }
 
-  function saveFiltersAsView() {
-    setShowFilterActionsMenu(false)
-    setShowCreateView(true)
-  }
-
   function updateFiltersOnView() {
     if (!activeView) return
     onUpdateView(activeView.id, currentFiltersAsPatch())
-    setShowFilterActionsMenu(false)
     setToast(`Updated view "${activeView.name}"`)
   }
 
@@ -434,8 +431,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     : mode === 'comments'
     ? 'Comments'
     : 'Inbox'
-
-  const filterFacetCount = filterTags.size + filterSentiments.size + filterPlatforms.size + filterStatuses.size
 
   const channelsMenuContent = (
     <>
@@ -589,43 +584,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     </div>
   )
 
-  const filterActionsContent = (
-    <>
-      {(filterFacetCount > 0 || activeColFilterCount > 0) && (
-        <button
-          onClick={() => { setFilterTags(new Set()); setFilterSentiments(new Set()); setFilterPlatforms(new Set()); setFilterStatuses(new Set()); setColFilters({}) }}
-          style={{ fontSize: 12, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left', fontFamily: 'inherit' }}
-        >
-          Clear all filters
-        </button>
-      )}
-      <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {hasUnsavedFilterChanges && activeView && (
-          <button
-            onClick={updateFiltersOnView}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              padding: '7px 10px', borderRadius: 7, border: 'none', background: '#4338ca',
-              color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            <BookmarkPlus size={13} /> Update "{activeView.name}"
-          </button>
-        )}
-        <button
-          onClick={saveFiltersAsView}
-          style={{
-            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            padding: '7px 10px', borderRadius: 7, border: '1px solid #5e6ad2', background: '#eef2ff',
-            color: '#4338ca', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          <BookmarkPlus size={13} /> Save filters as new view
-        </button>
-      </div>
-    </>
-  )
-
   function colFilterContent(field: FilterField) {
     const def = FIELD_DEFS[field]
     const cond = colFilters[field] ?? { operator: defaultOperatorForField(field), value: '' }
@@ -668,20 +626,35 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     panelWidth: number
   }
 
+  // Ordered to match the table's column order: Name, Priority, Ticket #, Replies, Reach, Channel, Time — then the
+  // remaining filters that don't correspond to a column (Visibility, Status, Sentiment, Platform, Tags).
   const facets: Facet[] = [
+    ...COLUMN_FILTER_FIELDS.map((field): Facet => {
+      const cond = colFilters[field]
+      const active = Boolean(cond?.value.trim())
+      return {
+        key: field,
+        icon: <SlidersHorizontal size={13} />,
+        label: `${FIELD_DEFS[field].label}${active ? `: ${cond!.value}` : ''}`,
+        show: Boolean(colFilterMenus[field]),
+        setShow: (v: boolean) => setColFilterMenus((prev) => ({ ...prev, [field]: v })),
+        content: colFilterContent(field),
+        panelWidth: 180,
+      }
+    }),
     {
       key: 'channels', icon: <AtSign size={13} />,
       label: `Channels${filterChannels.size > 0 ? `: ${filterChannels.size}` : `: ${channels.length}`}`,
       show: showChannelsMenu, setShow: setShowChannelsMenu, content: channelsMenuContent, panelWidth: 220,
     },
     {
-      key: 'visibility', icon: <Eye size={13} />, label: 'Visibility: All',
-      show: false, setShow: () => {}, content: visibilityContent, panelWidth: 200,
-    },
-    {
       key: 'timerange', icon: <Calendar size={13} />,
       label: timeRange === 'all' ? 'Timeframe' : `Timeframe: ${TIME_RANGE_LABELS[timeRange]}`,
       show: showTimeRangeMenu, setShow: setShowTimeRangeMenu, content: timeRangeContent, panelWidth: 200,
+    },
+    {
+      key: 'visibility', icon: <Eye size={13} />, label: 'Visibility: All',
+      show: false, setShow: () => {}, content: visibilityContent, panelWidth: 200,
     },
     {
       key: 'status', icon: <SlidersHorizontal size={13} />,
@@ -703,19 +676,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       label: `Tags${filterTags.size > 0 ? `: ${filterTags.size}` : ''}`,
       show: showTagsMenu, setShow: setShowTagsMenu, content: tagsContent, panelWidth: 240,
     },
-    ...COLUMN_FILTER_FIELDS.map((field): Facet => {
-      const cond = colFilters[field]
-      const active = Boolean(cond?.value.trim())
-      return {
-        key: field,
-        icon: <SlidersHorizontal size={13} />,
-        label: `${FIELD_DEFS[field].label}${active ? `: ${cond!.value}` : ''}`,
-        show: Boolean(colFilterMenus[field]),
-        setShow: (v: boolean) => setColFilterMenus((prev) => ({ ...prev, [field]: v })),
-        content: colFilterContent(field),
-        panelWidth: 180,
-      }
-    }),
   ]
 
   const visibleFacets = facets.slice(0, visibleFilterSlots)
@@ -793,12 +753,19 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           }}
         >
           All
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
+            background: filter === 'all' ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
+            color: filter === 'all' ? '#fff' : '#6b7280',
+          }}>
+            {inboxFilterCounts.all > 999 ? '999+' : inboxFilterCounts.all}
+          </span>
         </button>
 
         {(
           [
             { f: 'new' as InboxFilter, icon: <Sparkles size={13} />, label: 'New', count: inboxFilterCounts.new },
-            { f: 'assigned_me' as InboxFilter, icon: <UserCheck size={13} />, label: 'Assigned to me', count: 0 },
+            { f: 'assigned_me' as InboxFilter, icon: <UserCheck size={13} />, label: 'Assigned to me', count: inboxFilterCounts.assigned_me },
             { f: 'starred' as InboxFilter, icon: <Star size={13} />, label: 'Starred', count: inboxFilterCounts.starred },
           ] as const
         ).filter(({ f }) => !hiddenInboxFilters.has(f)).map(({ f, icon, label, count }) => (
@@ -853,10 +820,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           </div>
         ))}
 
-        {customViews.length > 0 && (
-          <div style={{ width: 1, height: 16, background: '#e5e7eb', margin: '0 2px', flexShrink: 0 }} />
-        )}
-
         {customViews.map((view) => {
           const active = activeViewId === view.id
           const showUpdate = active && hasUnsavedFilterChanges
@@ -889,6 +852,13 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                 }}
               >
                 <span>{view.icon}</span>{view.name}
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
+                  background: active ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
+                  color: active ? '#fff' : '#6b7280',
+                }}>
+                  {customViewCount(view) > 999 ? '999+' : customViewCount(view)}
+                </span>
               </button>
               <div style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 2 }}>
                 {showUpdate && (
@@ -924,12 +894,12 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           onClick={() => setShowCreateView(true)}
           title="Add a view"
           style={{
-            display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
-            padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-            border: '1px dashed #d1d5db', background: 'none', color: '#6b7280', fontSize: 13, fontWeight: 500,
+            display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0,
+            padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+            border: 'none', background: 'none', color: '#9ca3af', fontSize: 12, fontWeight: 400,
           }}
         >
-          <Plus size={13} /> Add view
+          <Plus size={12} /> Add view
         </button>
       </div>
 
@@ -987,33 +957,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           </div>
         )}
 
-        {overflowFacets.length > 0 && (
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowFilterActionsMenu((v) => !v)} style={{ ...pillBtnStyle, padding: '6px 8px' }} title="Save, update, or clear filters">
-            <BookmarkPlus size={14} />
-            {filterFacetCount > 0 && (
-              <span style={{ background: '#5e6ad2', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
-                {filterFacetCount}
-              </span>
-            )}
-          </button>
-          {showFilterActionsMenu && (
-            <>
-              <div onClick={() => setShowFilterActionsMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
-              <div
-                style={{
-                  position: 'absolute', top: '110%', left: 0, zIndex: 10,
-                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 220,
-                  display: 'flex', flexDirection: 'column', gap: 10,
-                }}
-              >
-                {filterActionsContent}
-              </div>
-            </>
-          )}
-        </div>
-        )}
 
         <div style={{ flex: 1 }} />
 
