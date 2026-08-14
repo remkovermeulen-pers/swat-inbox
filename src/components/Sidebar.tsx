@@ -11,7 +11,6 @@ import {
   Settings,
   GraduationCap,
   ChevronDown,
-  Sparkles,
   Bell,
 } from 'lucide-react'
 
@@ -184,27 +183,6 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Brand settings */}
-        <div style={{ marginTop: 8 }}>
-          <NavLink
-            to="/inbox/settings"
-            style={({ isActive }) => ({
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '7px 10px',
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 500,
-              color: isActive ? '#15803d' : '#6b7280',
-              background: isActive ? '#f0fdf4' : 'transparent',
-              textDecoration: 'none',
-            })}
-          >
-            <Sparkles size={14} style={{ color: 'inherit' }} />
-            AI / Brand Settings
-          </NavLink>
-        </div>
       </nav>
 
       {/* Bottom */}
