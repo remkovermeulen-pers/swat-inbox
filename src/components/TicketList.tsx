@@ -20,7 +20,6 @@ import {
   Columns3,
   SlidersHorizontal,
   X,
-  MoreHorizontal,
   Plus,
   Sparkles,
   UserCheck,
@@ -121,11 +120,13 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [filterPlatforms, setFilterPlatforms] = useState<Set<Platform>>(new Set())
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
-  const [showMoreMenu, setShowMoreMenu] = useState(false)
   const [showCreateView, setShowCreateView] = useState(false)
   const [showChannelsMenu, setShowChannelsMenu] = useState(false)
-  const [showMoreFilters, setShowMoreFilters] = useState(false)
-  const [visibleFilterSlots, setVisibleFilterSlots] = useState(3)
+  const [showStatusMenu, setShowStatusMenu] = useState(false)
+  const [showSentimentMenu, setShowSentimentMenu] = useState(false)
+  const [showPlatformMenu, setShowPlatformMenu] = useState(false)
+  const [showTagsMenu, setShowTagsMenu] = useState(false)
+  const [visibleFilterSlots, setVisibleFilterSlots] = useState(6)
   const [hiddenInboxFilters, setHiddenInboxFilters] = useState<Set<InboxFilter>>(() => loadHiddenFilters())
   const filterRowRef = useRef<HTMLDivElement>(null)
   const [groupBy, setGroupBy] = useState<GroupField | null>(null)
@@ -154,10 +155,13 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     if (!el) return
     function measure() {
       const w = el!.clientWidth
-      if (w < 150) setVisibleFilterSlots(0)
-      else if (w < 280) setVisibleFilterSlots(1)
-      else if (w < 420) setVisibleFilterSlots(2)
-      else setVisibleFilterSlots(3)
+      if (w < 250) setVisibleFilterSlots(0)
+      else if (w < 450) setVisibleFilterSlots(1)
+      else if (w < 600) setVisibleFilterSlots(2)
+      else if (w < 750) setVisibleFilterSlots(3)
+      else if (w < 850) setVisibleFilterSlots(4)
+      else if (w < 950) setVisibleFilterSlots(5)
+      else setVisibleFilterSlots(6)
     }
     measure()
     const ro = new ResizeObserver(measure)
@@ -357,7 +361,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       ...currentFiltersAsPatch(),
     })
     setShowFilterMenu(false)
-    setShowMoreFilters(false)
     setToast(`Saved view "${name.trim()}"`)
   }
 
@@ -365,7 +368,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     if (!activeView) return
     onUpdateView(activeView.id, currentFiltersAsPatch())
     setShowFilterMenu(false)
-    setShowMoreFilters(false)
     setToast(`Updated view "${activeView.name}"`)
   }
 
@@ -414,90 +416,88 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     </>
   )
 
-  const visibilityPillButton = (
-    <button style={pillBtnStyle} title="Comment moderation state — decorative in this prototype">
-      <Eye size={13} /> Visibility: All
-    </button>
+  const visibilityContent = (
+    <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>All (decorative in this prototype)</p>
   )
 
-  const filterMenuContent = (
+  const statusContent = (
+    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      {(Object.keys(STATUS_LABELS) as MessageStatus[]).map((st) => (
+        <button
+          key={st}
+          onClick={() => toggleSetValue(setFilterStatuses, st)}
+          style={{
+            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+            border: `1px solid ${filterStatuses.has(st) ? '#5e6ad2' : '#e5e7eb'}`,
+            background: filterStatuses.has(st) ? '#eef2ff' : '#fff',
+            color: filterStatuses.has(st) ? '#4338ca' : '#6b7280',
+          }}
+        >
+          {STATUS_LABELS[st]}
+        </button>
+      ))}
+    </div>
+  )
+
+  const sentimentContent = (
+    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      {SENTIMENTS.map((s) => (
+        <button
+          key={s}
+          onClick={() => toggleSetValue(setFilterSentiments, s)}
+          style={{
+            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', fontFamily: 'inherit',
+            border: `1px solid ${filterSentiments.has(s) ? '#5e6ad2' : '#e5e7eb'}`,
+            background: filterSentiments.has(s) ? '#eef2ff' : '#fff',
+            color: filterSentiments.has(s) ? '#4338ca' : '#6b7280',
+          }}
+        >
+          {s}
+        </button>
+      ))}
+    </div>
+  )
+
+  const platformContent = (
+    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      {PLATFORMS.map((p) => (
+        <button
+          key={p}
+          onClick={() => toggleSetValue(setFilterPlatforms, p)}
+          style={{
+            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', fontFamily: 'inherit',
+            border: `1px solid ${filterPlatforms.has(p) ? '#5e6ad2' : '#e5e7eb'}`,
+            background: filterPlatforms.has(p) ? '#eef2ff' : '#fff',
+            color: filterPlatforms.has(p) ? '#4338ca' : '#6b7280',
+          }}
+        >
+          {p}
+        </button>
+      ))}
+    </div>
+  )
+
+  const tagsContent = (
+    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      {KNOWN_TAGS.map((t) => (
+        <button
+          key={t}
+          onClick={() => toggleSetValue(setFilterTags, t)}
+          style={{
+            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+            border: `1px solid ${filterTags.has(t) ? '#5e6ad2' : '#e5e7eb'}`,
+            background: filterTags.has(t) ? '#eef2ff' : '#fff',
+            color: filterTags.has(t) ? '#4338ca' : '#6b7280',
+          }}
+        >
+          {t}
+        </button>
+      ))}
+    </div>
+  )
+
+  const filterActionsContent = (
     <>
-      <div>
-        <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Status</p>
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {(Object.keys(STATUS_LABELS) as MessageStatus[]).map((st) => (
-            <button
-              key={st}
-              onClick={() => toggleSetValue(setFilterStatuses, st)}
-              style={{
-                padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
-                border: `1px solid ${filterStatuses.has(st) ? '#5e6ad2' : '#e5e7eb'}`,
-                background: filterStatuses.has(st) ? '#eef2ff' : '#fff',
-                color: filterStatuses.has(st) ? '#4338ca' : '#6b7280',
-              }}
-            >
-              {STATUS_LABELS[st]}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Sentiment</p>
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {SENTIMENTS.map((s) => (
-            <button
-              key={s}
-              onClick={() => toggleSetValue(setFilterSentiments, s)}
-              style={{
-                padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', fontFamily: 'inherit',
-                border: `1px solid ${filterSentiments.has(s) ? '#5e6ad2' : '#e5e7eb'}`,
-                background: filterSentiments.has(s) ? '#eef2ff' : '#fff',
-                color: filterSentiments.has(s) ? '#4338ca' : '#6b7280',
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Platform</p>
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {PLATFORMS.map((p) => (
-            <button
-              key={p}
-              onClick={() => toggleSetValue(setFilterPlatforms, p)}
-              style={{
-                padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', fontFamily: 'inherit',
-                border: `1px solid ${filterPlatforms.has(p) ? '#5e6ad2' : '#e5e7eb'}`,
-                background: filterPlatforms.has(p) ? '#eef2ff' : '#fff',
-                color: filterPlatforms.has(p) ? '#4338ca' : '#6b7280',
-              }}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div>
-        <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Tags</p>
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-          {KNOWN_TAGS.map((t) => (
-            <button
-              key={t}
-              onClick={() => toggleSetValue(setFilterTags, t)}
-              style={{
-                padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
-                border: `1px solid ${filterTags.has(t) ? '#5e6ad2' : '#e5e7eb'}`,
-                background: filterTags.has(t) ? '#eef2ff' : '#fff',
-                color: filterTags.has(t) ? '#4338ca' : '#6b7280',
-              }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-      </div>
       {filterFacetCount > 0 && (
         <button
           onClick={() => { setFilterTags(new Set()); setFilterSentiments(new Set()); setFilterPlatforms(new Set()); setFilterStatuses(new Set()) }}
@@ -532,6 +532,76 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       </div>
     </>
   )
+
+  type Facet = {
+    key: string
+    label: string
+    icon: React.ReactNode
+    show: boolean
+    setShow: (v: boolean) => void
+    content: React.ReactNode
+    panelWidth: number
+  }
+
+  const facets: Facet[] = [
+    {
+      key: 'channels', icon: <AtSign size={13} />,
+      label: `Channels${filterChannels.size > 0 ? `: ${filterChannels.size}` : `: ${channels.length}`}`,
+      show: showChannelsMenu, setShow: setShowChannelsMenu, content: channelsMenuContent, panelWidth: 220,
+    },
+    {
+      key: 'visibility', icon: <Eye size={13} />, label: 'Visibility: All',
+      show: false, setShow: () => {}, content: visibilityContent, panelWidth: 200,
+    },
+    {
+      key: 'status', icon: <SlidersHorizontal size={13} />,
+      label: `Status${filterStatuses.size > 0 ? `: ${filterStatuses.size}` : ''}`,
+      show: showStatusMenu, setShow: setShowStatusMenu, content: statusContent, panelWidth: 200,
+    },
+    {
+      key: 'sentiment', icon: <SlidersHorizontal size={13} />,
+      label: `Sentiment${filterSentiments.size > 0 ? `: ${filterSentiments.size}` : ''}`,
+      show: showSentimentMenu, setShow: setShowSentimentMenu, content: sentimentContent, panelWidth: 180,
+    },
+    {
+      key: 'platform', icon: <SlidersHorizontal size={13} />,
+      label: `Platform${filterPlatforms.size > 0 ? `: ${filterPlatforms.size}` : ''}`,
+      show: showPlatformMenu, setShow: setShowPlatformMenu, content: platformContent, panelWidth: 200,
+    },
+    {
+      key: 'tags', icon: <TagIcon size={13} />,
+      label: `Tags${filterTags.size > 0 ? `: ${filterTags.size}` : ''}`,
+      show: showTagsMenu, setShow: setShowTagsMenu, content: tagsContent, panelWidth: 240,
+    },
+  ]
+
+  const visibleFacets = facets.slice(0, visibleFilterSlots)
+  const overflowFacets = facets.slice(visibleFilterSlots)
+
+  function renderFacetPill(f: Facet) {
+    return (
+      <div key={f.key} style={{ position: 'relative' }}>
+        <button onClick={() => f.setShow(!f.show)} style={pillBtnStyle}>
+          {f.icon} {f.label}
+        </button>
+        {f.show && (
+          <>
+            <div onClick={() => f.setShow(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+            <div
+              style={{
+                position: 'absolute', top: '110%', left: 0, zIndex: 10,
+                background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 10, width: f.panelWidth,
+                maxHeight: 260, overflowY: 'auto',
+              }}
+            >
+              {f.content}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -574,37 +644,12 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
               </button>
             )}
           </div>
-          <div style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowMoreMenu((v) => !v)}
-              style={{ display: 'flex', alignItems: 'center', padding: '5px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
-            >
-              <MoreHorizontal size={18} />
-            </button>
-            {showMoreMenu && (
-              <>
-                <div onClick={() => setShowMoreMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
-                <div
-                  style={{
-                    position: 'absolute', top: '110%', right: 0, zIndex: 10,
-                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 6, width: 160,
-                  }}
-                >
-                  <button
-                    onClick={() => setShowMoreMenu(false)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 8px', borderRadius: 6, border: 'none', background: 'none',
-                      cursor: 'pointer', fontSize: 13, color: '#374151', fontFamily: 'inherit', textAlign: 'left',
-                    }}
-                  >
-                    <Download size={14} /> Download
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            title="Download"
+            style={{ display: 'flex', alignItems: 'center', padding: '5px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
+          >
+            <Download size={18} />
+          </button>
         </div>
       </div>
 
@@ -732,106 +777,49 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         </button>
       </div>
 
-      {/* Row 3: Channels / Visibility / Filter (responsive — overflow collapses into "More filters") ... Columns */}
+      {/* Row 3: Channels / Visibility / Status / Sentiment / Platform / Tags (responsive — overflow collapses into "Filter") ... Group by / Columns */}
       <div ref={filterRowRef} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px 12px', borderBottom: '1px solid #f3f4f6' }}>
-        {visibleFilterSlots >= 1 && (
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowChannelsMenu((v) => !v)} style={pillBtnStyle}>
-              <AtSign size={13} /> Channels: {filterChannels.size > 0 ? filterChannels.size : channels.length}
-            </button>
-            {showChannelsMenu && (
-              <>
-                <div onClick={() => setShowChannelsMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
-                <div
-                  style={{
-                    position: 'absolute', top: '110%', left: 0, zIndex: 10,
-                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 8, width: 220,
-                    display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 240, overflowY: 'auto',
-                  }}
-                >
-                  {channelsMenuContent}
-                </div>
-              </>
-            )}
-          </div>
-        )}
+        {visibleFacets.map(renderFacetPill)}
 
-        {visibleFilterSlots >= 2 && visibilityPillButton}
-
-        {visibleFilterSlots >= 3 && (
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowFilterMenu((v) => !v)} style={pillBtnStyle}>
-              <SlidersHorizontal size={13} /> Filter
-              {filterFacetCount > 0 && (
-                <span style={{ background: '#5e6ad2', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
-                  {filterFacetCount}
-                </span>
-              )}
-            </button>
-            {showFilterMenu && (
-              <>
-                <div onClick={() => setShowFilterMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
-                <div
-                  style={{
-                    position: 'absolute', top: '110%', left: 0, zIndex: 10,
-                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 220,
-                    display: 'flex', flexDirection: 'column', gap: 12,
-                  }}
-                >
-                  {filterMenuContent}
-                </div>
-              </>
+        <div style={{ position: 'relative' }}>
+          <button onClick={() => setShowFilterMenu((v) => !v)} style={pillBtnStyle}>
+            <SlidersHorizontal size={13} /> Filter
+            {filterFacetCount > 0 && (
+              <span style={{ background: '#5e6ad2', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
+                {filterFacetCount}
+              </span>
             )}
-          </div>
-        )}
-
-        {visibleFilterSlots < 3 && (
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setShowMoreFilters((v) => !v)} style={pillBtnStyle}>
-              <SlidersHorizontal size={13} /> More filters
-              {(filterFacetCount + (visibleFilterSlots < 1 ? filterChannels.size : 0)) > 0 && (
-                <span style={{ background: '#5e6ad2', color: '#fff', borderRadius: 99, fontSize: 10, fontWeight: 700, padding: '1px 6px' }}>
-                  {filterFacetCount + (visibleFilterSlots < 1 ? filterChannels.size : 0)}
-                </span>
-              )}
-            </button>
-            {showMoreFilters && (
-              <>
-                <div onClick={() => setShowMoreFilters(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
-                <div
-                  style={{
-                    position: 'absolute', top: '110%', left: 0, zIndex: 10,
-                    background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 240,
-                    display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 420, overflowY: 'auto',
-                  }}
-                >
-                  {visibleFilterSlots < 1 && (
-                    <div>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Channels</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 200, overflowY: 'auto' }}>
-                        {channelsMenuContent}
-                      </div>
+          </button>
+          {showFilterMenu && (
+            <>
+              <div onClick={() => setShowFilterMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+              <div
+                style={{
+                  position: 'absolute', top: '110%', left: 0, zIndex: 10,
+                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 12, width: 240,
+                  display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 460, overflowY: 'auto',
+                }}
+              >
+                {overflowFacets.length === 0 ? (
+                  <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>All filters fit in the row above.</p>
+                ) : (
+                  overflowFacets.map((f, i) => (
+                    <div key={f.key} style={i > 0 ? { borderTop: '1px solid #f3f4f6', paddingTop: 10 } : undefined}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>
+                        {f.key === 'channels' ? 'Channels' : f.key === 'visibility' ? 'Visibility' : f.key}
+                      </p>
+                      {f.content}
                     </div>
-                  )}
-                  {visibleFilterSlots < 2 && (
-                    <div style={visibleFilterSlots < 1 ? { borderTop: '1px solid #f3f4f6', paddingTop: 12 } : undefined}>
-                      <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Visibility</p>
-                      {visibilityPillButton}
-                    </div>
-                  )}
-                  {visibleFilterSlots < 3 && (
-                    <div style={visibleFilterSlots < 2 ? { borderTop: '1px solid #f3f4f6', paddingTop: 12 } : undefined}>
-                      {filterMenuContent}
-                    </div>
-                  )}
+                  ))
+                )}
+                <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 10 }}>
+                  {filterActionsContent}
                 </div>
-              </>
-            )}
-          </div>
-        )}
+              </div>
+            </>
+          )}
+        </div>
 
         <div style={{ flex: 1 }} />
 
