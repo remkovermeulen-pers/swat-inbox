@@ -1,7 +1,5 @@
-import { useState } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { messages } from '../data/mockData'
-import type { InboxFilter } from '../data/mockData'
 import {
   Home,
   Inbox,
@@ -12,49 +10,17 @@ import {
   Settings,
   GraduationCap,
   ChevronDown,
-  Star,
-  UserCheck,
-  Users,
-  Archive,
   Sparkles,
   Bell,
-  Pin,
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Trash2,
-  CheckCheck,
 } from 'lucide-react'
 
-const filterCounts: Record<InboxFilter, number> = {
-  all: messages.length,
-  new: messages.filter((m) => m.unread).length,
-  starred: messages.filter((m) => m.starred).length,
-  assigned_me: messages.filter((m) => m.assignedTo === 'Remko').length,
-  assigned_others: messages.filter((m) => m.assignedTo && m.assignedTo !== 'Remko').length,
-  archive: 999,
-}
+// Comments reuses the same mock message data as Inbox in this prototype, so both counts are identical for now.
+const newItemsCount = messages.filter((m) => m.unread && !m.archived).length
 
-const commentCounts = {
-  unread: messages.filter((m) => m.unread).length,
-  pinned: messages.filter((m) => m.starred).length,
-  actionRequired: messages.filter((m) => m.status === 'ai_pending').length,
-}
-
-interface Props {
-  activeFilter: InboxFilter
-  onFilterChange: (f: InboxFilter) => void
-}
-
-export function Sidebar({
-  activeFilter,
-  onFilterChange,
-}: Props) {
-  const [inboxOpen, setInboxOpen] = useState(true)
-  const [commentsOpen, setCommentsOpen] = useState(false)
+export function Sidebar() {
   const location = useLocation()
-  const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
+  const isComments = location.pathname.startsWith('/comments')
 
   return (
     <aside
@@ -117,183 +83,39 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Main nav */}
+      {/* Main nav — flat, no nested sub-items (those live as filter pills atop the Inbox/Comments list) */}
       <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
-        {/* Home */}
-        <NavItem
-          icon={<Home size={16} />}
-          label="Home"
-          active={false}
-          onClick={() => {}}
-        />
-
-        {/* Inbox */}
-        <div>
-          <button
-            onClick={() => { navigate('/inbox'); setInboxOpen(true) }}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '7px 10px',
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-              background: isInbox && !location.pathname.includes('settings') ? '#f0fdf4' : 'transparent',
-              color: '#111827',
-              fontFamily: 'inherit',
-              fontSize: 14,
-              fontWeight: isInbox ? 600 : 500,
-              textAlign: 'left',
-            }}
-          >
-            <Inbox size={16} style={{ color: '#6b7280' }} />
-            <span style={{ flex: 1 }}>Inbox</span>
-            <ChevronDown
-              size={13}
-              style={{
-                color: '#9ca3af',
-                transform: inboxOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                transition: 'transform 0.15s',
-              }}
-            />
-          </button>
-
-          {inboxOpen && (
-            <div style={{ marginLeft: 8, marginTop: 2 }}>
-              {(
-                [
-                  { f: 'new' as InboxFilter, icon: <Sparkles size={13} />, label: 'New', count: filterCounts.new },
-                  { f: 'starred' as InboxFilter, icon: <Star size={13} />, label: 'Starred', count: filterCounts.starred },
-                  { f: 'assigned_me' as InboxFilter, icon: <UserCheck size={13} />, label: 'Assigned to me', count: filterCounts.assigned_me, dot: true },
-                  { f: 'assigned_others' as InboxFilter, icon: <Users size={13} />, label: 'Assigned to others', count: filterCounts.assigned_others },
-                  { f: 'archive' as InboxFilter, icon: <Archive size={13} />, label: 'Archive', count: filterCounts.archive },
-                ] as const
-              ).map(({ f, icon, label, count, ...rest }) => {
-                const dot = 'dot' in rest ? rest.dot : false
-                return (
-                <button
-                  key={f}
-                  onClick={() => onFilterChange(f)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 7,
-                    padding: '5px 10px',
-                    borderRadius: 6,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: activeFilter === f ? '#f0fdf4' : 'transparent',
-                    color: activeFilter === f ? '#15803d' : '#374151',
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    textAlign: 'left',
-                  }}
-                >
-                  {icon}
-                  <span style={{ flex: 1 }}>{label}</span>
-                  {dot && (
-                    <span
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        background: '#22c55e',
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
-                  {count > 0 && !dot && (
-                    <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
-                      {count > 999 ? '999+' : count}
-                    </span>
-                  )}
-                </button>
-              )})}
-            </div>
-          )}
-        </div>
-
-        {/* Comments */}
-        <div>
-          <button
-            onClick={() => setCommentsOpen(!commentsOpen)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '7px 10px',
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-              background: 'transparent',
-              color: '#111827',
-              fontFamily: 'inherit',
-              fontSize: 14,
-              fontWeight: 500,
-              textAlign: 'left',
-            }}
-          >
-            <MessageSquare size={16} style={{ color: '#6b7280' }} />
-            <span style={{ flex: 1 }}>Comments</span>
-            <ChevronDown
-              size={13}
-              style={{
-                color: '#9ca3af',
-                transform: commentsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                transition: 'transform 0.15s',
-              }}
-            />
-          </button>
-
-          {commentsOpen && (
-            <div style={{ marginLeft: 8, marginTop: 2 }}>
-              {(
-                [
-                  { icon: <UserCheck size={13} />, label: 'Unread', count: commentCounts.unread },
-                  { icon: <Pin size={13} />, label: 'Pinned', count: commentCounts.pinned },
-                  { icon: <AlertCircle size={13} />, label: 'Action required', count: commentCounts.actionRequired },
-                  { icon: <Eye size={13} />, label: 'Visible', count: 0 },
-                  { icon: <EyeOff size={13} />, label: 'Hidden', count: 0 },
-                  { icon: <Trash2 size={13} />, label: 'Deleted', count: 0 },
-                  { icon: <CheckCheck size={13} />, label: 'Read', count: 0 },
-                ] as const
-              ).map(({ icon, label, count }) => (
-                <button
-                  key={label}
-                  onClick={() => {}}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 7,
-                    padding: '5px 10px',
-                    borderRadius: 6,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: 'transparent',
-                    color: '#374151',
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    textAlign: 'left',
-                  }}
-                >
-                  {icon}
-                  <span style={{ flex: 1 }}>{label}</span>
-                  {count > 0 && (
-                    <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>{count}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
+        <NavItem icon={<Home size={16} />} label="Home" active={false} onClick={() => {}} />
+        <NavLink
+          to="/inbox"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 10px', borderRadius: 6,
+            fontSize: 14, fontWeight: isInbox ? 600 : 400,
+            color: isInbox ? '#15803d' : '#374151',
+            background: isInbox ? '#f0fdf4' : 'transparent',
+            textDecoration: 'none',
+          }}
+        >
+          <span style={{ color: '#6b7280' }}><Inbox size={16} /></span>
+          <span style={{ flex: 1 }}>Inbox</span>
+          {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isInbox} />}
+        </NavLink>
+        <NavLink
+          to="/comments"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 10px', borderRadius: 6,
+            fontSize: 14, fontWeight: isComments ? 600 : 400,
+            color: isComments ? '#15803d' : '#374151',
+            background: isComments ? '#f0fdf4' : 'transparent',
+            textDecoration: 'none',
+          }}
+        >
+          <span style={{ color: '#6b7280' }}><MessageSquare size={16} /></span>
+          <span style={{ flex: 1 }}>Comments</span>
+          {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isComments} />}
+        </NavLink>
         <NavLink
           to="/publisher"
           style={({ isActive }) => ({
@@ -372,6 +194,20 @@ export function Sidebar({
         </div>
       </div>
     </aside>
+  )
+}
+
+function CountBadge({ count, active }: { count: number; active: boolean }) {
+  return (
+    <span
+      style={{
+        fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 99,
+        background: active ? '#dcfce7' : '#f3f4f6',
+        color: active ? '#15803d' : '#6b7280',
+      }}
+    >
+      {count > 999 ? '999+' : count}
+    </span>
   )
 }
 
