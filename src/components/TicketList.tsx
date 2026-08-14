@@ -22,7 +22,6 @@ import {
   X,
   MoreHorizontal,
   Plus,
-  Bookmark,
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
@@ -87,7 +86,6 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showMoreMenu, setShowMoreMenu] = useState(false)
-  const [showViewsMenu, setShowViewsMenu] = useState(false)
   const [showCreateView, setShowCreateView] = useState(false)
 
   function toggleSetValue<T>(setFn: React.Dispatch<React.SetStateAction<Set<T>>>, value: T) {
@@ -328,8 +326,8 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
           </span>
         )}
 
-        {/* Status quick-filters */}
-        <div style={{ display: 'flex', gap: 6, marginLeft: 8 }}>
+        {/* Status quick-filters + Smart Views */}
+        <div style={{ display: 'flex', gap: 6, marginLeft: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {(['All', 'Unanswered', 'AI pending', 'Answered'] as const).map((f) => (
             <button
               key={f}
@@ -350,72 +348,61 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
               {f}
             </button>
           ))}
-        </div>
 
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={() => setShowViewsMenu((v) => !v)}
-            style={{ ...saveViewBtnStyle, ...(activeView ? { background: '#eef2ff', borderColor: '#5e6ad2', color: '#4338ca' } : {}) }}
-          >
-            <Bookmark size={13} /> {activeView ? `${activeView.icon} ${activeView.name}` : 'Views'} <ChevronDown size={12} />
-          </button>
-          {showViewsMenu && (
-            <>
-              <div onClick={() => setShowViewsMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
-              <div
-                style={{
-                  position: 'absolute', top: '110%', left: 0, zIndex: 10,
-                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8,
-                  boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 6, width: 230,
-                }}
-              >
-                {customViews.map((view) => {
-                  const active = activeViewId === view.id
-                  const count = messages.filter((m) => messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
-                  return (
-                    <div key={view.id} style={{ display: 'flex', alignItems: 'center', borderRadius: 6, background: active ? '#eef2ff' : 'transparent' }}>
-                      <button
-                        onClick={() => { onViewChange(active ? null : view.id); setShowViewsMenu(false) }}
-                        style={{
-                          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 7,
-                          padding: '6px 4px 6px 8px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer',
-                          color: active ? '#4338ca' : '#374151', fontFamily: 'inherit', fontSize: 13,
-                          fontWeight: active ? 600 : 500, textAlign: 'left',
-                        }}
-                      >
-                        <span>{view.icon}</span>
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{view.name}</span>
-                        <span style={{ fontSize: 11, color: active ? '#4338ca' : '#9ca3af', fontWeight: 600 }}>{count}</span>
-                      </button>
-                      <button
-                        onClick={() => { if (window.confirm(`Remove the "${view.name}" view?`)) onDeleteView(view.id) }}
-                        title="Remove view"
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          width: 22, height: 22, marginRight: 4, flexShrink: 0,
-                          border: 'none', borderRadius: 5, background: 'none', color: '#9ca3af', cursor: 'pointer',
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#dc2626' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#9ca3af' }}
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
-                  )
-                })}
+          {customViews.length > 0 && (
+            <div style={{ width: 1, height: 16, background: '#e5e7eb', margin: '0 2px' }} />
+          )}
+
+          {customViews.map((view) => {
+            const active = activeViewId === view.id
+            return (
+              <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <button
-                  onClick={() => { setShowViewsMenu(false); setShowCreateView(true) }}
+                  onClick={() => onViewChange(active ? null : view.id)}
                   style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 7,
-                    padding: '6px 8px', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer',
-                    fontFamily: 'inherit', fontSize: 12, color: '#9ca3af', textAlign: 'left',
+                    padding: '4px 22px 4px 10px',
+                    borderRadius: 99,
+                    border: 'none',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    background: active ? '#4338ca' : '#f3f4f6',
+                    color: active ? '#fff' : '#6b7280',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontFamily: 'inherit',
                   }}
                 >
-                  <Plus size={13} /> New view
+                  <span>{view.icon}</span>{view.name}
+                </button>
+                <button
+                  onClick={() => { if (window.confirm(`Remove the "${view.name}" view?`)) onDeleteView(view.id) }}
+                  title="Remove view"
+                  style={{
+                    position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 15, height: 15, border: 'none', borderRadius: '50%',
+                    background: 'none', color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af', cursor: 'pointer',
+                  }}
+                >
+                  <X size={10} />
                 </button>
               </div>
-            </>
-          )}
+            )
+          })}
+
+          <button
+            onClick={() => setShowCreateView(true)}
+            title="Create a new smart view"
+            style={{
+              width: 24, height: 24, borderRadius: '50%', border: '1px dashed #d1d5db',
+              background: 'none', color: '#9ca3af', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}
+          >
+            <Plus size={13} />
+          </button>
         </div>
 
         <button onClick={saveCurrentView} style={saveViewBtnStyle} title="Save the current filters, status, and sort order as a Smart View">

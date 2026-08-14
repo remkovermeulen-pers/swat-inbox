@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { channels, messages } from '../data/mockData'
+import { messages } from '../data/mockData'
 import type { InboxFilter } from '../data/mockData'
 import {
   Home,
@@ -44,19 +44,14 @@ const commentCounts = {
 interface Props {
   activeFilter: InboxFilter
   onFilterChange: (f: InboxFilter) => void
-  activeChannelId: string | null
-  onChannelChange: (id: string | null) => void
 }
 
 export function Sidebar({
   activeFilter,
   onFilterChange,
-  activeChannelId,
-  onChannelChange,
 }: Props) {
   const [inboxOpen, setInboxOpen] = useState(true)
   const [commentsOpen, setCommentsOpen] = useState(false)
-  const [channelsOpen, setChannelsOpen] = useState(true)
   const location = useLocation()
   const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
@@ -322,94 +317,6 @@ export function Sidebar({
           onClick={() => {}}
         />
 
-        {/* Channels */}
-        <div style={{ marginTop: 12 }}>
-          <button
-            onClick={() => setChannelsOpen(!channelsOpen)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '5px 10px',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              fontSize: 11,
-              fontWeight: 600,
-              color: '#6b7280',
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              textAlign: 'left',
-            }}
-          >
-            <ChevronDown
-              size={12}
-              style={{
-                transform: channelsOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
-                transition: 'transform 0.15s',
-              }}
-            />
-            Channels
-          </button>
-
-          {channelsOpen && (
-            <div style={{ marginTop: 2 }}>
-              {channels.map((ch) => {
-                const active = activeChannelId === ch.id
-                return (
-                  <button
-                    key={ch.id}
-                    onClick={() => onChannelChange(active ? null : ch.id)}
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '5px 10px',
-                      borderRadius: 6,
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: active ? '#f0fdf4' : 'transparent',
-                      fontFamily: 'inherit',
-                      fontSize: 12,
-                      color: active ? '#15803d' : '#374151',
-                      textAlign: 'left',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {/* Checkbox */}
-                    <span
-                      style={{
-                        width: 14,
-                        height: 14,
-                        borderRadius: 3,
-                        border: `2px solid ${active ? '#22c55e' : '#d1d5db'}`,
-                        background: active ? '#22c55e' : '#fff',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {active && (
-                        <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                          <path d="M1 3l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </span>
-                    <PlatformDot platform={ch.platform} />
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ch.name}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
         {/* Brand settings */}
         <div style={{ marginTop: 8 }}>
           <NavLink
@@ -509,43 +416,5 @@ function NavItem({
         </span>
       )}
     </button>
-  )
-}
-
-function PlatformDot({ platform }: { platform: string }) {
-  const colors: Record<string, string> = {
-    facebook: '#1877f2',
-    twitter: '#000',
-    instagram: '#e1306c',
-    linkedin: '#0077b5',
-    youtube: '#ff0000',
-    tiktok: '#000',
-  }
-  const icons: Record<string, string> = {
-    facebook: 'f',
-    twitter: '𝕏',
-    instagram: '◎',
-    linkedin: 'in',
-    youtube: '▶',
-    tiktok: '♪',
-  }
-  return (
-    <span
-      style={{
-        width: 16,
-        height: 16,
-        borderRadius: 3,
-        background: colors[platform] || '#6b7280',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        fontSize: 9,
-        color: '#fff',
-        fontWeight: 700,
-      }}
-    >
-      {icons[platform] || '?'}
-    </span>
   )
 }

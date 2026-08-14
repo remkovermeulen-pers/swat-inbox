@@ -167,12 +167,6 @@ export default function App() {
 
   useEffect(() => { saveCustomViews(customViews) }, [customViews])
 
-  function handleChannelChange(id: string | null) {
-    setActiveChannelId(id)
-    setActiveBrandId(null)
-    setActiveViewId(null)
-  }
-
   function activateView(view: CustomView | null) {
     setActiveViewId(view?.id ?? null)
     if (view) {
@@ -201,8 +195,6 @@ export default function App() {
         <Sidebar
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
-          activeChannelId={activeChannelId}
-          onChannelChange={handleChannelChange}
         />
         <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <InboxRoutes
