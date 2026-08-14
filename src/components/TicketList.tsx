@@ -34,6 +34,7 @@ import {
   List,
   LayoutList,
   Plus,
+  BellOff,
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
@@ -94,9 +95,10 @@ const GROUP_LABELS: Record<GroupField, string> = {
   platform: 'Platform', status: 'Status', sentiment: 'Sentiment', channel: 'Channel',
 }
 
-type ColKey = 'priority' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
+type ColKey = 'tags' | 'priority' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
 
 const TOGGLEABLE_COLUMNS: { key: ColKey; label: string; width: number }[] = [
+  { key: 'tags', label: 'Tags', width: 200 },
   { key: 'priority', label: 'Priority', width: 72 },
   { key: 'ticket', label: 'Ticket #', width: 80 },
   { key: 'replies', label: 'Replies', width: 60 },
@@ -127,7 +129,7 @@ function saveColWidths(widths: Record<ColWidthKey, number>) {
   localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(widths))
 }
 
-type ReorderableCol = 'tags' | ColKey
+type ReorderableCol = ColKey
 
 const DEFAULT_COL_ORDER: ReorderableCol[] = ['tags', 'priority', 'ticket', 'replies', 'reach', 'channel', 'time']
 
@@ -300,12 +302,12 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     })
   }
 
-  const visibleColOrder = colOrder.filter((k) => k === 'tags' || visibleCols.has(k))
+  const visibleColOrder = colOrder.filter((k) => visibleCols.has(k))
 
   function reorderCol(key: ReorderableCol, atIndex: number) {
     setColOrder((prev) => {
       const withoutDragged = prev.filter((k) => k !== key)
-      const visibleWithoutDragged = withoutDragged.filter((k) => k === 'tags' || visibleCols.has(k))
+      const visibleWithoutDragged = withoutDragged.filter((k) => visibleCols.has(k))
       const anchorKey = visibleWithoutDragged[atIndex]
       const insertAt = anchorKey ? withoutDragged.indexOf(anchorKey) : withoutDragged.length
       const next = [...withoutDragged.slice(0, insertAt), key, ...withoutDragged.slice(insertAt)]
@@ -544,17 +546,24 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     setSelected(new Set())
   }
 
-  function bulkMarkAnswered() {
-    const count = selected.size
-    applyToSelected({ status: 'answered' })
-    setToast(`Marked ${count} ticket${count > 1 ? 's' : ''} as answered`)
-    setSelected(new Set())
-  }
-
   function bulkArchive() {
     const count = selected.size
     applyToSelected({ archived: true })
     setToast(`Archived ${count} ticket${count > 1 ? 's' : ''}`)
+    setSelected(new Set())
+  }
+
+  function bulkStar() {
+    const count = selected.size
+    applyToSelected({ starred: true })
+    setToast(`Starred ${count} ticket${count > 1 ? 's' : ''}`)
+    setSelected(new Set())
+  }
+
+  function bulkMute() {
+    const count = selected.size
+    applyToSelected({ muted: true })
+    setToast(`Muted ${count} ticket${count > 1 ? 's' : ''}`)
     setSelected(new Set())
   }
 
@@ -926,6 +935,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         height: '100%',
         overflow: 'hidden',
         background: '#fff',
+        position: 'relative',
       }}
     >
       {/* Row 1: page title + more */}
@@ -1229,7 +1239,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       </div>
 
 
-      {/* Bulk selection bar */}
+      {/* Selection status bar */}
       <div
         style={{
           display: 'flex',
@@ -1249,28 +1259,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         <span style={{ fontSize: 13, color: '#6b7280' }}>
           {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
         </span>
-
-        {selected.size > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <select
-              value=""
-              onChange={(e) => bulkAssign(e.target.value)}
-              style={bulkBtnStyle}
-            >
-              <option value="">Assign to…</option>
-              {AGENTS.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
-            <button onClick={bulkTag} style={bulkBtnStyle}>
-              <TagIcon size={13} /> Tag
-            </button>
-            <button onClick={bulkMarkAnswered} style={bulkBtnStyle}>
-              <CheckCheck size={13} /> Mark answered
-            </button>
-            <button onClick={bulkArchive} style={bulkBtnStyle}>
-              <Archive size={13} /> Archive
-            </button>
-          </div>
-        )}
 
         <div style={{ flex: 1 }} />
         {toast && (
@@ -1494,6 +1482,55 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         )}
       </div>
 
+      {/* Floating bulk-action bar */}
+      {selected.size > 0 && (
+        <div
+          style={{
+            position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: '#fff', borderRadius: 14, padding: '8px 12px',
+            boxShadow: '0 10px 28px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
+            border: '1px solid #e5e7eb', zIndex: 20,
+          }}
+        >
+          <button
+            onClick={() => setSelected(new Set())}
+            title="Clear selection"
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 22, height: 22, borderRadius: 6, border: 'none', cursor: 'pointer',
+              background: '#2563eb', color: '#fff',
+            }}
+          >
+            <CheckCheck size={13} />
+          </button>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' }}>
+            {selected.size} selected
+          </span>
+          <div style={{ width: 1, height: 20, background: '#e5e7eb', margin: '0 2px' }} />
+          <select
+            value=""
+            onChange={(e) => bulkAssign(e.target.value)}
+            style={bulkBtnStyle}
+          >
+            <option value="">Assign to…</option>
+            {AGENTS.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+          <button onClick={bulkTag} style={bulkBtnStyle}>
+            <TagIcon size={13} /> Tags
+          </button>
+          <button onClick={bulkStar} style={bulkBtnStyle}>
+            <Star size={13} /> Star
+          </button>
+          <button onClick={bulkMute} style={bulkBtnStyle}>
+            <BellOff size={13} /> Mute
+          </button>
+          <button onClick={bulkArchive} style={bulkBtnStyle}>
+            <Archive size={13} /> Archive
+          </button>
+        </div>
+      )}
+
       {showCreateView && (
         <CreateViewModal
           onClose={() => setShowCreateView(false)}
@@ -1627,7 +1664,7 @@ function TicketRow({
   const timeStr = format(new Date(msg.timestamp), 'MMM d')
   const score = getPriorityScore(msg, customer)
   const tier = priorityTier(score)
-  const visibleColOrder = colOrder.filter((k) => k === 'tags' || visibleCols.has(k))
+  const visibleColOrder = colOrder.filter((k) => visibleCols.has(k))
 
   function renderCell(key: ReorderableCol) {
     switch (key) {
