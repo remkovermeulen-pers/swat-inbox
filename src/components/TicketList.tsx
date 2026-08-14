@@ -7,9 +7,9 @@ import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
 import { CommentCard } from './CommentCard'
 import {
-  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier,
+  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem,
   FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition, RANGE_SEPARATOR,
-  type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir,
+  type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir, type PinnedItem,
 } from '../lib/inboxScale'
 import {
   Search,
@@ -44,6 +44,16 @@ const PRIORITY_TIER_COLORS: Record<string, string> = {
   Critical: '#dc2626', High: '#f59e0b', Normal: '#6b7280', Low: '#d1d5db',
 }
 
+const BASE_FILTER_META: Partial<Record<InboxFilter, { icon: React.ReactNode; label: string }>> = {
+  new: { icon: <Sparkles size={13} />, label: 'New' },
+  assigned_me: { icon: <UserCheck size={13} />, label: 'Assigned to me' },
+  starred: { icon: <Star size={13} />, label: 'Starred' },
+}
+
+function ViewDropIndicator() {
+  return <div style={{ width: 2, height: 28, borderRadius: 1, background: '#5e6ad2', flexShrink: 0 }} />
+}
+
 interface Props {
   brandId: string | null
   channelId: string | null
@@ -55,6 +65,8 @@ interface Props {
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
+  viewOrder: PinnedItem[]
+  onReorderView: (item: PinnedItem, atIndex: number) => void
   mode?: 'inbox' | 'comments'
 }
 
@@ -149,7 +161,7 @@ function customViewCount(view: CustomView): number {
   return messages.filter((m) => !m.archived && messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
 }
 
-export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, mode = 'inbox' }: Props) {
+export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, viewOrder, onReorderView, mode = 'inbox' }: Props) {
   const navigate = useNavigate()
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -182,6 +194,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [colFilterMenus, setColFilterMenus] = useState<Partial<Record<FilterField, boolean>>>({})
   const [visibleFilterSlots, setVisibleFilterSlots] = useState(COLUMN_FILTER_FIELDS.length + 7)
   const [hiddenInboxFilters, setHiddenInboxFilters] = useState<Set<InboxFilter>>(() => loadHiddenFilters())
+  const [viewDropIndex, setViewDropIndex] = useState<number | null>(null)
   const filterRowRef = useRef<HTMLDivElement>(null)
   const [groupBy, setGroupBy] = useState<GroupField | null>(null)
   const [showGroupMenu, setShowGroupMenu] = useState(false)
@@ -256,6 +269,45 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
   const activeView = customViews.find((v) => v.id === activeViewId) ?? null
   const allActive = filter === 'all' && !activeViewId
+
+  const rowItems = viewOrder.filter((item) =>
+    item.kind === 'filter' ? !hiddenInboxFilters.has(item.key) : customViews.some((v) => v.id === item.id)
+  )
+
+  function computeViewDropIndex(e: React.DragEvent<HTMLDivElement>): number {
+    const items = Array.from(e.currentTarget.querySelectorAll('[data-view-pill]'))
+    for (let i = 0; i < items.length; i++) {
+      const rect = items[i].getBoundingClientRect()
+      if (e.clientX < rect.left + rect.width / 2) return i
+    }
+    return items.length
+  }
+
+  function handleViewRowDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setViewDropIndex(computeViewDropIndex(e))
+  }
+
+  function handleViewRowDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setViewDropIndex(null)
+  }
+
+  function handleViewRowDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    let atIndex = computeViewDropIndex(e)
+    setViewDropIndex(null)
+    const raw = e.dataTransfer.getData('application/json')
+    if (!raw) return
+    try {
+      const payload = JSON.parse(raw) as PinnedItem
+      const fromIndex = rowItems.findIndex((p) => samePinnedItem(p, payload))
+      if (fromIndex !== -1 && fromIndex < atIndex) atIndex -= 1
+      onReorderView(payload, atIndex)
+    } catch {
+      // ignore malformed drag payloads
+    }
+  }
 
   useEffect(() => {
     if (!activeViewId) return
@@ -817,7 +869,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         </div>
       </div>
 
-      {/* Row 2: one unified list of views — All, New, Assigned to me, Starred, custom views, + Add view. Draggable onto the sidebar (except All). */}
+      {/* Row 2: one unified list of views — All, New, Assigned to me, Starred, custom views, + Add view. Draggable onto the
+          sidebar (except All), and draggable left/right within this row to reorder. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 20px 14px', flexWrap: 'nowrap', overflowX: 'auto' }}>
         <button
           onClick={() => onFilterChange('all')}
@@ -840,133 +893,149 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           </span>
         </button>
 
-        {(
-          [
-            { f: 'new' as InboxFilter, icon: <Sparkles size={13} />, label: 'New', count: inboxFilterCounts.new },
-            { f: 'assigned_me' as InboxFilter, icon: <UserCheck size={13} />, label: 'Assigned to me', count: inboxFilterCounts.assigned_me },
-            { f: 'starred' as InboxFilter, icon: <Star size={13} />, label: 'Starred', count: inboxFilterCounts.starred },
-          ] as const
-        ).filter(({ f }) => !hiddenInboxFilters.has(f)).map(({ f, icon, label, count }) => (
-          <div
-            key={f}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData('application/json', JSON.stringify({ kind: 'filter', key: f, label }))
-              e.dataTransfer.effectAllowed = 'copy'
-            }}
-            style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'grab' }}
-          >
-            <button
-              onClick={() => onFilterChange(f)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 26px 6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                border: `1px solid ${filter === f ? '#4b5563' : '#e5e7eb'}`,
-                background: filter === f ? '#4b5563' : '#fff',
-                color: filter === f ? '#fff' : '#374151',
-                fontSize: 13, fontWeight: 500,
-              }}
-            >
-              {icon} {label}
-              {count > 0 && (
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
-                  background: filter === f ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
-                  color: filter === f ? '#fff' : '#6b7280',
-                }}>
-                  {count > 999 ? '999+' : count}
-                </span>
+        <div
+          onDragOver={handleViewRowDragOver}
+          onDragLeave={handleViewRowDragLeave}
+          onDrop={handleViewRowDrop}
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        >
+          {rowItems.map((item, i) => (
+            <div key={item.kind === 'filter' ? `f:${item.key}` : `v:${item.id}`} data-view-pill style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {viewDropIndex === i && <ViewDropIndicator />}
+              {item.kind === 'filter' ? (
+                (() => {
+                  const meta = BASE_FILTER_META[item.key]
+                  const f = item.key
+                  if (!meta) return null
+                  const { icon, label } = meta
+                  const count = inboxFilterCounts[f]
+                  return (
+                    <div
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/json', JSON.stringify({ kind: 'filter', key: f }))
+                        e.dataTransfer.effectAllowed = 'copyMove'
+                      }}
+                      style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'grab' }}
+                    >
+                      <button
+                        onClick={() => onFilterChange(f)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          padding: '6px 26px 6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                          border: `1px solid ${filter === f ? '#4b5563' : '#e5e7eb'}`,
+                          background: filter === f ? '#4b5563' : '#fff',
+                          color: filter === f ? '#fff' : '#374151',
+                          fontSize: 13, fontWeight: 500,
+                        }}
+                      >
+                        {icon} {label}
+                        {count > 0 && (
+                          <span style={{
+                            fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
+                            background: filter === f ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
+                            color: filter === f ? '#fff' : '#6b7280',
+                          }}>
+                            {count > 999 ? '999+' : count}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Remove "${label}" from this list? You can't add it back from here.`)) {
+                            setHiddenInboxFilters((prev) => new Set(prev).add(f))
+                            if (filter === f) onFilterChange('all')
+                          }
+                        }}
+                        title="Remove view"
+                        style={{
+                          position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 15, height: 15, border: 'none', borderRadius: '50%',
+                          background: 'none', color: filter === f ? 'rgba(255,255,255,0.7)' : '#9ca3af', cursor: 'pointer',
+                        }}
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  )
+                })()
+              ) : (
+                (() => {
+                  const view = customViews.find((v) => v.id === item.id)
+                  if (!view) return null
+                  const active = activeViewId === view.id
+                  const showUpdate = active && hasUnsavedFilterChanges
+                  const iconCount = (showUpdate ? 1 : 0) + 1
+                  return (
+                    <div
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/json', JSON.stringify({ kind: 'view', id: view.id }))
+                        e.dataTransfer.effectAllowed = 'copyMove'
+                      }}
+                      style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'grab' }}
+                    >
+                      <button
+                        onClick={() => onViewChange(active ? null : view.id)}
+                        style={{
+                          padding: `6px ${12 + iconCount * 18}px 6px 12px`,
+                          borderRadius: 8,
+                          border: `1px solid ${active ? '#4b5563' : '#e5e7eb'}`,
+                          fontSize: 13,
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          background: active ? '#4b5563' : '#fff',
+                          color: active ? '#fff' : '#374151',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        <span>{view.icon}</span>{view.name}
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
+                          background: active ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
+                          color: active ? '#fff' : '#6b7280',
+                        }}>
+                          {customViewCount(view) > 999 ? '999+' : customViewCount(view)}
+                        </span>
+                      </button>
+                      <div style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {showUpdate && (
+                          <button
+                            onClick={() => updateFiltersOnView()}
+                            title={`Update "${view.name}" with the current filters`}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: 16, height: 16, border: 'none', borderRadius: '50%',
+                              background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
+                            }}
+                          >
+                            <BookmarkPlus size={10} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => { if (window.confirm(`Remove the "${view.name}" view?`)) onDeleteView(view.id) }}
+                          title="Remove view"
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            width: 15, height: 15, border: 'none', borderRadius: '50%',
+                            background: 'none', color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af', cursor: 'pointer',
+                          }}
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()
               )}
-            </button>
-            <button
-              onClick={() => {
-                if (window.confirm(`Remove "${label}" from this list? You can't add it back from here.`)) {
-                  setHiddenInboxFilters((prev) => new Set(prev).add(f))
-                  if (filter === f) onFilterChange('all')
-                }
-              }}
-              title="Remove view"
-              style={{
-                position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 15, height: 15, border: 'none', borderRadius: '50%',
-                background: 'none', color: filter === f ? 'rgba(255,255,255,0.7)' : '#9ca3af', cursor: 'pointer',
-              }}
-            >
-              <X size={10} />
-            </button>
-          </div>
-        ))}
-
-        {customViews.map((view) => {
-          const active = activeViewId === view.id
-          const showUpdate = active && hasUnsavedFilterChanges
-          const iconCount = (showUpdate ? 1 : 0) + 1
-          return (
-            <div
-              key={view.id}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('application/json', JSON.stringify({ kind: 'view', id: view.id, label: view.name }))
-                e.dataTransfer.effectAllowed = 'copy'
-              }}
-              style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0, cursor: 'grab' }}
-            >
-              <button
-                onClick={() => onViewChange(active ? null : view.id)}
-                style={{
-                  padding: `6px ${12 + iconCount * 18}px 6px 12px`,
-                  borderRadius: 8,
-                  border: `1px solid ${active ? '#4b5563' : '#e5e7eb'}`,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  background: active ? '#4b5563' : '#fff',
-                  color: active ? '#fff' : '#374151',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontFamily: 'inherit',
-                }}
-              >
-                <span>{view.icon}</span>{view.name}
-                <span style={{
-                  fontSize: 11, fontWeight: 700, padding: '1px 6px', borderRadius: 5,
-                  background: active ? 'rgba(255,255,255,0.2)' : '#f3f4f6',
-                  color: active ? '#fff' : '#6b7280',
-                }}>
-                  {customViewCount(view) > 999 ? '999+' : customViewCount(view)}
-                </span>
-              </button>
-              <div style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 2 }}>
-                {showUpdate && (
-                  <button
-                    onClick={() => updateFiltersOnView()}
-                    title={`Update "${view.name}" with the current filters`}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 16, height: 16, border: 'none', borderRadius: '50%',
-                      background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
-                    }}
-                  >
-                    <BookmarkPlus size={10} />
-                  </button>
-                )}
-                <button
-                  onClick={() => { if (window.confirm(`Remove the "${view.name}" view?`)) onDeleteView(view.id) }}
-                  title="Remove view"
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    width: 15, height: 15, border: 'none', borderRadius: '50%',
-                    background: 'none', color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af', cursor: 'pointer',
-                  }}
-                >
-                  <X size={10} />
-                </button>
-              </div>
             </div>
-          )
-        })}
+          ))}
+          {viewDropIndex === rowItems.length && <ViewDropIndicator />}
+        </div>
 
         <button
           onClick={() => setShowCreateView(true)}

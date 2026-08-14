@@ -287,3 +287,28 @@ export function loadPinnedItems(): PinnedItem[] {
 export function savePinnedItems(items: PinnedItem[]) {
   localStorage.setItem(PINNED_ITEMS_KEY, JSON.stringify(items))
 }
+
+/** Removes any existing occurrence of `item` from `list`, then inserts it at `atIndex` — used for both pinning and reordering. */
+export function insertPinnedItemAt(list: PinnedItem[], item: PinnedItem, atIndex: number): PinnedItem[] {
+  const withoutDup = list.filter((p) => !samePinnedItem(p, item))
+  const idx = Math.min(Math.max(0, atIndex), withoutDup.length)
+  return [...withoutDup.slice(0, idx), item, ...withoutDup.slice(idx)]
+}
+
+const VIEW_ORDER_KEY = 'inbox-view-order'
+
+/** The display order of the view pills atop the Inbox/Comments list. Returns null when nothing has been saved yet. */
+export function loadViewOrder(): PinnedItem[] | null {
+  try {
+    const raw = localStorage.getItem(VIEW_ORDER_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as PinnedItem[]) : null
+  } catch {
+    return null
+  }
+}
+
+export function saveViewOrder(items: PinnedItem[]) {
+  localStorage.setItem(VIEW_ORDER_KEY, JSON.stringify(items))
+}
