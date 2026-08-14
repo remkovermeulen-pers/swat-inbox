@@ -19,6 +19,8 @@ function InboxShell({
   customViews,
   activeViewId,
   onAddView,
+  onViewChange,
+  onDeleteView,
 }: {
   brandId: string | null
   channelId: string | null
@@ -26,6 +28,8 @@ function InboxShell({
   customViews: CustomView[]
   activeViewId: string | null
   onAddView: (view: CustomView) => void
+  onViewChange: (id: string | null) => void
+  onDeleteView: (id: string) => void
 }) {
   const { messageId } = useParams()
   const hasMessage = Boolean(messageId)
@@ -78,6 +82,8 @@ function InboxShell({
           customViews={customViews}
           activeViewId={activeViewId}
           onAddView={onAddView}
+          onViewChange={onViewChange}
+          onDeleteView={onDeleteView}
         />
       </div>
 
@@ -116,6 +122,8 @@ function InboxRoutes({
   customViews,
   activeViewId,
   onAddView,
+  onViewChange,
+  onDeleteView,
 }: {
   brandId: string | null
   channelId: string | null
@@ -123,8 +131,21 @@ function InboxRoutes({
   customViews: CustomView[]
   activeViewId: string | null
   onAddView: (view: CustomView) => void
+  onViewChange: (id: string | null) => void
+  onDeleteView: (id: string) => void
 }) {
-  const shell = <InboxShell brandId={brandId} channelId={channelId} filter={filter} customViews={customViews} activeViewId={activeViewId} onAddView={onAddView} />
+  const shell = (
+    <InboxShell
+      brandId={brandId}
+      channelId={channelId}
+      filter={filter}
+      customViews={customViews}
+      activeViewId={activeViewId}
+      onAddView={onAddView}
+      onViewChange={onViewChange}
+      onDeleteView={onDeleteView}
+    />
+  )
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/inbox" replace />} />
@@ -182,11 +203,6 @@ export default function App() {
           onFilterChange={setActiveFilter}
           activeChannelId={activeChannelId}
           onChannelChange={handleChannelChange}
-          customViews={customViews}
-          activeViewId={activeViewId}
-          onViewChange={handleViewChange}
-          onAddView={addCustomView}
-          onDeleteView={deleteCustomView}
         />
         <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <InboxRoutes
@@ -196,6 +212,8 @@ export default function App() {
             customViews={customViews}
             activeViewId={activeViewId}
             onAddView={addCustomView}
+            onViewChange={handleViewChange}
+            onDeleteView={deleteCustomView}
           />
         </main>
       </div>
