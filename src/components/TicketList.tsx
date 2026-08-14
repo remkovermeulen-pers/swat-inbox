@@ -5,6 +5,7 @@ import { messages, customers, brands, channels } from '../data/mockData'
 import type { Message, InboxFilter, Tag, Sentiment, Platform, MessageStatus } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
+import { CommentCard } from './CommentCard'
 import {
   AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier,
   FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition,
@@ -24,7 +25,6 @@ import {
   Columns3,
   SlidersHorizontal,
   X,
-  Plus,
   Sparkles,
   UserCheck,
   Users,
@@ -32,6 +32,9 @@ import {
   Eye,
   Rows3,
   Calendar,
+  List,
+  LayoutList,
+  Pin,
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
@@ -48,6 +51,8 @@ interface Props {
   onViewChange: (id: string | null) => void
   onDeleteView: (id: string) => void
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
+  pinnedViewIds: Set<string>
+  onTogglePinView: (id: string) => void
   mode?: 'inbox' | 'comments'
 }
 
@@ -116,7 +121,7 @@ const inboxFilterCounts: Record<InboxFilter, number> = {
   archive: 999,
 }
 
-export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, mode = 'inbox' }: Props) {
+export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, pinnedViewIds, onTogglePinView, mode = 'inbox' }: Props) {
   const navigate = useNavigate()
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -135,6 +140,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showFilterActionsMenu, setShowFilterActionsMenu] = useState(false)
   const [showCreateView, setShowCreateView] = useState(false)
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards')
   const [showChannelsMenu, setShowChannelsMenu] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
   const [showSentimentMenu, setShowSentimentMenu] = useState(false)
@@ -194,8 +200,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     function measure() {
       const w = el!.clientWidth
       // ~115px per pill on average, minus space reserved for the always-present
-      // Group by / Columns / (More Filters + actions when they appear) controls.
-      const fit = Math.max(0, Math.floor((w - 300) / 115))
+      // search box + Group by (More Filters + actions only appear once needed).
+      const fit = Math.max(0, Math.floor((w - 490) / 115))
       setVisibleFilterSlots(fit)
     }
     measure()
@@ -407,17 +413,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   }
 
   function saveFiltersAsView() {
-    const name = window.prompt('Name this view:', activeView ? `${activeView.name} (customized)` : '')
-    if (!name?.trim()) return
-    onAddView({
-      id: `view-${Date.now()}`,
-      name: name.trim(),
-      icon: activeView?.icon ?? '📌',
-      color: activeView?.color ?? '#5e6ad2',
-      ...currentFiltersAsPatch(),
-    })
     setShowFilterActionsMenu(false)
-    setToast(`Saved view "${name.trim()}"`)
+    setShowCreateView(true)
   }
 
   function updateFiltersOnView() {
@@ -763,7 +760,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         background: '#fff',
       }}
     >
-      {/* Row 1: page title + search + more */}
+      {/* Row 1: page title + more */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 6px' }}>
         <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111827', margin: 0 }}>
           {headerLabel}
@@ -771,28 +768,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
         {activeView && (
           <span style={{ fontSize: 12, color: '#6b7280', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 99, padding: '3px 10px' }}>
-            Smart view · across all brands &amp; channels, sorted by priority
+            View · across all brands &amp; channels, sorted by priority
           </span>
         )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <Search size={14} style={{ color: '#9ca3af', position: 'absolute', left: 9 }} />
-            <input
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search…"
-              style={{
-                width: 170, fontSize: 12, padding: '6px 10px 6px 28px', borderRadius: 6,
-                border: '1px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', color: '#111827',
-              }}
-            />
-            {searchText && (
-              <button onClick={() => setSearchText('')} style={{ position: 'absolute', right: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex' }}>
-                <X size={13} />
-              </button>
-            )}
-          </div>
           <button
             title="Download"
             style={{ display: 'flex', alignItems: 'center', padding: '5px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
@@ -802,12 +782,12 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         </div>
       </div>
 
-      {/* Row 2: All / New / Starred / Assigned to me / Assigned to others / Archive */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 20px 14px', flexWrap: 'wrap' }}>
+      {/* Row 2: All / New / Starred / Assigned to me / Assigned to others / Archive — never wraps, scrolls horizontally instead */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 20px 14px', flexWrap: 'nowrap', overflowX: 'auto' }}>
         <button
           onClick={() => onFilterChange('all')}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6,
+            display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
             padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
             border: `1px solid ${filter === 'all' ? '#111827' : '#e5e7eb'}`,
             background: filter === 'all' ? '#111827' : '#fff',
@@ -827,7 +807,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
             { f: 'archive' as InboxFilter, icon: <Archive size={13} />, label: 'Archive', count: inboxFilterCounts.archive },
           ] as const
         ).filter(({ f }) => !hiddenInboxFilters.has(f)).map(({ f, icon, label, count }) => (
-          <div key={f} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <div key={f} style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <button
               onClick={() => onFilterChange(f)}
               style={{
@@ -871,17 +851,20 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         ))}
 
         {customViews.length > 0 && (
-          <div style={{ width: 1, height: 16, background: '#e5e7eb', margin: '0 2px' }} />
+          <div style={{ width: 1, height: 16, background: '#e5e7eb', margin: '0 2px', flexShrink: 0 }} />
         )}
 
         {customViews.map((view) => {
           const active = activeViewId === view.id
+          const showUpdate = active && hasUnsavedFilterChanges
+          const pinned = pinnedViewIds.has(view.id)
+          const iconCount = (showUpdate ? 1 : 0) + 2
           return (
-            <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <div key={view.id} style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <button
                 onClick={() => onViewChange(active ? null : view.id)}
                 style={{
-                  padding: '6px 26px 6px 12px',
+                  padding: `6px ${12 + iconCount * 18}px 6px 12px`,
                   borderRadius: 8,
                   border: `1px solid ${active ? '#111827' : '#e5e7eb'}`,
                   fontSize: 13,
@@ -897,37 +880,70 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
               >
                 <span>{view.icon}</span>{view.name}
               </button>
-              <button
-                onClick={() => { if (window.confirm(`Remove the "${view.name}" view?`)) onDeleteView(view.id) }}
-                title="Remove view"
-                style={{
-                  position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 15, height: 15, border: 'none', borderRadius: '50%',
-                  background: 'none', color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af', cursor: 'pointer',
-                }}
-              >
-                <X size={10} />
-              </button>
+              <div style={{ position: 'absolute', right: 4, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 2 }}>
+                {showUpdate && (
+                  <button
+                    onClick={() => updateFiltersOnView()}
+                    title={`Update "${view.name}" with the current filters`}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 16, height: 16, border: 'none', borderRadius: '50%',
+                      background: 'rgba(255,255,255,0.15)', color: '#fff', cursor: 'pointer',
+                    }}
+                  >
+                    <BookmarkPlus size={10} />
+                  </button>
+                )}
+                <button
+                  onClick={() => onTogglePinView(view.id)}
+                  title={pinned ? 'Unpin from sidebar' : 'Pin to sidebar'}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 15, height: 15, border: 'none', borderRadius: '50%',
+                    background: 'none', color: active ? 'rgba(255,255,255,0.85)' : pinned ? '#5e6ad2' : '#9ca3af', cursor: 'pointer',
+                  }}
+                >
+                  <Pin size={10} fill={pinned ? 'currentColor' : 'none'} />
+                </button>
+                <button
+                  onClick={() => { if (window.confirm(`Remove the "${view.name}" view?`)) onDeleteView(view.id) }}
+                  title="Remove view"
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 15, height: 15, border: 'none', borderRadius: '50%',
+                    background: 'none', color: active ? 'rgba(255,255,255,0.7)' : '#9ca3af', cursor: 'pointer',
+                  }}
+                >
+                  <X size={10} />
+                </button>
+              </div>
             </div>
           )
         })}
-
-        <button
-          onClick={() => setShowCreateView(true)}
-          title="Create a new smart view"
-          style={{
-            width: 28, height: 28, borderRadius: '50%', border: '1px dashed #d1d5db',
-            background: 'none', color: '#9ca3af', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}
-        >
-          <Plus size={14} />
-        </button>
       </div>
 
       {/* Row 3: Channels / Visibility / Status / Sentiment / Platform / Tags (responsive — overflow collapses into "Filter") ... Group by / Columns */}
-      <div ref={filterRowRef} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px 12px', borderBottom: '1px solid #f3f4f6' }}>
+      <div ref={filterRowRef} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 20px 12px', borderBottom: '1px solid #f3f4f6', flexWrap: 'nowrap', overflow: 'visible' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <Search size={14} style={{ color: '#9ca3af', position: 'absolute', left: 9 }} />
+          <input
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search…"
+            style={{
+              width: 170, fontSize: 12, padding: '6px 10px 6px 28px', borderRadius: 6,
+              border: '1px solid #e5e7eb', outline: 'none', fontFamily: 'inherit', color: '#111827',
+            }}
+          />
+          {searchText && (
+            <button onClick={() => setSearchText('')} style={{ position: 'absolute', right: 6, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex' }}>
+              <X size={13} />
+            </button>
+          )}
+        </div>
+
+        <div style={{ width: 1, height: 16, background: '#e5e7eb', margin: '0 2px' }} />
+
         {visibleFacets.map(renderFacetPill)}
 
         {overflowFacets.length > 0 && (
@@ -1086,9 +1102,38 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
             <CheckCheck size={13} /> {toast}
           </span>
         )}
+        {mode === 'comments' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f3f4f6', borderRadius: 7, padding: 2 }}>
+            <button
+              onClick={() => setViewMode('cards')}
+              title="Card view"
+              style={{
+                display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
+                background: viewMode === 'cards' ? '#fff' : 'none',
+                boxShadow: viewMode === 'cards' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                color: viewMode === 'cards' ? '#111827' : '#9ca3af',
+              }}
+            >
+              <LayoutList size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              title="List view"
+              style={{
+                display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
+                background: viewMode === 'list' ? '#fff' : 'none',
+                boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+                color: viewMode === 'list' ? '#111827' : '#9ca3af',
+              }}
+            >
+              <List size={16} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Column headers */}
+      {!(mode === 'comments' && viewMode === 'cards') && (
       <div
         style={{
           display: 'flex',
@@ -1167,6 +1212,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           )}
         </div>
       </div>
+      )}
 
       {/* Ticket rows */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -1187,7 +1233,19 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           </div>
         ) : (
           <>
-            {groupedSections ? (
+            {mode === 'comments' && viewMode === 'cards' ? (
+              filtered.map((msg) => (
+                <CommentCard
+                  key={msg.id}
+                  msg={msg}
+                  customer={customers.find((c) => c.id === msg.customerId)}
+                  selected={selected.has(msg.id)}
+                  onSelect={() => toggleSelect(msg.id)}
+                  active={msg.id === messageId}
+                  onClick={() => navigate(`/comments/${msg.id}`)}
+                />
+              ))
+            ) : groupedSections ? (
               groupedSections.map((section) => (
                 <div key={section.key}>
                   <div
@@ -1248,7 +1306,17 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       {showCreateView && (
         <CreateViewModal
           onClose={() => setShowCreateView(false)}
-          onCreate={(view) => { onAddView(view); setShowCreateView(false) }}
+          onCreate={(name, icon) => {
+            onAddView({
+              id: `view-${Date.now()}`,
+              name,
+              icon,
+              color: '#5e6ad2',
+              ...currentFiltersAsPatch(),
+            })
+            setShowCreateView(false)
+            setToast(`Saved view "${name}"`)
+          }}
         />
       )}
     </div>
