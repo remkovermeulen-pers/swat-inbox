@@ -30,6 +30,71 @@ const FILTER_META: Record<string, { icon: React.ReactNode; label: string }> = {
   starred: { icon: <Star size={14} />, label: 'Starred' },
 }
 
+type StaticKey = 'home' | 'inbox' | 'comments' | 'publisher' | 'insights' | 'library'
+const STATIC_KEYS: StaticKey[] = ['home', 'inbox', 'comments', 'publisher', 'insights', 'library']
+
+type NavRow = { kind: 'static'; key: StaticKey } | { kind: 'pinned'; item: PinnedItem }
+
+const NAV_ORDER_KEY = 'inbox-sidebar-nav-order'
+
+function loadNavOrderIds(): string[] {
+  try {
+    const raw = localStorage.getItem(NAV_ORDER_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as string[]) : []
+  } catch {
+    return []
+  }
+}
+
+function saveNavOrderIds(ids: string[]) {
+  localStorage.setItem(NAV_ORDER_KEY, JSON.stringify(ids))
+}
+
+function itemKey(item: PinnedItem) {
+  return item.kind === 'filter' ? `f:${item.key}` : `v:${item.id}`
+}
+
+/** Merges the user's saved order with the current static items + pinned items, so it always
+ * renders something sensible even if the saved order is stale, empty, or missing entries. */
+function buildNavRows(orderIds: string[], items: PinnedItem[]): NavRow[] {
+  const pinnedByKey = new Map(items.map((it) => [itemKey(it), it]))
+  const seen = new Set<string>()
+  const rows: NavRow[] = []
+  for (const id of orderIds) {
+    if (seen.has(id)) continue
+    if (id.startsWith('static:')) {
+      const key = id.slice(7) as StaticKey
+      if (STATIC_KEYS.includes(key)) {
+        rows.push({ kind: 'static', key })
+        seen.add(id)
+      }
+    } else {
+      const item = pinnedByKey.get(id)
+      if (item) {
+        rows.push({ kind: 'pinned', item })
+        seen.add(id)
+      }
+    }
+  }
+  for (const key of STATIC_KEYS) {
+    const id = `static:${key}`
+    if (!seen.has(id)) {
+      rows.push({ kind: 'static', key })
+      seen.add(id)
+    }
+  }
+  for (const item of items) {
+    const id = itemKey(item)
+    if (!seen.has(id)) {
+      rows.push({ kind: 'pinned', item })
+      seen.add(id)
+    }
+  }
+  return rows
+}
+
 export function Sidebar({
   customViews,
   activeViewId,
@@ -51,19 +116,16 @@ export function Sidebar({
   const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
   const isComments = location.pathname.startsWith('/comments')
+  const [navOrderIds, setNavOrderIds] = useState<string[]>(() => loadNavOrderIds())
   const [dropIndex, setDropIndex] = useState<number | null>(null)
 
-  function itemKey(item: PinnedItem) {
-    return item.kind === 'filter' ? `f:${item.key}` : `v:${item.id}`
-  }
+  const navRows = buildNavRows(navOrderIds, pinnedItems)
 
   function itemMeta(item: PinnedItem): { icon: React.ReactNode; label: string } | null {
     if (item.kind === 'filter') return FILTER_META[item.key] ?? null
     const view = customViews.find((v) => v.id === item.id)
     return view ? { icon: <span style={{ fontSize: 14 }}>{view.icon}</span>, label: view.name } : null
   }
-
-  const visibleItems = pinnedItems.filter((item) => itemMeta(item) !== null)
 
   function isActive(item: PinnedItem) {
     if (!isInbox) return false
@@ -76,7 +138,7 @@ export function Sidebar({
   }
 
   function computeDropIndex(e: React.DragEvent<HTMLDivElement>): number {
-    const rows = Array.from(e.currentTarget.querySelectorAll('[data-pinned-row]'))
+    const rows = Array.from(e.currentTarget.querySelectorAll('[data-nav-row]'))
     for (let i = 0; i < rows.length; i++) {
       const rect = rows[i].getBoundingClientRect()
       if (e.clientY < rect.top + rect.height / 2) return i
@@ -86,7 +148,7 @@ export function Sidebar({
 
   function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault()
-    e.dataTransfer.dropEffect = 'copy'
+    e.dataTransfer.dropEffect = 'move'
     setDropIndex(computeDropIndex(e))
   }
 
@@ -96,20 +158,91 @@ export function Sidebar({
 
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault()
-    let atIndex = computeDropIndex(e)
+    const atIndex = computeDropIndex(e)
     setDropIndex(null)
     const raw = e.dataTransfer.getData('application/json')
     if (!raw) return
+    let payload: PinnedItem
     try {
-      const payload = JSON.parse(raw) as PinnedItem
-      // Reordering an already-pinned item: computeDropIndex is measured against the list that still
-      // includes the dragged row, so dropping it after its own original slot needs a -1 correction
-      // once that row is removed and re-inserted.
-      const fromIndex = visibleItems.findIndex((p) => samePinnedItem(p, payload))
-      if (fromIndex !== -1 && fromIndex < atIndex) atIndex -= 1
-      onDropItem(payload, atIndex)
+      payload = JSON.parse(raw) as PinnedItem
     } catch {
-      // ignore malformed drag payloads
+      return
+    }
+    const payloadId = itemKey(payload)
+    const alreadyPinned = pinnedItems.some((p) => samePinnedItem(p, payload))
+    if (!alreadyPinned) onDropItem(payload, pinnedItems.length)
+
+    const ids = navRows.map((r) => (r.kind === 'static' ? `static:${r.key}` : itemKey(r.item)))
+    const fromIndex = ids.indexOf(payloadId)
+    const withoutDragged = fromIndex !== -1 ? [...ids.slice(0, fromIndex), ...ids.slice(fromIndex + 1)] : ids
+    let insertAt = fromIndex !== -1 && fromIndex < atIndex ? atIndex - 1 : atIndex
+    insertAt = Math.min(Math.max(0, insertAt), withoutDragged.length)
+    const nextIds = [...withoutDragged.slice(0, insertAt), payloadId, ...withoutDragged.slice(insertAt)]
+    setNavOrderIds(nextIds)
+    saveNavOrderIds(nextIds)
+  }
+
+  function renderStaticRow(key: StaticKey) {
+    switch (key) {
+      case 'home':
+        return <NavItem icon={<Home size={16} />} label="Home" active={false} onClick={() => {}} />
+      case 'inbox':
+        return (
+          <NavLink
+            to="/inbox"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 10px', borderRadius: 6,
+              fontSize: 14, fontWeight: isInbox ? 600 : 400,
+              color: isInbox ? '#15803d' : '#374151',
+              background: isInbox ? '#f0fdf4' : 'transparent',
+              textDecoration: 'none',
+            }}
+          >
+            <span style={{ color: '#6b7280' }}><Inbox size={16} /></span>
+            <span style={{ flex: 1 }}>Inbox</span>
+            {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isInbox} />}
+          </NavLink>
+        )
+      case 'comments':
+        return (
+          <NavLink
+            to="/comments"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 10px', borderRadius: 6,
+              fontSize: 14, fontWeight: isComments ? 600 : 400,
+              color: isComments ? '#15803d' : '#374151',
+              background: isComments ? '#f0fdf4' : 'transparent',
+              textDecoration: 'none',
+            }}
+          >
+            <span style={{ color: '#6b7280' }}><MessageSquare size={16} /></span>
+            <span style={{ flex: 1 }}>Comments</span>
+            {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isComments} />}
+          </NavLink>
+        )
+      case 'publisher':
+        return (
+          <NavLink
+            to="/publisher"
+            style={({ isActive }) => ({
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '7px 10px', borderRadius: 6,
+              fontSize: 14, fontWeight: isActive ? 600 : 400,
+              color: isActive ? '#15803d' : '#374151',
+              background: isActive ? '#f0fdf4' : 'transparent',
+              textDecoration: 'none',
+            })}
+          >
+            <span style={{ color: '#6b7280' }}><Calendar size={16} /></span>
+            Publisher
+          </NavLink>
+        )
+      case 'insights':
+        return <NavItem icon={<BarChart2 size={16} />} label="Insights" active={false} onClick={() => {}} />
+      case 'library':
+        return <NavItem icon={<Folder size={16} />} label="Library" badge="BETA" active={false} onClick={() => {}} />
     }
   }
 
@@ -174,127 +307,68 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Main nav — flat, no nested sub-items (those live as filter pills atop the Inbox/Comments list) */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
-        <NavItem icon={<Home size={16} />} label="Home" active={false} onClick={() => {}} />
-        <NavLink
-          to="/inbox"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 10px', borderRadius: 6,
-            fontSize: 14, fontWeight: isInbox ? 600 : 400,
-            color: isInbox ? '#15803d' : '#374151',
-            background: isInbox ? '#f0fdf4' : 'transparent',
-            textDecoration: 'none',
-          }}
-        >
-          <span style={{ color: '#6b7280' }}><Inbox size={16} /></span>
-          <span style={{ flex: 1 }}>Inbox</span>
-          {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isInbox} />}
-        </NavLink>
-        <NavLink
-          to="/comments"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 10px', borderRadius: 6,
-            fontSize: 14, fontWeight: isComments ? 600 : 400,
-            color: isComments ? '#15803d' : '#374151',
-            background: isComments ? '#f0fdf4' : 'transparent',
-            textDecoration: 'none',
-          }}
-        >
-          <span style={{ color: '#6b7280' }}><MessageSquare size={16} /></span>
-          <span style={{ flex: 1 }}>Comments</span>
-          {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isComments} />}
-        </NavLink>
-        <NavLink
-          to="/publisher"
-          style={({ isActive }) => ({
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '7px 10px', borderRadius: 6,
-            fontSize: 14, fontWeight: isActive ? 600 : 400,
-            color: isActive ? '#15803d' : '#374151',
-            background: isActive ? '#f0fdf4' : 'transparent',
-            textDecoration: 'none',
-          })}
-        >
-          <span style={{ color: '#6b7280' }}><Calendar size={16} /></span>
-          Publisher
-        </NavLink>
-        <NavItem icon={<BarChart2 size={16} />} label="Insights" active={false} onClick={() => {}} />
-        <NavItem
-          icon={<Folder size={16} />}
-          label="Library"
-          badge="BETA"
-          active={false}
-          onClick={() => {}}
-        />
-
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          style={{
-            marginTop: 12, borderRadius: 8,
-            border: dropIndex !== null ? '1.5px dashed #5e6ad2' : '1.5px dashed transparent',
-            background: dropIndex !== null ? '#eef2ff' : 'transparent',
-            padding: '4px 2px',
-          }}
-        >
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 4px', padding: '0 10px' }}>
-            Views
-          </p>
-          {visibleItems.length === 0 && dropIndex === null && (
-            <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, padding: '4px 10px' }}>
-              Drag a view here to pin it
-            </p>
-          )}
-          {visibleItems.map((item, i) => {
-            const meta = itemMeta(item)!
-            const active = isActive(item)
-            return (
-              <div key={itemKey(item)} data-pinned-row style={{ position: 'relative' }}>
-                {dropIndex === i && <DropIndicator />}
-                <div
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('application/json', JSON.stringify(item))
-                    e.dataTransfer.effectAllowed = 'move'
-                  }}
-                  style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'grab' }}
-                >
-                  <button
-                    onClick={() => goToItem(item)}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '7px 28px 7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                      background: active ? '#f0fdf4' : 'transparent',
-                      color: active ? '#15803d' : '#374151',
-                      fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
-                    }}
-                  >
-                    <span style={{ color: '#6b7280', display: 'flex' }}>{meta.icon}</span>
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta.label}</span>
-                  </button>
-                  <button
-                    onClick={() => onRemoveItem(item)}
-                    title="Unpin from sidebar"
-                    style={{
-                      position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      width: 16, height: 16, border: 'none', borderRadius: '50%',
-                      background: 'none', color: '#9ca3af', cursor: 'pointer',
-                    }}
-                  >
-                    <X size={11} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-          {dropIndex === visibleItems.length && <DropIndicator />}
-        </div>
-      </nav>
+      {/* Main nav — a pinned view can be dragged to any vertical position, interspersed with the static items */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}
+      >
+        {navRows.map((row, i) => {
+          const rowKey = row.kind === 'static' ? `static:${row.key}` : itemKey(row.item)
+          return (
+            <div key={rowKey} data-nav-row>
+              {dropIndex === i && <DropIndicator />}
+              {row.kind === 'static' ? (
+                renderStaticRow(row.key)
+              ) : (
+                (() => {
+                  const meta = itemMeta(row.item)
+                  if (!meta) return null
+                  const active = isActive(row.item)
+                  return (
+                    <div
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/json', JSON.stringify(row.item))
+                        e.dataTransfer.effectAllowed = 'move'
+                      }}
+                      style={{ position: 'relative', display: 'flex', alignItems: 'center', cursor: 'grab' }}
+                    >
+                      <button
+                        onClick={() => goToItem(row.item)}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '7px 28px 7px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                          background: active ? '#f0fdf4' : 'transparent',
+                          color: active ? '#15803d' : '#374151',
+                          fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 600 : 400, textAlign: 'left',
+                        }}
+                      >
+                        <span style={{ color: '#6b7280', display: 'flex' }}>{meta.icon}</span>
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meta.label}</span>
+                      </button>
+                      <button
+                        onClick={() => onRemoveItem(row.item)}
+                        title="Unpin from sidebar"
+                        style={{
+                          position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          width: 16, height: 16, border: 'none', borderRadius: '50%',
+                          background: 'none', color: '#9ca3af', cursor: 'pointer',
+                        }}
+                      >
+                        <X size={11} />
+                      </button>
+                    </div>
+                  )
+                })()
+              )}
+            </div>
+          )
+        })}
+        {dropIndex === navRows.length && <DropIndicator />}
+      </div>
 
       {/* Bottom */}
       <div style={{ borderTop: '1px solid #f3f4f6', padding: '10px 14px' }}>

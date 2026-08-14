@@ -61,6 +61,7 @@ export interface Message {
   tags: Tag[]
   aiDraft?: string
   archived?: boolean
+  muted?: boolean
 }
 
 export type AutomationAction = 'auto_send' | 'approve' | 'escalate'
