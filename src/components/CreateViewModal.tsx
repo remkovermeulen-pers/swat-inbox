@@ -1,9 +1,34 @@
 import { useState } from 'react'
-import { X, Sparkles } from 'lucide-react'
-import type { Sentiment } from '../data/mockData'
-import { KNOWN_TAGS, type CustomView } from '../lib/inboxScale'
+import { X, Sparkles, Plus, Trash2 } from 'lucide-react'
+import {
+  FIELD_DEFS,
+  FILTER_FIELDS,
+  operatorsForField,
+  defaultOperatorForField,
+  type CustomView,
+  type FilterCondition,
+  type FilterField,
+} from '../lib/inboxScale'
 
 const ICONS = ['🔥', '⭐', '💳', '🚨', '📌', '🧭', '💬', '🛑']
+
+let rowIdCounter = 0
+function nextRowId() {
+  rowIdCounter += 1
+  return rowIdCounter
+}
+
+interface Row {
+  id: number
+  field: FilterField
+  operator: string
+  value: string | string[]
+}
+
+function blankRow(): Row {
+  const field: FilterField = 'tag'
+  return { id: nextRowId(), field, operator: defaultOperatorForField(field), value: [] }
+}
 
 export function CreateViewModal({
   onCreate,
@@ -14,31 +39,44 @@ export function CreateViewModal({
 }) {
   const [name, setName] = useState('')
   const [icon, setIcon] = useState(ICONS[0])
-  const [keywordsText, setKeywordsText] = useState('')
-  const [tags, setTags] = useState<string[]>([])
-  const [sentiments, setSentiments] = useState<Sentiment[]>([])
-  const [minReach, setMinReach] = useState('')
+  const [rows, setRows] = useState<Row[]>([blankRow()])
 
-  function toggleTag(tag: string) {
-    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]))
+  function updateRow(id: number, patch: Partial<Row>) {
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)))
   }
 
-  function toggleSentiment(s: Sentiment) {
-    setSentiments((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]))
+  function setRowField(id: number, field: FilterField) {
+    updateRow(id, { field, operator: defaultOperatorForField(field), value: FIELD_DEFS[field].type === 'select' ? [] : '' })
+  }
+
+  function addRow() {
+    setRows((prev) => [...prev, blankRow()])
+  }
+
+  function removeRow(id: number) {
+    setRows((prev) => prev.filter((r) => r.id !== id))
+  }
+
+  function toggleSelectValue(id: number, value: string) {
+    setRows((prev) => prev.map((r) => {
+      if (r.id !== id) return r
+      const current = Array.isArray(r.value) ? r.value : []
+      const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
+      return { ...r, value: next }
+    }))
   }
 
   function submit() {
     if (!name.trim()) return
-    const keywords = keywordsText.split(',').map((k) => k.trim()).filter(Boolean)
+    const conditions: FilterCondition[] = rows
+      .filter((r) => (Array.isArray(r.value) ? r.value.length > 0 : r.value.trim() !== ''))
+      .map((r) => ({ field: r.field, operator: r.operator, value: r.value }))
     onCreate({
       id: `view-${Date.now()}`,
       name: name.trim(),
       icon,
       color: '#5e6ad2',
-      keywords: keywords.length ? keywords : undefined,
-      tags: tags.length ? tags : undefined,
-      sentiments: sentiments.length ? sentiments : undefined,
-      minReach: minReach.trim() ? Number(minReach) : undefined,
+      conditions: conditions.length ? conditions : undefined,
     })
   }
 
@@ -53,7 +91,7 @@ export function CreateViewModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          width: 420, maxHeight: '85vh', overflowY: 'auto', background: '#fff',
+          width: 560, maxHeight: '85vh', overflowY: 'auto', background: '#fff',
           borderRadius: 12, boxShadow: '0 12px 32px rgba(0,0,0,0.2)', fontFamily: 'inherit',
         }}
       >
@@ -94,79 +132,92 @@ export function CreateViewModal({
             </div>
           </div>
 
-          {/* Keywords */}
+          {/* Filters */}
           <div>
-            <Label>Keywords (comma-separated)</Label>
-            <input
-              value={keywordsText}
-              onChange={(e) => setKeywordsText(e.target.value)}
-              placeholder="e.g. recall, hacked, lawsuit"
-              style={inputStyle}
-            />
-            <p style={hintStyle}>Matches if the subject or message text contains ANY of these.</p>
-          </div>
-
-          {/* Tags */}
-          <div>
-            <Label>Tags</Label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {KNOWN_TAGS.map((tag) => {
-                const active = tags.includes(tag)
+            <Label>Filters</Label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {rows.map((row) => {
+                const def = FIELD_DEFS[row.field]
+                const operators = operatorsForField(row.field)
                 return (
-                  <button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    style={{
-                      padding: '3px 10px', borderRadius: 99, fontSize: 12, cursor: 'pointer',
-                      border: `1px solid ${active ? '#5e6ad2' : '#e5e7eb'}`,
-                      background: active ? '#eef2ff' : '#fff',
-                      color: active ? '#4338ca' : '#6b7280',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    {tag}
-                  </button>
+                  <div key={row.id} style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+                    <select
+                      value={row.field}
+                      onChange={(e) => setRowField(row.id, e.target.value as FilterField)}
+                      style={{ ...selectStyle, width: 130, flexShrink: 0 }}
+                    >
+                      {FILTER_FIELDS.map((f) => (
+                        <option key={f} value={f}>{FIELD_DEFS[f].label}</option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={row.operator}
+                      onChange={(e) => updateRow(row.id, { operator: e.target.value })}
+                      style={{ ...selectStyle, width: 110, flexShrink: 0 }}
+                    >
+                      {operators.map((op) => (
+                        <option key={op.value} value={op.value}>{op.label}</option>
+                      ))}
+                    </select>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {def.type === 'select' ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, padding: '4px 0' }}>
+                          {def.options?.map((opt) => {
+                            const active = Array.isArray(row.value) && row.value.includes(opt)
+                            return (
+                              <button
+                                key={opt}
+                                onClick={() => toggleSelectValue(row.id, opt)}
+                                style={{
+                                  padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+                                  textTransform: 'capitalize',
+                                  border: `1px solid ${active ? '#5e6ad2' : '#e5e7eb'}`,
+                                  background: active ? '#eef2ff' : '#fff',
+                                  color: active ? '#4338ca' : '#6b7280',
+                                }}
+                              >
+                                {opt.replace('_', ' ')}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      ) : (
+                        <input
+                          type={def.type === 'number' ? 'number' : 'text'}
+                          value={Array.isArray(row.value) ? '' : row.value}
+                          onChange={(e) => updateRow(row.id, { value: e.target.value })}
+                          placeholder={def.type === 'number' ? 'e.g. 10000' : 'value'}
+                          style={{ ...inputStyle, padding: '6px 10px' }}
+                        />
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => removeRow(row.id)}
+                      title="Remove filter"
+                      style={{
+                        flexShrink: 0, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: 'none', borderRadius: 6, background: 'none', color: '#9ca3af', cursor: 'pointer',
+                      }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 )
               })}
             </div>
-            <p style={hintStyle}>Matches if the message has ANY of the selected tags (combined with keywords above as OR).</p>
-          </div>
-
-          {/* Sentiment */}
-          <div>
-            <Label>Customer sentiment</Label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {(['negative', 'neutral', 'positive'] as Sentiment[]).map((s) => {
-                const active = sentiments.includes(s)
-                return (
-                  <button
-                    key={s}
-                    onClick={() => toggleSentiment(s)}
-                    style={{
-                      padding: '3px 10px', borderRadius: 99, fontSize: 12, cursor: 'pointer', textTransform: 'capitalize',
-                      border: `1px solid ${active ? '#5e6ad2' : '#e5e7eb'}`,
-                      background: active ? '#eef2ff' : '#fff',
-                      color: active ? '#4338ca' : '#6b7280',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    {s}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Min reach */}
-          <div>
-            <Label>Minimum customer reach</Label>
-            <input
-              value={minReach}
-              onChange={(e) => setMinReach(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="e.g. 10000"
-              style={inputStyle}
-            />
-            <p style={hintStyle}>Sentiment and reach must ALL match (AND) — keywords/tags match if ANY apply (OR).</p>
+            <button
+              onClick={addRow}
+              style={{
+                marginTop: 8, display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 12, color: '#5e6ad2', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit',
+              }}
+            >
+              <Plus size={13} /> Add filter
+            </button>
+            <p style={hintStyle}>All filters must match (AND). "is"/"is not" on multi-value fields match if ANY selected value applies.</p>
           </div>
         </div>
 
@@ -186,11 +237,16 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 const inputStyle: React.CSSProperties = {
-  flex: 1, fontSize: 13, padding: '7px 10px', borderRadius: 7,
-  border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', color: '#111827',
+  width: '100%', fontSize: 13, padding: '7px 10px', borderRadius: 7,
+  border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', color: '#111827', boxSizing: 'border-box',
 }
 
-const hintStyle: React.CSSProperties = { fontSize: 11, color: '#9ca3af', margin: '5px 0 0' }
+const selectStyle: React.CSSProperties = {
+  fontSize: 12, padding: '6px 8px', borderRadius: 7,
+  border: '1px solid #e2e8f0', outline: 'none', fontFamily: 'inherit', color: '#111827', background: '#fff',
+}
+
+const hintStyle: React.CSSProperties = { fontSize: 11, color: '#9ca3af', margin: '8px 0 0' }
 
 const primaryBtn: React.CSSProperties = {
   flex: 1, padding: '8px 14px', borderRadius: 7, border: 'none',

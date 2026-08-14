@@ -161,7 +161,7 @@ function InboxRoutes({
 export default function App() {
   const [activeFilter, setActiveFilter] = useState<InboxFilter>('all')
   const [activeBrandId, setActiveBrandId] = useState<string | null>(null)
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
+  const activeChannelId: string | null = null
   const [customViews, setCustomViews] = useState<CustomView[]>(() => loadCustomViews())
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
 
@@ -171,7 +171,6 @@ export default function App() {
     setActiveViewId(view?.id ?? null)
     if (view) {
       setActiveBrandId(view.brandId ?? null)
-      setActiveChannelId(view.channelId ?? null)
     }
   }
 

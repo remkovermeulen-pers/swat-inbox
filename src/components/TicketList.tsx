@@ -5,7 +5,7 @@ import { messages, customers, brands, channels } from '../data/mockData'
 import type { Message, InboxFilter, Tag, Sentiment, Platform } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
-import { AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, type CustomView, type SortCol, type SortDir } from '../lib/inboxScale'
+import { AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, type CustomView, type FilterCondition, type SortCol, type SortDir } from '../lib/inboxScale'
 import {
   Search,
   Download,
@@ -111,7 +111,6 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
   }
 
   const activeView = customViews.find((v) => v.id === activeViewId) ?? null
-  const viewChannel = activeView?.channelId ? channels.find((c) => c.id === activeView.channelId) : null
 
   useEffect(() => {
     if (!activeViewId) return
@@ -146,9 +145,7 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
     .filter((m) => {
       if (activeView) {
         const cust = customers.find((c) => c.id === m.customerId)
-        if (!messageMatchesView(m, cust, activeView)) return false
-        if (viewChannel && !(m.channel === viewChannel.name && m.platform === viewChannel.platform)) return false
-        return true
+        return messageMatchesView(m, cust, activeView)
       }
       return (!brandId || m.brandId === brandId)
         && (!channelId || (channel && m.channel === channel.name && m.platform === channel.platform))
@@ -261,7 +258,7 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
     setSelected(new Set())
   }
 
-  function saveCurrentView() {
+  function saveFiltersAsView() {
     const name = window.prompt('Name this view:', activeView ? `${activeView.name} (customized)` : '')
     if (!name?.trim()) return
     const statuses = sortFilter === 'All' ? undefined : [
@@ -269,21 +266,21 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
         : sortFilter === 'AI pending' ? 'ai_pending' as const
         : 'answered' as const,
     ]
+    const conditions: FilterCondition[] = []
+    if (filterTags.size > 0) conditions.push({ field: 'tag', operator: 'is', value: Array.from(filterTags) })
+    if (filterSentiments.size > 0) conditions.push({ field: 'sentiment', operator: 'is', value: Array.from(filterSentiments) })
+    if (filterPlatforms.size > 0) conditions.push({ field: 'platform', operator: 'is', value: Array.from(filterPlatforms) })
     onAddView({
       id: `view-${Date.now()}`,
       name: name.trim(),
       icon: activeView?.icon ?? '📌',
       color: activeView?.color ?? '#5e6ad2',
-      keywords: activeView?.keywords,
-      tags: activeView?.tags,
-      sentiments: activeView?.sentiments,
-      minReach: activeView?.minReach,
       statuses,
-      brandId: activeView?.brandId ?? brandId ?? undefined,
-      channelId: activeView?.channelId ?? channelId ?? undefined,
+      conditions: conditions.length ? conditions : activeView?.conditions,
       sortCol,
       sortDir,
     })
+    setShowFilterMenu(false)
     setToast(`Saved view "${name.trim()}"`)
   }
 
@@ -404,10 +401,6 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
             <Plus size={13} />
           </button>
         </div>
-
-        <button onClick={saveCurrentView} style={saveViewBtnStyle} title="Save the current filters, status, and sort order as a Smart View">
-          <BookmarkPlus size={13} /> Save view
-        </button>
 
         {/* Right controls */}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -535,6 +528,18 @@ export function TicketList({ brandId, channelId, filter, customViews, activeView
                       Clear all filters
                     </button>
                   )}
+                  <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: 10 }}>
+                    <button
+                      onClick={saveFiltersAsView}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        padding: '7px 10px', borderRadius: 7, border: '1px solid #5e6ad2', background: '#eef2ff',
+                        color: '#4338ca', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      <BookmarkPlus size={13} /> Save filters as new view
+                    </button>
+                  </div>
                 </div>
               </>
             )}
