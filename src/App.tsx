@@ -1,20 +1,15 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { HashRouter, Routes, Route, Navigate, useParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Sidebar } from './components/Sidebar'
 import { TicketList } from './components/TicketList'
-import { MessageDetail } from './components/MessageDetail'
 import { BrandSettings } from './pages/BrandSettings'
 import { Publisher } from './pages/Publisher'
 import type { InboxFilter } from './data/mockData'
-import type { CustomView } from './lib/inboxScale'
+import type { CustomView, PinnedItem } from './lib/inboxScale'
 import {
   loadCustomViews, saveCustomViews,
-  loadPinnedViewIds, savePinnedViewIds,
-  loadPinnedFilters, savePinnedFilters,
+  loadPinnedItems, savePinnedItems, samePinnedItem,
 } from './lib/inboxScale'
-
-const SPLIT_KEY = 'inbox-split-pct'
-const DEFAULT_SPLIT = 50
 
 function InboxShell({
   brandId,
@@ -41,50 +36,9 @@ function InboxShell({
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
   mode?: 'inbox' | 'comments'
 }) {
-  const { messageId } = useParams()
-  const hasMessage = Boolean(messageId)
-
-  const saved = parseFloat(localStorage.getItem(SPLIT_KEY) || String(DEFAULT_SPLIT))
-  const [splitPct, setSplitPct] = useState(saved)
-  const [dragging, setDragging] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setDragging(true)
-  }, [])
-
-  useEffect(() => {
-    if (!dragging) return
-    function onMove(e: MouseEvent) {
-      const container = containerRef.current
-      if (!container) return
-      const rect = container.getBoundingClientRect()
-      const pct = Math.min(75, Math.max(25, ((e.clientX - rect.left) / rect.width) * 100))
-      setSplitPct(pct)
-    }
-    function onUp() {
-      setDragging(false)
-      setSplitPct((prev) => { localStorage.setItem(SPLIT_KEY, String(prev)); return prev })
-    }
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [dragging])
-
   return (
-    <div ref={containerRef} style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden', cursor: dragging ? 'col-resize' : 'default', userSelect: dragging ? 'none' : 'auto' }}>
-      {/* Ticket list */}
-      <div
-        style={{
-          width: hasMessage ? `${splitPct}%` : '100%',
-          flexShrink: 0,
-          height: '100%',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
+    <div style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden' }}>
+      <div style={{ width: '100%', flexShrink: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <TicketList
           brandId={brandId}
           channelId={channelId}
@@ -99,31 +53,6 @@ function InboxShell({
           mode={mode}
         />
       </div>
-
-      {/* Draggable divider */}
-      {hasMessage && (
-        <div
-          onMouseDown={onMouseDown}
-          style={{
-            width: 5,
-            flexShrink: 0,
-            height: '100%',
-            cursor: 'col-resize',
-            background: dragging ? '#d1d5db' : '#e5e7eb',
-            transition: dragging ? 'none' : 'background 0.15s',
-            position: 'relative',
-          }}
-          onMouseEnter={(e) => { if (!dragging) (e.currentTarget as HTMLDivElement).style.background = '#d1d5db' }}
-          onMouseLeave={(e) => { if (!dragging) (e.currentTarget as HTMLDivElement).style.background = '#e5e7eb' }}
-        />
-      )}
-
-      {/* Detail panel */}
-      {hasMessage && (
-        <div style={{ flex: 1, height: '100%', overflow: 'hidden', display: 'flex' }}>
-          <MessageDetail key={messageId} />
-        </div>
-      )}
     </div>
   )
 }
@@ -200,12 +129,10 @@ export default function App() {
   const activeChannelId: string | null = null
   const [customViews, setCustomViews] = useState<CustomView[]>(() => loadCustomViews())
   const [activeViewId, setActiveViewId] = useState<string | null>(null)
-  const [pinnedViewIds, setPinnedViewIds] = useState<Set<string>>(() => loadPinnedViewIds())
-  const [pinnedFilters, setPinnedFilters] = useState<Set<InboxFilter>>(() => loadPinnedFilters() as Set<InboxFilter>)
+  const [pinnedItems, setPinnedItems] = useState<PinnedItem[]>(() => loadPinnedItems())
 
   useEffect(() => { saveCustomViews(customViews) }, [customViews])
-  useEffect(() => { savePinnedViewIds(pinnedViewIds) }, [pinnedViewIds])
-  useEffect(() => { savePinnedFilters(pinnedFilters) }, [pinnedFilters])
+  useEffect(() => { savePinnedItems(pinnedItems) }, [pinnedItems])
 
   function activateView(view: CustomView | null) {
     setActiveViewId(view?.id ?? null)
@@ -238,28 +165,21 @@ export default function App() {
     setCustomViews((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)))
   }
 
-  function pinView(id: string) {
-    setPinnedViewIds((prev) => new Set(prev).add(id))
+  function insertPinnedItem(item: PinnedItem, atIndex: number) {
+    setPinnedItems((prev) => {
+      const withoutDup = prev.filter((p) => !samePinnedItem(p, item))
+      const idx = Math.min(Math.max(0, atIndex), withoutDup.length)
+      return [...withoutDup.slice(0, idx), item, ...withoutDup.slice(idx)]
+    })
   }
 
-  function unpinView(id: string) {
-    setPinnedViewIds((prev) => { const next = new Set(prev); next.delete(id); return next })
+  function removePinnedItem(item: PinnedItem) {
+    setPinnedItems((prev) => prev.filter((p) => !samePinnedItem(p, item)))
   }
 
-  function pinFilter(f: InboxFilter) {
-    setPinnedFilters((prev) => new Set(prev).add(f))
-  }
-
-  function unpinFilter(f: InboxFilter) {
-    setPinnedFilters((prev) => { const next = new Set(prev); next.delete(f); return next })
-  }
-
-  function selectViewFromSidebar(id: string) {
-    activateView(customViews.find((v) => v.id === id) ?? null)
-  }
-
-  function selectFilterFromSidebar(f: InboxFilter) {
-    handleFilterChange(f)
+  function selectPinnedItem(item: PinnedItem) {
+    if (item.kind === 'view') activateView(customViews.find((v) => v.id === item.id) ?? null)
+    else handleFilterChange(item.key)
   }
 
   return (
@@ -267,16 +187,12 @@ export default function App() {
       <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
         <Sidebar
           customViews={customViews}
-          pinnedViewIds={pinnedViewIds}
           activeViewId={activeViewId}
-          onSelectView={selectViewFromSidebar}
-          onPinView={pinView}
-          onUnpinView={unpinView}
           activeFilter={activeFilter}
-          pinnedFilters={pinnedFilters}
-          onSelectFilter={selectFilterFromSidebar}
-          onPinFilter={pinFilter}
-          onUnpinFilter={unpinFilter}
+          pinnedItems={pinnedItems}
+          onSelectItem={selectPinnedItem}
+          onDropItem={insertPinnedItem}
+          onRemoveItem={removePinnedItem}
         />
         <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
           <InboxRoutes
