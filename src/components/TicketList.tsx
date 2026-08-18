@@ -1446,17 +1446,60 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                         {section.items.length}
                       </span>
                     </button>
-                    {initialPost && (
-                      <CommentCard
-                        key={initialPost.id}
-                        msg={initialPost}
-                        customer={customers.find((c) => c.id === initialPost.customerId)}
-                        selected={selected.has(initialPost.id)}
-                        onSelect={() => toggleSelect(initialPost.id)}
-                        active={initialPost.id === messageId}
-                        onClick={() => navigate(`/inbox/${initialPost.brandId}/${initialPost.id}`)}
-                      />
-                    )}
+                    {initialPost && (() => {
+                      const initialCustomer = customers.find((c) => c.id === initialPost.customerId)
+                      return (
+                        <div
+                          style={{
+                            display: 'flex', gap: 10, padding: '14px 20px 16px', cursor: 'pointer',
+                            borderBottom: '1px solid #e5e7eb',
+                            background: initialPost.id === messageId ? '#eff6ff' : '#fff',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected.has(initialPost.id)}
+                            onChange={(e) => { e.stopPropagation(); toggleSelect(initialPost.id) }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ width: 15, height: 15, marginTop: 3, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
+                          />
+                          <div onClick={() => navigate(`/inbox/${initialPost.brandId}/${initialPost.id}`)} style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                              <img
+                                src={initialCustomer?.avatar}
+                                style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', background: '#e5e7eb', flexShrink: 0 }}
+                              />
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{initialCustomer?.name ?? 'Anonymous'}</span>
+                                  <PlatformIcon platform={initialPost.platform} size={13} />
+                                  <span style={{ fontSize: 12, color: '#9ca3af' }}>{format(new Date(initialPost.timestamp), 'MMM d, yyyy')}</span>
+                                </div>
+                                <span style={{ fontSize: 12, color: '#9ca3af' }}>{initialPost.channel}</span>
+                              </div>
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', background: '#f3f4f6', padding: '2px 9px', borderRadius: 99, flexShrink: 0 }}>
+                                Original post
+                              </span>
+                            </div>
+                            <p style={{ fontSize: 14, color: '#111827', lineHeight: 1.6, margin: '0 0 8px', whiteSpace: 'pre-wrap' }}>
+                              {initialPost.preview}
+                            </p>
+                            {initialPost.tags.length > 0 && (
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                {initialPost.tags.map((tag) => (
+                                  <span
+                                    key={tag.label}
+                                    style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: '#ffedd5', color: '#c2410c' }}
+                                  >
+                                    {tag.label}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
                     {!collapsed && (
                       <div style={{ position: 'relative' }}>
                         {isThread && replies.length > 1 && (
