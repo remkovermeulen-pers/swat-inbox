@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns'
-import { ExternalLink, Reply as ReplyIcon, Repeat2, ThumbsUp, Pin, CornerDownRight, Trash2, Lock } from 'lucide-react'
+import { ExternalLink, Reply as ReplyIcon, Repeat2, ThumbsUp, Pin, CornerDownRight, Trash2, Lock, AtSign, CheckCircle2, Send, Meh, Tag as TagIcon } from 'lucide-react'
 import type { Customer, Message } from '../data/mockData'
 import { messageVisibility } from '../lib/inboxScale'
 import { PlatformIcon } from './PlatformIcon'
@@ -59,6 +59,17 @@ export function CommentCard({ msg, customer, selected, onSelect, active, onClick
               }}
             >
               Show Ticket <PlatformIcon platform={msg.platform} size={14} />
+            </button>
+            <button
+              title="Mention"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 24, height: 24, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: '#eff6ff', color: '#2563eb',
+              }}
+            >
+              <AtSign size={14} />
             </button>
             <button onClick={(e) => e.stopPropagation()} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex' }}>
               <Pin size={14} />
@@ -124,6 +135,21 @@ export function CommentCard({ msg, customer, selected, onSelect, active, onClick
           </button>
         </div>
       </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, paddingTop: 4, flexShrink: 0 }}>
+        <button title="Mark read" onClick={(e) => e.stopPropagation()} style={railIconBtnStyle}>
+          <CheckCircle2 size={17} />
+        </button>
+        <button title="Forward" onClick={(e) => e.stopPropagation()} style={railIconBtnStyle}>
+          <Send size={17} />
+        </button>
+        <button title="Set mood" onClick={(e) => e.stopPropagation()} style={railIconBtnStyle}>
+          <Meh size={17} />
+        </button>
+        <button title="Add tag" onClick={(e) => e.stopPropagation()} style={railIconBtnStyle}>
+          <TagIcon size={17} />
+        </button>
+      </div>
     </div>
   )
 }
@@ -131,4 +157,10 @@ export function CommentCard({ msg, customer, selected, onSelect, active, onClick
 const actionBtnStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#6b7280',
   background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit',
+}
+
+const railIconBtnStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  width: 30, height: 30, borderRadius: '50%', border: '1px solid #e5e7eb',
+  background: '#fff', color: '#6b7280', cursor: 'pointer',
 }
