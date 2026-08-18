@@ -10,9 +10,10 @@ interface Props {
   onSelect: () => void
   active: boolean
   onClick: () => void
+  threadBadge?: string
 }
 
-export function CommentCard({ msg, customer, selected, onSelect, active, onClick }: Props) {
+export function CommentCard({ msg, customer, selected, onSelect, active, onClick, threadBadge }: Props) {
   return (
     <div style={{ display: 'flex', gap: 10, padding: '10px 20px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingTop: 4, flexShrink: 0 }}>
@@ -43,6 +44,11 @@ export function CommentCard({ msg, customer, selected, onSelect, active, onClick
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{customer?.name ?? 'Anonymous'}</span>
             <div style={{ flex: 1 }} />
+            {threadBadge && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: 99 }}>
+                {threadBadge}
+              </span>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); onClick() }}
               style={{
