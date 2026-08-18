@@ -37,7 +37,7 @@ export const FIELD_DEFS: Record<FilterField, { label: string; type: FieldType; o
   priority: { label: 'Priority', type: 'select', options: ['Critical', 'High', 'Normal', 'Low'] },
   platform: { label: 'Platform', type: 'select', options: ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube'] },
   status: { label: 'Status', type: 'select', options: ['unanswered', 'answered', 'ai_pending'] },
-  sentiment: { label: 'Sentiment', type: 'select', options: ['negative', 'neutral', 'positive'] },
+  sentiment: { label: 'Sentiment', type: 'select', options: ['negative', 'neutral', 'positive', 'none'] },
   tag: { label: 'Tag', type: 'select', options: KNOWN_TAGS },
 }
 
@@ -96,7 +96,7 @@ function getFieldValue(field: FilterField, msg: Message, customer: Customer | un
     case 'priority': return priorityTier(getPriorityScore(msg, customer)).label
     case 'platform': return msg.platform
     case 'status': return msg.status
-    case 'sentiment': return customer?.sentiment ?? ''
+    case 'sentiment': return customer?.sentiment ?? 'none'
     default: return ''
   }
 }
