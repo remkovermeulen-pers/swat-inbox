@@ -62,6 +62,9 @@ export interface Message {
   aiDraft?: string
   archived?: boolean
   muted?: boolean
+  liked?: boolean
+  pinned?: boolean
+  mood?: Sentiment
 }
 
 export type AutomationAction = 'auto_send' | 'approve' | 'escalate'
