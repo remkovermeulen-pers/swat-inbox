@@ -1528,3 +1528,106 @@ const seeds: Seed[] = [
 const generatedMessages: Message[] = seeds.map(makeMsg)
 
 export const messages: Message[] = [...baseMessages, ...generatedMessages]
+
+// ── Automations & Community Agent jobs ───────────────────────────────────────
+
+export type AppliesTo = 'tickets' | 'comments'
+
+export interface Automation {
+  id: string
+  name: string
+  description: string
+  appliesTo: AppliesTo[]
+  enabled: boolean
+}
+
+export const AUTOMATIONS: Automation[] = [
+  {
+    id: 'auto-sentiment-ai',
+    name: 'Set sentiments with AI',
+    description: "Swat.io AI will analyze the comment's tone and assign the Sentiment as positive, negative or neutral automatically.",
+    appliesTo: ['comments'],
+    enabled: true,
+  },
+  {
+    id: 'auto-mark-read-ai',
+    name: 'Mark read with AI',
+    description: "Swat.io AI will analyze the comment and automatically mark it as read, if it doesn't require a response.",
+    appliesTo: ['comments'],
+    enabled: true,
+  },
+  {
+    id: 'auto-mark-read-media',
+    name: 'Mark comments read if they only contain images, videos or GIFs',
+    description: '',
+    appliesTo: ['comments'],
+    enabled: false,
+  },
+  {
+    id: 'auto-mark-read-mentions',
+    name: 'Mark comments read if they only contain mentions, emojis or punctuation',
+    description: '',
+    appliesTo: ['comments'],
+    enabled: true,
+  },
+  {
+    id: 'auto-assign-urgent',
+    name: 'Auto-assign urgent tickets',
+    description: 'Automatically assign tickets tagged "urgent" to the on-call agent.',
+    appliesTo: ['tickets'],
+    enabled: true,
+  },
+  {
+    id: 'auto-close-resolved',
+    name: 'Auto-close resolved tickets',
+    description: 'Close tickets marked "answered" after 48 hours of inactivity.',
+    appliesTo: ['tickets'],
+    enabled: false,
+  },
+]
+
+export interface AgentJob {
+  id: string
+  name: string
+  description: string
+  appliesTo: AppliesTo[]
+  enabled: boolean
+}
+
+export const AGENT_JOBS: AgentJob[] = [
+  {
+    id: 'job-hate-speech',
+    name: 'Hate speech job',
+    description: 'If you detect hate speech, notify Jovana Milosevic and tag it as urgent.',
+    appliesTo: ['comments'],
+    enabled: true,
+  },
+  {
+    id: 'job-hide-test',
+    name: 'Test comments sugg hide',
+    description: 'Suggest to hide test comments.',
+    appliesTo: ['comments'],
+    enabled: true,
+  },
+  {
+    id: 'job-lol-tag',
+    name: 'Lol tag',
+    description: 'If someone tells a joke mark it with lol.',
+    appliesTo: ['comments'],
+    enabled: true,
+  },
+  {
+    id: 'job-billing-escalation',
+    name: 'Escalate billing disputes',
+    description: 'If a ticket mentions a billing dispute, assign it to the billing team and mark it Critical.',
+    appliesTo: ['tickets'],
+    enabled: true,
+  },
+  {
+    id: 'job-vip-routing',
+    name: 'Auto-route VIP tickets',
+    description: 'Route tickets from customers with reach over 10K to the VIP queue.',
+    appliesTo: ['tickets'],
+    enabled: false,
+  },
+]
