@@ -253,6 +253,14 @@ export function priorityTier(score: number): { label: string; color: string } {
   return { label: 'Low', color: '#d1d5db' }
 }
 
+/** No `visibility` field exists on the seeded messages, so this derives a stable public/direct split from the
+ * message id (not random per render) — good enough for the prototype to make the Visibility filter functional. */
+export function messageVisibility(msg: Message): 'public' | 'direct' {
+  let hash = 0
+  for (let i = 0; i < msg.id.length; i++) hash = (hash * 31 + msg.id.charCodeAt(i)) >>> 0
+  return hash % 5 === 0 ? 'direct' : 'public'
+}
+
 const VIEWS_KEY = 'inbox-custom-views'
 
 /** Bump this whenever the seeded default views/pills change, so browsers with an older saved
