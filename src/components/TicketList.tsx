@@ -37,7 +37,6 @@ import {
   Plus,
   BellOff,
   User,
-  RefreshCw,
   CheckCircle2,
   ThumbsUp,
   Pin,
@@ -1466,9 +1465,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         <span style={{ fontSize: 13, color: '#6b7280', flexShrink: 0 }}>
           {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
         </span>
-        <button title="Refresh" style={{ display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 0, flexShrink: 0 }}>
-          <RefreshCw size={14} />
-        </button>
 
         {selected.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
