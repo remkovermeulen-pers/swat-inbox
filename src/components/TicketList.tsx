@@ -72,7 +72,6 @@ interface Props {
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
   viewOrder: PinnedItem[]
   onReorderView: (item: PinnedItem, atIndex: number) => void
-  mode?: 'inbox' | 'comments'
 }
 
 const STATUS_LABELS: Record<MessageStatus, string> = {
@@ -89,10 +88,10 @@ const TIME_RANGE_LABELS: Record<TimeRangePreset, string> = {
   all: 'All time', today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', custom: 'Custom range',
 }
 
-type GroupField = 'platform' | 'status' | 'sentiment' | 'channel'
+type GroupField = 'platform' | 'status' | 'sentiment' | 'channel' | 'thread'
 
 const GROUP_LABELS: Record<GroupField, string> = {
-  platform: 'Platform', status: 'Status', sentiment: 'Sentiment', channel: 'Channel',
+  platform: 'Platform', status: 'Status', sentiment: 'Sentiment', channel: 'Channel', thread: 'Thread',
 }
 
 type ColKey = 'tags' | 'priority' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
@@ -194,7 +193,7 @@ function customViewCount(view: CustomView): number {
   return messages.filter((m) => !m.archived && messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
 }
 
-export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, viewOrder, onReorderView, mode = 'inbox' }: Props) {
+export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, viewOrder, onReorderView }: Props) {
   const navigate = useNavigate()
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -233,6 +232,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const filterRowRef = useRef<HTMLDivElement>(null)
   const [groupBy, setGroupBy] = useState<GroupField | null>(null)
   const [showGroupMenu, setShowGroupMenu] = useState(false)
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
   function toggleSetValue<T>(setFn: React.Dispatch<React.SetStateAction<Set<T>>>, value: T) {
     setFn((prev) => {
@@ -491,6 +491,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       const key = groupBy === 'platform' ? msg.platform
         : groupBy === 'status' ? STATUS_LABELS[msg.status]
         : groupBy === 'sentiment' ? (cust?.sentiment ?? 'unknown')
+        : groupBy === 'thread' ? (cust?.name ?? 'Unknown')
         : msg.channel
       if (!buckets.has(key)) { buckets.set(key, []); order.push(key) }
       buckets.get(key)!.push(msg)
@@ -502,6 +503,14 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     setSelected((prev) => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleGroupCollapsed(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
       return next
     })
   }
@@ -599,8 +608,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     ? brands.find((b) => b.id === brandId)?.name ?? 'Inbox'
     : channel
     ? channel.name
-    : mode === 'comments'
-    ? 'Comments'
     : 'Inbox'
 
   const channelsMenuContent = (
@@ -1266,38 +1273,36 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
             <CheckCheck size={13} /> {toast}
           </span>
         )}
-        {mode === 'comments' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f3f4f6', borderRadius: 7, padding: 2 }}>
-            <button
-              onClick={() => setViewMode('cards')}
-              title="Card view"
-              style={{
-                display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
-                background: viewMode === 'cards' ? '#fff' : 'none',
-                boxShadow: viewMode === 'cards' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-                color: viewMode === 'cards' ? '#111827' : '#9ca3af',
-              }}
-            >
-              <LayoutList size={16} />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              title="List view"
-              style={{
-                display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
-                background: viewMode === 'list' ? '#fff' : 'none',
-                boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
-                color: viewMode === 'list' ? '#111827' : '#9ca3af',
-              }}
-            >
-              <List size={16} />
-            </button>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f3f4f6', borderRadius: 7, padding: 2 }}>
+          <button
+            onClick={() => setViewMode('cards')}
+            title="Card view"
+            style={{
+              display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
+              background: viewMode === 'cards' ? '#fff' : 'none',
+              boxShadow: viewMode === 'cards' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+              color: viewMode === 'cards' ? '#111827' : '#9ca3af',
+            }}
+          >
+            <LayoutList size={16} />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            title="List view"
+            style={{
+              display: 'flex', alignItems: 'center', padding: '5px 8px', borderRadius: 5, border: 'none', cursor: 'pointer',
+              background: viewMode === 'list' ? '#fff' : 'none',
+              boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+              color: viewMode === 'list' ? '#111827' : '#9ca3af',
+            }}
+          >
+            <List size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Column headers */}
-      {!(mode === 'comments' && viewMode === 'cards') && (
+      {!(viewMode === 'cards') && (
       <div
         style={{
           display: 'flex',
@@ -1408,7 +1413,59 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           </div>
         ) : (
           <>
-            {mode === 'comments' && viewMode === 'cards' ? (
+            {viewMode === 'cards' && groupedSections ? (
+              groupedSections.map((section) => {
+                const isThread = groupBy === 'thread'
+                const collapsed = collapsedGroups.has(section.key)
+                const firstCustomer = customers.find((c) => c.id === section.items[0]?.customerId)
+                return (
+                  <div key={section.key}>
+                    <button
+                      onClick={() => toggleGroupCollapsed(section.key)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                        padding: '8px 20px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
+                        border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                        position: 'sticky', top: 0, zIndex: 1,
+                      }}
+                    >
+                      <ChevronDown size={14} style={{ color: '#9ca3af', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.1s', flexShrink: 0 }} />
+                      {isThread && (
+                        <img
+                          src={firstCustomer?.avatar}
+                          style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', background: '#e5e7eb', flexShrink: 0 }}
+                        />
+                      )}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>
+                        {section.key}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, background: '#f3f4f6', padding: '1px 7px', borderRadius: 99 }}>
+                        {section.items.length}
+                      </span>
+                    </button>
+                    {!collapsed && (
+                      <div style={{ position: 'relative' }}>
+                        {isThread && section.items.length > 1 && (
+                          <div style={{ position: 'absolute', left: 32, top: 24, bottom: 24, width: 2, background: '#e5e7eb' }} />
+                        )}
+                        {section.items.map((msg, i) => (
+                          <CommentCard
+                            key={msg.id}
+                            msg={msg}
+                            customer={customers.find((c) => c.id === msg.customerId)}
+                            selected={selected.has(msg.id)}
+                            onSelect={() => toggleSelect(msg.id)}
+                            active={msg.id === messageId}
+                            onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
+                            threadBadge={isThread ? `#${i + 1}` : undefined}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            ) : viewMode === 'cards' ? (
               filtered.map((msg) => (
                 <CommentCard
                   key={msg.id}
@@ -1417,7 +1474,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                   selected={selected.has(msg.id)}
                   onSelect={() => toggleSelect(msg.id)}
                   active={msg.id === messageId}
-                  onClick={() => navigate(`/comments/${msg.id}`)}
+                  onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
                 />
               ))
             ) : groupedSections ? (
@@ -1442,7 +1499,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                       selected={selected.has(msg.id)}
                       onSelect={() => toggleSelect(msg.id)}
                       active={msg.id === messageId}
-                      onClick={() => navigate(mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`)}
+                      onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
                       visibleCols={visibleCols}
                       colWidths={colWidths}
                       colOrder={colOrder}
@@ -1458,7 +1515,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                   selected={selected.has(msg.id)}
                   onSelect={() => toggleSelect(msg.id)}
                   active={msg.id === messageId}
-                  onClick={() => navigate(mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`)}
+                  onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
                   visibleCols={visibleCols}
                   colWidths={colWidths}
                   colOrder={colOrder}

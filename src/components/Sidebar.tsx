@@ -7,7 +7,6 @@ import { samePinnedItem } from '../lib/inboxScale'
 import {
   Home,
   Inbox,
-  MessageSquare,
   Calendar,
   BarChart2,
   Folder,
@@ -21,7 +20,6 @@ import {
   X,
 } from 'lucide-react'
 
-// Comments reuses the same mock message data as Inbox in this prototype, so both counts are identical for now.
 const newItemsCount = messages.filter((m) => m.unread && !m.archived).length
 
 const FILTER_META: Record<string, { icon: React.ReactNode; label: string }> = {
@@ -30,8 +28,8 @@ const FILTER_META: Record<string, { icon: React.ReactNode; label: string }> = {
   starred: { icon: <Star size={14} />, label: 'Starred' },
 }
 
-type StaticKey = 'home' | 'inbox' | 'comments' | 'publisher' | 'insights' | 'library'
-const STATIC_KEYS: StaticKey[] = ['home', 'inbox', 'comments', 'publisher', 'insights', 'library']
+type StaticKey = 'home' | 'inbox' | 'publisher' | 'insights' | 'library'
+const STATIC_KEYS: StaticKey[] = ['home', 'inbox', 'publisher', 'insights', 'library']
 
 type NavRow = { kind: 'static'; key: StaticKey } | { kind: 'pinned'; item: PinnedItem }
 
@@ -115,7 +113,6 @@ export function Sidebar({
   const location = useLocation()
   const navigate = useNavigate()
   const isInbox = location.pathname.startsWith('/inbox') && !location.pathname.includes('settings')
-  const isComments = location.pathname.startsWith('/comments')
   const [navOrderIds, setNavOrderIds] = useState<string[]>(() => loadNavOrderIds())
   const [dropIndex, setDropIndex] = useState<number | null>(null)
 
@@ -202,24 +199,6 @@ export function Sidebar({
             <span style={{ color: '#6b7280' }}><Inbox size={16} /></span>
             <span style={{ flex: 1 }}>Inbox</span>
             {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isInbox} />}
-          </NavLink>
-        )
-      case 'comments':
-        return (
-          <NavLink
-            to="/comments"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '7px 10px', borderRadius: 6,
-              fontSize: 14, fontWeight: isComments ? 600 : 400,
-              color: isComments ? '#15803d' : '#374151',
-              background: isComments ? '#f0fdf4' : 'transparent',
-              textDecoration: 'none',
-            }}
-          >
-            <span style={{ color: '#6b7280' }}><MessageSquare size={16} /></span>
-            <span style={{ flex: 1 }}>Comments</span>
-            {newItemsCount > 0 && <CountBadge count={newItemsCount} active={isComments} />}
           </NavLink>
         )
       case 'publisher':
