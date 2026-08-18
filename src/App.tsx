@@ -44,6 +44,7 @@ function InboxShell({
   onUpdateView,
   viewOrder,
   onReorderView,
+  mode = 'inbox',
 }: {
   brandId: string | null
   channelId: string | null
@@ -57,6 +58,7 @@ function InboxShell({
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
   viewOrder: PinnedItem[]
   onReorderView: (item: PinnedItem, atIndex: number) => void
+  mode?: 'inbox' | 'comments'
 }) {
   return (
     <div style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden' }}>
@@ -74,6 +76,7 @@ function InboxShell({
           onUpdateView={onUpdateView}
           viewOrder={viewOrder}
           onReorderView={onReorderView}
+          mode={mode}
         />
       </div>
     </div>
@@ -123,6 +126,23 @@ function InboxRoutes({
       onReorderView={onReorderView}
     />
   )
+  const commentsShell = (
+    <InboxShell
+      brandId={null}
+      channelId={null}
+      filter={filter}
+      onFilterChange={onFilterChange}
+      customViews={customViews}
+      activeViewId={activeViewId}
+      onAddView={onAddView}
+      onViewChange={onViewChange}
+      onDeleteView={onDeleteView}
+      onUpdateView={onUpdateView}
+      viewOrder={viewOrder}
+      onReorderView={onReorderView}
+      mode="comments"
+    />
+  )
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/inbox" replace />} />
@@ -131,9 +151,8 @@ function InboxRoutes({
       <Route path="/inbox" element={shell} />
       <Route path="/inbox/:brandId" element={shell} />
       <Route path="/inbox/:brandId/:messageId" element={shell} />
-      {/* Comments is now folded into Inbox as the cards/list view toggle */}
-      <Route path="/comments" element={<Navigate to="/inbox" replace />} />
-      <Route path="/comments/:messageId" element={<Navigate to="/inbox" replace />} />
+      <Route path="/comments" element={commentsShell} />
+      <Route path="/comments/:messageId" element={commentsShell} />
     </Routes>
   )
 }

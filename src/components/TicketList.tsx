@@ -81,6 +81,7 @@ interface Props {
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
   viewOrder: PinnedItem[]
   onReorderView: (item: PinnedItem, atIndex: number) => void
+  mode?: 'inbox' | 'comments'
 }
 
 const STATUS_LABELS: Record<MessageStatus, string> = {
@@ -196,7 +197,7 @@ function customViewCount(view: CustomView): number {
   return messages.filter((m) => !m.archived && messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
 }
 
-export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, viewOrder, onReorderView }: Props) {
+export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, viewOrder, onReorderView, mode = 'inbox' }: Props) {
   const navigate = useNavigate()
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -547,7 +548,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           onClick={(e) => e.stopPropagation()}
           style={{ width: 15, height: 15, marginTop: 3, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
         />
-        <div onClick={() => navigate(`/inbox/${initialPost.brandId}/${initialPost.id}`)} style={{ flex: 1, minWidth: 0 }}>
+        <div onClick={() => navigate(ticketPath(initialPost))} style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
             <img
               src={initialCustomer?.avatar}
@@ -678,7 +679,13 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     ? brands.find((b) => b.id === brandId)?.name ?? 'Inbox'
     : channel
     ? channel.name
+    : mode === 'comments'
+    ? 'Comments'
     : 'Inbox'
+
+  function ticketPath(msg: Message) {
+    return mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`
+  }
 
   const channelsMenuContent = (
     <>
@@ -1540,7 +1547,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                             selected={selected.has(msg.id)}
                             onSelect={() => toggleSelect(msg.id)}
                             active={msg.id === messageId}
-                            onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
+                            onClick={() => navigate(ticketPath(msg))}
                             threadBadge={isThread ? `#${i + 1}` : undefined}
                           />
                         ))}
@@ -1558,7 +1565,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                   selected={selected.has(msg.id)}
                   onSelect={() => toggleSelect(msg.id)}
                   active={msg.id === messageId}
-                  onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
+                  onClick={() => navigate(ticketPath(msg))}
                 />
               ))
             ) : groupedSections ? (
@@ -1601,7 +1608,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                         selected={selected.has(msg.id)}
                         onSelect={() => toggleSelect(msg.id)}
                         active={msg.id === messageId}
-                        onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
+                        onClick={() => navigate(ticketPath(msg))}
                         visibleCols={visibleCols}
                         colWidths={colWidths}
                         colOrder={colOrder}
@@ -1618,7 +1625,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                   selected={selected.has(msg.id)}
                   onSelect={() => toggleSelect(msg.id)}
                   active={msg.id === messageId}
-                  onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
+                  onClick={() => navigate(ticketPath(msg))}
                   visibleCols={visibleCols}
                   colWidths={colWidths}
                   colOrder={colOrder}
