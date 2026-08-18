@@ -13,10 +13,10 @@ import {
   samePinnedItem, insertPinnedItemAt,
 } from './lib/inboxScale'
 
-const BASE_VIEW_FILTERS: InboxFilter[] = ['new', 'assigned_me', 'starred']
+const BASE_VIEW_FILTERS: InboxFilter[] = ['new', 'assigned_me']
 
-// Pinned right after the "New" filter by default, ahead of the rest of the custom views.
-const LEAD_VIEW_IDS = ['view-threads', 'view-comments']
+// Pinned right after the "New" filter by default, ahead of "Assigned to me" and the rest of the custom views.
+const LEAD_VIEW_IDS = ['view-complaints', 'view-critical']
 
 function defaultViewOrder(customViews: CustomView[]): PinnedItem[] {
   const [firstFilter, ...restFilters] = BASE_VIEW_FILTERS
