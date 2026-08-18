@@ -7,7 +7,7 @@ import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
 import { CommentCard } from './CommentCard'
 import {
-  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem, GROUP_LABELS,
+  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem, GROUP_LABELS, messageVisibility,
   FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition, RANGE_SEPARATOR,
   type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir, type PinnedItem, type GroupField,
 } from '../lib/inboxScale'
@@ -29,6 +29,7 @@ import {
   UserCheck,
   AtSign,
   Eye,
+  Lock,
   Rows3,
   Calendar,
   List,
@@ -47,6 +48,12 @@ const SENTIMENT_FILTER_OPTIONS: { value: SentimentFilterValue | null; label: str
   { value: 'negative', label: 'Negative' },
   { value: 'neutral', label: 'Neutral' },
   { value: 'none', label: 'No sentiment' },
+]
+
+const VISIBILITY_FILTER_OPTIONS: { value: 'public' | 'direct' | null; label: string }[] = [
+  { value: null, label: 'All' },
+  { value: 'public', label: 'Public comments' },
+  { value: 'direct', label: 'Direct messages' },
 ]
 
 // Matches the colors priorityTier() uses for each label, so the Priority filter's pills look like the column badges.
@@ -214,6 +221,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [searchText, setSearchText] = useState('')
   const [filterTags, setFilterTags] = useState<Set<string>>(new Set())
   const [sentimentFilter, setSentimentFilter] = useState<SentimentFilterValue | null>(null)
+  const [visibilityFilter, setVisibilityFilter] = useState<'public' | 'direct' | null>(null)
+  const [showVisibilityMenu, setShowVisibilityMenu] = useState(false)
   const [filterPlatforms, setFilterPlatforms] = useState<Set<Platform>>(new Set())
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
@@ -264,7 +273,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
   const activeColFilterCount = Object.values(colFilters).filter((c) => c && c.value.trim()).length
 
-  const activeFilterCount = filterTags.size + (sentimentFilter !== null ? 1 : 0) + filterPlatforms.size + filterChannels.size + filterStatuses.size + activeColFilterCount
+  const activeFilterCount = filterTags.size + (sentimentFilter !== null ? 1 : 0) + (visibilityFilter !== null ? 1 : 0) + filterPlatforms.size + filterChannels.size + filterStatuses.size + activeColFilterCount
 
   useEffect(() => {
     localStorage.setItem(VISIBLE_COLS_KEY, JSON.stringify(Array.from(visibleCols)))
@@ -452,6 +461,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       if (filterTags.size > 0 && !m.tags.some((t) => filterTags.has(t.label))) return false
       if (sentimentFilter === 'none' && cust) return false
       if (sentimentFilter && sentimentFilter !== 'none' && cust?.sentiment !== sentimentFilter) return false
+      if (visibilityFilter && messageVisibility(m) !== visibilityFilter) return false
       if (filterPlatforms.size > 0 && !filterPlatforms.has(m.platform)) return false
       if (filterChannels.size > 0) {
         const matchesChannel = channels.some((ch) => filterChannels.has(ch.id) && ch.name === m.channel && ch.platform === m.platform)
@@ -629,6 +639,14 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     setSelected(new Set())
   }
 
+  function bulkSetStatus(status: string) {
+    if (!status) return
+    const count = selected.size
+    applyToSelected({ status: status as MessageStatus })
+    setToast(`Marked ${count} ticket${count > 1 ? 's' : ''} as ${STATUS_LABELS[status as MessageStatus]}`)
+    setSelected(new Set())
+  }
+
   function bulkTag() {
     const label = window.prompt('Tag to add to selected tickets:')
     if (!label?.trim()) return
@@ -739,7 +757,23 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   )
 
   const visibilityContent = (
-    <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>All (decorative in this prototype)</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {VISIBILITY_FILTER_OPTIONS.map((opt) => (
+        <button
+          key={opt.label}
+          onClick={() => { setVisibilityFilter(opt.value); setShowVisibilityMenu(false) }}
+          style={{
+            width: '100%', textAlign: 'left', padding: '7px 9px', borderRadius: 6,
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
+            background: visibilityFilter === opt.value ? '#eef2ff' : 'none',
+            color: visibilityFilter === opt.value ? '#4338ca' : '#374151',
+            fontWeight: visibilityFilter === opt.value ? 600 : 400,
+          }}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
   )
 
   const timeRangeContent = (
@@ -981,8 +1015,9 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       show: showTimeRangeMenu, setShow: setShowTimeRangeMenu, content: timeRangeContent, panelWidth: 200,
     },
     {
-      key: 'visibility', icon: <Eye size={13} />, label: 'Visibility: All',
-      show: false, setShow: () => {}, content: visibilityContent, panelWidth: 200,
+      key: 'visibility', icon: <Eye size={13} />,
+      label: visibilityFilter ? `Visibility: ${VISIBILITY_FILTER_OPTIONS.find((opt) => opt.value === visibilityFilter)?.label}` : 'Visibility: All',
+      show: showVisibilityMenu, setShow: setShowVisibilityMenu, content: visibilityContent, panelWidth: 200,
     },
     columnFacet('reach'),
     {
@@ -1719,6 +1754,14 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
             <option value="">Assign to…</option>
             {AGENTS.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
+          <select
+            value=""
+            onChange={(e) => bulkSetStatus(e.target.value)}
+            style={bulkBtnStyle}
+          >
+            <option value="">Set status…</option>
+            {(Object.keys(STATUS_LABELS) as MessageStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+          </select>
           <button onClick={bulkTag} style={bulkBtnStyle}>
             <TagIcon size={13} /> Tags
           </button>
@@ -2065,6 +2108,13 @@ function TicketRow({
           {customer?.name ?? 'Anonymous profile'}
         </span>
       </div>
+
+      {/* Visibility (public comment vs direct message) */}
+      {messageVisibility(msg) === 'direct' && (
+        <div title="Direct message" style={{ flexShrink: 0, display: 'flex' }}>
+          <Lock size={12} style={{ color: '#9ca3af' }} />
+        </div>
+      )}
 
       {/* Preview */}
       <div style={{ flex: 1, minWidth: 0 }}>

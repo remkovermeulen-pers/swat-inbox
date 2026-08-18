@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from 'date-fns'
-import { ExternalLink, Reply as ReplyIcon, Repeat2, ThumbsUp, Pin, CornerDownRight, Trash2 } from 'lucide-react'
+import { ExternalLink, Reply as ReplyIcon, Repeat2, ThumbsUp, Pin, CornerDownRight, Trash2, Lock } from 'lucide-react'
 import type { Customer, Message } from '../data/mockData'
+import { messageVisibility } from '../lib/inboxScale'
 import { PlatformIcon } from './PlatformIcon'
 
 interface Props {
@@ -68,6 +69,11 @@ export function CommentCard({ msg, customer, selected, onSelect, active, onClick
             <CornerDownRight size={12} />
             <PlatformIcon platform={msg.platform} size={14} />
             {msg.channel}
+            {messageVisibility(msg) === 'direct' && (
+              <span title="Direct message" style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 2 }}>
+                <Lock size={11} /> DM
+              </span>
+            )}
           </div>
 
           <p style={{ fontSize: 13, color: '#374151', lineHeight: 1.6, margin: '0 0 8px', whiteSpace: 'pre-wrap' }}>
