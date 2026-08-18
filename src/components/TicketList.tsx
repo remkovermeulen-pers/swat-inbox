@@ -36,6 +36,12 @@ import {
   LayoutList,
   Plus,
   BellOff,
+  User,
+  RefreshCw,
+  CheckCircle2,
+  ThumbsUp,
+  Pin,
+  Smile,
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
@@ -105,6 +111,12 @@ const TIME_RANGE_LABELS: Record<TimeRangePreset, string> = {
   all: 'All time', today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', custom: 'Custom range',
 }
 
+const SORT_LABELS: Record<SortCol, string> = {
+  priority: 'Priority', time: 'Time', name: 'Name', ticket: 'Ticket #', replies: 'Replies', reach: 'Reach', channel: 'Channel',
+}
+
+const SORT_OPTIONS: SortCol[] = ['priority', 'time', 'name', 'ticket', 'replies', 'reach', 'channel']
+
 type ColKey = 'tags' | 'priority' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
 
 const TOGGLEABLE_COLUMNS: { key: ColKey; label: string; width: number }[] = [
@@ -164,6 +176,11 @@ function saveColOrder(order: ReorderableCol[]) {
 
 const REORDERABLE_COL_LABELS: Record<ReorderableCol, string> = {
   tags: 'Tags', priority: 'Priority', ticket: 'Ticket #', replies: 'Replies', reach: 'Reach', channel: 'Channel', time: 'Time',
+}
+
+// Numeric columns are right-aligned; text/label columns stay left-aligned.
+const REORDERABLE_COL_JUSTIFY: Partial<Record<ReorderableCol, 'right'>> = {
+  ticket: 'right', replies: 'right', reach: 'right', time: 'right',
 }
 
 const VISIBLE_COLS_KEY = 'inbox-visible-columns'
@@ -227,13 +244,17 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showCreateView, setShowCreateView] = useState(false)
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards')
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>(mode === 'comments' ? 'cards' : 'list')
   const [showChannelsMenu, setShowChannelsMenu] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
   const [showSentimentMenu, setShowSentimentMenu] = useState(false)
   const [showPlatformMenu, setShowPlatformMenu] = useState(false)
   const [showTagsMenu, setShowTagsMenu] = useState(false)
   const [showTimeRangeMenu, setShowTimeRangeMenu] = useState(false)
+  const [showBulkAssignMenu, setShowBulkAssignMenu] = useState(false)
+  const [showBulkTagsMenu, setShowBulkTagsMenu] = useState(false)
+  const [showBulkMoodMenu, setShowBulkMoodMenu] = useState(false)
+  const [showSortMenu, setShowSortMenu] = useState(false)
   const [timeRange, setTimeRange] = useState<TimeRangePreset>('all')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
@@ -243,6 +264,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [hiddenInboxFilters, setHiddenInboxFilters] = useState<Set<InboxFilter>>(() => loadHiddenFilters())
   const [viewDropIndex, setViewDropIndex] = useState<number | null>(null)
   const filterRowRef = useRef<HTMLDivElement>(null)
+  const selectAllRef = useRef<HTMLInputElement>(null)
   const [groupBy, setGroupBy] = useState<GroupField | null>(null)
   const [showGroupMenu, setShowGroupMenu] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
@@ -523,6 +545,12 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     return order.map((key) => ({ key, items: buckets.get(key)! }))
   })()
 
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = selected.size > 0 && selected.size < filtered.length
+    }
+  }, [selected, filtered.length])
+
   function toggleSelect(id: string) {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -639,17 +667,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     setSelected(new Set())
   }
 
-  function bulkSetStatus(status: string) {
-    if (!status) return
-    const count = selected.size
-    applyToSelected({ status: status as MessageStatus })
-    setToast(`Marked ${count} ticket${count > 1 ? 's' : ''} as ${STATUS_LABELS[status as MessageStatus]}`)
-    setSelected(new Set())
-  }
-
-  function bulkTag() {
-    const label = window.prompt('Tag to add to selected tickets:')
-    if (!label?.trim()) return
+  function bulkAddTag(label: string) {
+    if (!label.trim()) return
     const newTag: Tag = { label: label.trim(), color: '#5e6ad2' }
     const count = selected.size
     setOverrides((prev) => {
@@ -664,6 +683,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     })
     setToast(`Tagged ${count} ticket${count > 1 ? 's' : ''} "${newTag.label}"`)
     setSelected(new Set())
+  }
+
+  function bulkTagPrompt() {
+    const label = window.prompt('Tag to add to selected tickets:')
+    if (label) bulkAddTag(label)
   }
 
   function bulkArchive() {
@@ -684,6 +708,35 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     const count = selected.size
     applyToSelected({ muted: true })
     setToast(`Muted ${count} ticket${count > 1 ? 's' : ''}`)
+    setSelected(new Set())
+  }
+
+  function bulkMarkRead() {
+    const count = selected.size
+    applyToSelected({ unread: false })
+    setToast(`Marked ${count} comment${count > 1 ? 's' : ''} as read`)
+    setSelected(new Set())
+  }
+
+  function bulkLike() {
+    const count = selected.size
+    applyToSelected({ liked: true })
+    setToast(`Liked ${count} comment${count > 1 ? 's' : ''}`)
+    setSelected(new Set())
+  }
+
+  function bulkPin() {
+    const count = selected.size
+    applyToSelected({ pinned: true })
+    setToast(`Pinned ${count} comment${count > 1 ? 's' : ''}`)
+    setSelected(new Set())
+  }
+
+  function bulkSetMood(mood: string) {
+    if (!mood) return
+    const count = selected.size
+    applyToSelected({ mood: mood as Sentiment })
+    setToast(`Set mood to ${mood} on ${count} comment${count > 1 ? 's' : ''}`)
     setSelected(new Set())
   }
 
@@ -1400,23 +1453,136 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           padding: '8px 20px',
           borderBottom: '1px solid #f3f4f6',
           background: selected.size > 0 ? '#f0fdf4' : '#fff',
+          flexWrap: 'wrap',
         }}
       >
         <input
+          ref={selectAllRef}
           type="checkbox"
           checked={selected.size > 0 && selected.size === filtered.length}
           onChange={toggleAll}
-          style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#22c55e' }}
+          style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
         />
-        <span style={{ fontSize: 13, color: '#6b7280' }}>
+        <span style={{ fontSize: 13, color: '#6b7280', flexShrink: 0 }}>
           {selected.size > 0 ? `${selected.size} selected` : 'None selected'}
         </span>
+        <button title="Refresh" style={{ display: 'flex', alignItems: 'center', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 0, flexShrink: 0 }}>
+          <RefreshCw size={14} />
+        </button>
+
+        {selected.size > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ width: 1, height: 20, background: '#e5e7eb', flexShrink: 0 }} />
+
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowBulkAssignMenu((v) => !v)} style={bulkBtnStyle}>
+                <User size={15} /> Assign to <ChevronDown size={14} style={{ color: '#9ca3af' }} />
+              </button>
+              {showBulkAssignMenu && (
+                <>
+                  <div onClick={() => setShowBulkAssignMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+                  <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 10, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 6, width: 150 }}>
+                    {AGENTS.map((a) => (
+                      <button key={a} onClick={() => { bulkAssign(a); setShowBulkAssignMenu(false) }} style={bulkDropdownItemStyle}>{a}</button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowBulkTagsMenu((v) => !v)} style={bulkBtnStyle}>
+                <TagIcon size={15} /> Tags <ChevronDown size={14} style={{ color: '#9ca3af' }} />
+              </button>
+              {showBulkTagsMenu && (
+                <>
+                  <div onClick={() => setShowBulkTagsMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+                  <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 10, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 6, width: 180, maxHeight: 240, overflowY: 'auto' }}>
+                    {KNOWN_TAGS.map((t) => (
+                      <button key={t} onClick={() => { bulkAddTag(t); setShowBulkTagsMenu(false) }} style={{ ...bulkDropdownItemStyle, textTransform: 'capitalize' }}>{t}</button>
+                    ))}
+                    <button onClick={() => { setShowBulkTagsMenu(false); bulkTagPrompt() }} style={{ ...bulkDropdownItemStyle, color: '#5e6ad2', fontWeight: 600 }}>+ Custom tag…</button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {mode === 'comments' ? (
+              <>
+                <button onClick={bulkMarkRead} style={bulkBtnStyle}>
+                  <CheckCircle2 size={15} /> Mark read
+                </button>
+                <button onClick={bulkLike} style={bulkBtnStyle}>
+                  <ThumbsUp size={15} /> Like
+                </button>
+                <button onClick={bulkPin} style={bulkBtnStyle}>
+                  <Pin size={15} /> Pin
+                </button>
+                <div style={{ position: 'relative' }}>
+                  <button onClick={() => setShowBulkMoodMenu((v) => !v)} style={bulkBtnStyle}>
+                    <Smile size={15} /> Set mood <ChevronDown size={14} style={{ color: '#9ca3af' }} />
+                  </button>
+                  {showBulkMoodMenu && (
+                    <>
+                      <div onClick={() => setShowBulkMoodMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+                      <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 10, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 6, width: 140 }}>
+                        {(['positive', 'neutral', 'negative'] as Sentiment[]).map((m) => (
+                          <button key={m} onClick={() => { bulkSetMood(m); setShowBulkMoodMenu(false) }} style={{ ...bulkDropdownItemStyle, textTransform: 'capitalize' }}>{m}</button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <button onClick={bulkStar} style={bulkBtnStyle}>
+                  <Star size={15} /> Star
+                </button>
+                <button onClick={bulkMute} style={bulkBtnStyle}>
+                  <BellOff size={15} /> Mute
+                </button>
+                <button onClick={bulkArchive} style={bulkBtnStyle}>
+                  <Archive size={15} /> Archive
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         <div style={{ flex: 1 }} />
         {toast && (
           <span style={{ fontSize: 12, fontWeight: 600, color: '#15803d', display: 'flex', alignItems: 'center', gap: 6 }}>
             <CheckCheck size={13} /> {toast}
           </span>
+        )}
+        {viewMode === 'cards' && (
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowSortMenu((v) => !v)} style={pillBtnStyle}>
+              <Rows3 size={13} /> Sort by: {SORT_LABELS[sortCol]}
+            </button>
+            {showSortMenu && (
+              <>
+                <div onClick={() => setShowSortMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9 }} />
+                <div style={{ position: 'absolute', top: '110%', right: 0, zIndex: 10, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, boxShadow: '0 8px 20px rgba(0,0,0,0.1)', padding: 6, width: 160 }}>
+                  {SORT_OPTIONS.map((col) => (
+                    <button
+                      key={col}
+                      onClick={() => { handleSort(col); setShowSortMenu(false) }}
+                      style={{
+                        ...bulkDropdownItemStyle,
+                        background: sortCol === col ? '#f3f4f6' : 'none',
+                        color: sortCol === col ? '#111827' : '#374151',
+                        fontWeight: sortCol === col ? 600 : 400,
+                      }}
+                    >
+                      {SORT_LABELS[col]}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f3f4f6', borderRadius: 7, padding: 2 }}>
           <button
@@ -1486,6 +1652,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                 <ColHeader
                   label={REORDERABLE_COL_LABELS[key]} col={key} sortCol={sortCol} sortDir={sortDir} onSort={handleSort}
                   width={colWidths[key]} onResize={(w) => resizeCol(key, w)} reorderKey={key}
+                  justify={REORDERABLE_COL_JUSTIFY[key]}
                 />
               )}
             </div>
@@ -1720,63 +1887,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         )}
       </div>
 
-      {/* Floating bulk-action bar */}
-      {selected.size > 0 && (
-        <div
-          style={{
-            position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: '#fff', borderRadius: 14, padding: '8px 12px',
-            boxShadow: '0 10px 28px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)',
-            border: '1px solid #e5e7eb', zIndex: 20,
-          }}
-        >
-          <button
-            onClick={() => setSelected(new Set())}
-            title="Clear selection"
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 22, height: 22, borderRadius: 6, border: 'none', cursor: 'pointer',
-              background: '#2563eb', color: '#fff',
-            }}
-          >
-            <CheckCheck size={13} />
-          </button>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#111827', whiteSpace: 'nowrap' }}>
-            {selected.size} selected
-          </span>
-          <div style={{ width: 1, height: 20, background: '#e5e7eb', margin: '0 2px' }} />
-          <select
-            value=""
-            onChange={(e) => bulkAssign(e.target.value)}
-            style={bulkBtnStyle}
-          >
-            <option value="">Assign to…</option>
-            {AGENTS.map((a) => <option key={a} value={a}>{a}</option>)}
-          </select>
-          <select
-            value=""
-            onChange={(e) => bulkSetStatus(e.target.value)}
-            style={bulkBtnStyle}
-          >
-            <option value="">Set status…</option>
-            {(Object.keys(STATUS_LABELS) as MessageStatus[]).map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
-          </select>
-          <button onClick={bulkTag} style={bulkBtnStyle}>
-            <TagIcon size={13} /> Tags
-          </button>
-          <button onClick={bulkStar} style={bulkBtnStyle}>
-            <Star size={13} /> Star
-          </button>
-          <button onClick={bulkMute} style={bulkBtnStyle}>
-            <BellOff size={13} /> Mute
-          </button>
-          <button onClick={bulkArchive} style={bulkBtnStyle}>
-            <Archive size={13} /> Archive
-          </button>
-        </div>
-      )}
-
       {showCreateView && (
         <CreateViewModal
           onClose={() => setShowCreateView(false)}
@@ -1847,10 +1957,11 @@ function PlainColHeader({
 }
 
 function ColHeader({
-  label, col, sortCol, sortDir, onSort, width, onResize, reorderKey,
+  label, col, sortCol, sortDir, onSort, width, onResize, reorderKey, justify = 'left',
 }: {
   label: string; col: SortCol; sortCol: SortCol; sortDir: SortDir
   onSort: (col: SortCol) => void; width: number; onResize: (newWidth: number) => void; reorderKey?: string
+  justify?: 'left' | 'right'
 }) {
   const active = sortCol === col
   return (
@@ -1865,6 +1976,7 @@ function ColHeader({
         style={{
           display: 'flex',
           alignItems: 'center',
+          justifyContent: justify === 'right' ? 'flex-end' : 'flex-start',
           gap: 3,
           width: '100%',
           background: 'none',
@@ -1959,13 +2071,13 @@ function TicketRow({
         )
       case 'ticket':
         return (
-          <div key="ticket" style={{ width: colWidths.ticket, flexShrink: 0 }}>
+          <div key="ticket" style={{ width: colWidths.ticket, flexShrink: 0, textAlign: 'right' }}>
             <span style={{ fontSize: 12, color: '#9ca3af' }}>{msg.ticketNumber}</span>
           </div>
         )
       case 'replies':
         return (
-          <div key="replies" style={{ width: colWidths.replies, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div key="replies" style={{ width: colWidths.replies, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
             <span style={{ fontSize: 13, color: '#6b7280' }}>{msg.replyCount}</span>
             {msg.newReplies > 0 && (
               <span
@@ -2188,14 +2300,28 @@ const pillBtnStyle: React.CSSProperties = {
 const bulkBtnStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
-  gap: 5,
-  padding: '4px 10px',
-  borderRadius: 6,
-  border: '1px solid #d1d5db',
+  gap: 6,
+  padding: '6px 12px',
+  borderRadius: 8,
+  border: '1px solid #e5e7eb',
   background: '#fff',
-  fontSize: 12,
-  fontWeight: 500,
-  color: '#374151',
+  fontSize: 13,
+  fontWeight: 600,
+  color: '#111827',
   cursor: 'pointer',
   fontFamily: 'inherit',
+  whiteSpace: 'nowrap',
+}
+
+const bulkDropdownItemStyle: React.CSSProperties = {
+  width: '100%',
+  textAlign: 'left',
+  padding: '6px 8px',
+  borderRadius: 6,
+  border: 'none',
+  background: 'none',
+  cursor: 'pointer',
+  fontFamily: 'inherit',
+  fontSize: 13,
+  color: '#374151',
 }

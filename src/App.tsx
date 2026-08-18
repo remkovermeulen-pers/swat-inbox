@@ -64,6 +64,7 @@ function InboxShell({
     <div style={{ display: 'flex', flex: 1, height: '100%', overflow: 'hidden' }}>
       <div style={{ width: '100%', flexShrink: 0, height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <TicketList
+          key={mode}
           brandId={brandId}
           channelId={channelId}
           filter={filter}
