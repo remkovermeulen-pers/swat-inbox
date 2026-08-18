@@ -518,6 +518,63 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     })
   }
 
+  /** The oldest message in a "Group by Thread" section, rendered as an uncarded header post — shared by both
+   * the cards and list views so a thread's origin post always looks the same regardless of display mode. */
+  function renderThreadInitialPost(initialPost: Message) {
+    const initialCustomer = customers.find((c) => c.id === initialPost.customerId)
+    return (
+      <div
+        style={{
+          display: 'flex', gap: 10, padding: '14px 20px 16px', cursor: 'pointer',
+          borderBottom: '1px solid #e5e7eb',
+          background: initialPost.id === messageId ? '#eff6ff' : '#fff',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={selected.has(initialPost.id)}
+          onChange={(e) => { e.stopPropagation(); toggleSelect(initialPost.id) }}
+          onClick={(e) => e.stopPropagation()}
+          style={{ width: 15, height: 15, marginTop: 3, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
+        />
+        <div onClick={() => navigate(`/inbox/${initialPost.brandId}/${initialPost.id}`)} style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <img
+              src={initialCustomer?.avatar}
+              style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', background: '#e5e7eb', flexShrink: 0 }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{initialCustomer?.name ?? 'Anonymous'}</span>
+                <PlatformIcon platform={initialPost.platform} size={13} />
+                <span style={{ fontSize: 12, color: '#9ca3af' }}>{format(new Date(initialPost.timestamp), 'MMM d, yyyy')}</span>
+              </div>
+              <span style={{ fontSize: 12, color: '#9ca3af' }}>{initialPost.channel}</span>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', background: '#f3f4f6', padding: '2px 9px', borderRadius: 99, flexShrink: 0 }}>
+              Original post
+            </span>
+          </div>
+          <p style={{ fontSize: 14, color: '#111827', lineHeight: 1.6, margin: '0 0 8px', whiteSpace: 'pre-wrap' }}>
+            {initialPost.preview}
+          </p>
+          {initialPost.tags.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {initialPost.tags.map((tag) => (
+                <span
+                  key={tag.label}
+                  style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: '#ffedd5', color: '#c2410c' }}
+                >
+                  {tag.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   function toggleAll() {
     if (selected.size === filtered.length) setSelected(new Set())
     else setSelected(new Set(filtered.map((m) => m.id)))
@@ -1454,60 +1511,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                         {section.items.length}
                       </span>
                     </button>
-                    {initialPost && (() => {
-                      const initialCustomer = customers.find((c) => c.id === initialPost.customerId)
-                      return (
-                        <div
-                          style={{
-                            display: 'flex', gap: 10, padding: '14px 20px 16px', cursor: 'pointer',
-                            borderBottom: '1px solid #e5e7eb',
-                            background: initialPost.id === messageId ? '#eff6ff' : '#fff',
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selected.has(initialPost.id)}
-                            onChange={(e) => { e.stopPropagation(); toggleSelect(initialPost.id) }}
-                            onClick={(e) => e.stopPropagation()}
-                            style={{ width: 15, height: 15, marginTop: 3, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
-                          />
-                          <div onClick={() => navigate(`/inbox/${initialPost.brandId}/${initialPost.id}`)} style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                              <img
-                                src={initialCustomer?.avatar}
-                                style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', background: '#e5e7eb', flexShrink: 0 }}
-                              />
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{initialCustomer?.name ?? 'Anonymous'}</span>
-                                  <PlatformIcon platform={initialPost.platform} size={13} />
-                                  <span style={{ fontSize: 12, color: '#9ca3af' }}>{format(new Date(initialPost.timestamp), 'MMM d, yyyy')}</span>
-                                </div>
-                                <span style={{ fontSize: 12, color: '#9ca3af' }}>{initialPost.channel}</span>
-                              </div>
-                              <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', background: '#f3f4f6', padding: '2px 9px', borderRadius: 99, flexShrink: 0 }}>
-                                Original post
-                              </span>
-                            </div>
-                            <p style={{ fontSize: 14, color: '#111827', lineHeight: 1.6, margin: '0 0 8px', whiteSpace: 'pre-wrap' }}>
-                              {initialPost.preview}
-                            </p>
-                            {initialPost.tags.length > 0 && (
-                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                {initialPost.tags.map((tag) => (
-                                  <span
-                                    key={tag.label}
-                                    style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, background: '#ffedd5', color: '#c2410c' }}
-                                  >
-                                    {tag.label}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })()}
+                    {initialPost && renderThreadInitialPost(initialPost)}
                     {!collapsed && (
                       <div style={{ position: 'relative' }}>
                         {isThread && replies.length > 1 && (
@@ -1543,35 +1547,54 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                 />
               ))
             ) : groupedSections ? (
-              groupedSections.map((section) => (
-                <div key={section.key}>
-                  <div
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 20px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
-                      position: 'sticky', top: 0, zIndex: 1,
-                    }}
-                  >
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>
-                      {section.key}
-                    </span>
-                    <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>{section.items.length}</span>
+              groupedSections.map((section) => {
+                const isThread = groupBy === 'thread'
+                const collapsed = collapsedGroups.has(section.key)
+                const firstCustomer = customers.find((c) => c.id === section.items[0]?.customerId)
+                const initialPost = isThread ? section.items[0] : undefined
+                const rows = isThread ? section.items.slice(1) : section.items
+                return (
+                  <div key={section.key}>
+                    <button
+                      onClick={() => toggleGroupCollapsed(section.key)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                        padding: '8px 20px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
+                        border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                        position: 'sticky', top: 0, zIndex: 1,
+                      }}
+                    >
+                      <ChevronDown size={14} style={{ color: '#9ca3af', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.1s', flexShrink: 0 }} />
+                      {isThread && (
+                        <img
+                          src={firstCustomer?.avatar}
+                          style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', background: '#e5e7eb', flexShrink: 0 }}
+                        />
+                      )}
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>
+                        {section.key}
+                      </span>
+                      <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, background: '#f3f4f6', padding: '1px 7px', borderRadius: 99 }}>
+                        {section.items.length}
+                      </span>
+                    </button>
+                    {initialPost && renderThreadInitialPost(initialPost)}
+                    {!collapsed && rows.map((msg) => (
+                      <TicketRow
+                        key={msg.id}
+                        msg={msg}
+                        selected={selected.has(msg.id)}
+                        onSelect={() => toggleSelect(msg.id)}
+                        active={msg.id === messageId}
+                        onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
+                        visibleCols={visibleCols}
+                        colWidths={colWidths}
+                        colOrder={colOrder}
+                      />
+                    ))}
                   </div>
-                  {section.items.map((msg) => (
-                    <TicketRow
-                      key={msg.id}
-                      msg={msg}
-                      selected={selected.has(msg.id)}
-                      onSelect={() => toggleSelect(msg.id)}
-                      active={msg.id === messageId}
-                      onClick={() => navigate(`/inbox/${msg.brandId}/${msg.id}`)}
-                      visibleCols={visibleCols}
-                      colWidths={colWidths}
-                      colOrder={colOrder}
-                    />
-                  ))}
-                </div>
-              ))
+                )
+              })
             ) : (
               filtered.map((msg) => (
                 <TicketRow
