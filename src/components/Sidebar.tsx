@@ -21,6 +21,7 @@ import {
   X,
   Plug,
   Zap,
+  HelpCircle,
 } from 'lucide-react'
 
 // Comments reuses the same mock message data as Inbox in this prototype, so both counts are identical for now.
@@ -374,9 +375,9 @@ export function Sidebar({
 
       {/* Settings-area shortcuts */}
       <div style={{ borderTop: '1px solid #f3f4f6', padding: '8px 8px' }}>
-        <NavItem icon={<Plug size={16} />} label="Integrations" active={false} onClick={() => {}} />
-        <NavItem icon={<Zap size={16} />} label="Automations & Agents" active={false} onClick={() => {}} />
-        <NavItem icon={<Settings size={16} />} label="Settings" active={false} onClick={() => {}} />
+        <MinorNavItem icon={<Plug size={14} />} label="Integrations" onClick={() => {}} />
+        <MinorNavItem icon={<Zap size={14} />} label="Automations & Agents" onClick={() => {}} />
+        <MinorNavItem icon={<Settings size={14} />} label="Settings" onClick={() => {}} />
       </div>
 
       {/* Bottom */}
@@ -403,7 +404,7 @@ export function Sidebar({
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <button style={{ fontSize: 12, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-            <Settings size={13} /> Settings
+            <HelpCircle size={13} /> Help center
           </button>
           <button style={{ fontSize: 12, color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
             <GraduationCap size={13} /> Tutorials
@@ -472,6 +473,33 @@ function NavItem({
           {badge}
         </span>
       )}
+    </button>
+  )
+}
+
+function MinorNavItem({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '5px 10px',
+        borderRadius: 6,
+        border: 'none',
+        cursor: 'pointer',
+        background: 'transparent',
+        color: '#9ca3af',
+        fontFamily: 'inherit',
+        fontSize: 12.5,
+        fontWeight: 400,
+        textAlign: 'left',
+      }}
+    >
+      <span style={{ color: '#9ca3af', display: 'flex' }}>{icon}</span>
+      <span>{label}</span>
     </button>
   )
 }
