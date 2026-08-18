@@ -272,7 +272,9 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       // ~115px per pill on average, minus space reserved for the always-present
       // search box + Group by (More Filters + actions only appear once needed).
       const fit = Math.max(0, Math.floor((w - 490) / 115))
-      setVisibleFilterSlots(fit)
+      // Priority, Timeframe, Visibility, Reach are the intended default set — cap at 4 even when there's
+      // room for more, so the rest always live under "More Filters" rather than auto-filling the row.
+      setVisibleFilterSlots(Math.min(4, fit))
     }
     measure()
     const ro = new ResizeObserver(measure)
@@ -853,28 +855,25 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     panelWidth: number
   }
 
-  // Ordered to match the table's column order: Name, Priority, Ticket #, Replies, Reach, Channel, Time — then the
-  // remaining filters that don't correspond to a column (Visibility, Status, Sentiment, Platform, Tags).
+  function columnFacet(field: (typeof COLUMN_FILTER_FIELDS)[number]): Facet {
+    const cond = colFilters[field]
+    const active = Boolean(cond?.value.trim())
+    const displayValue = cond?.value.includes(RANGE_SEPARATOR) ? cond.value.split(RANGE_SEPARATOR).join(' - ') : cond?.value
+    return {
+      key: field,
+      icon: <SlidersHorizontal size={13} />,
+      label: `${FIELD_DEFS[field].label}${active ? `: ${displayValue}` : ''}`,
+      show: Boolean(colFilterMenus[field]),
+      setShow: (v: boolean) => setColFilterMenus((prev) => ({ ...prev, [field]: v })),
+      content: colFilterContent(field),
+      panelWidth: 180,
+    }
+  }
+
+  // Priority, Timeframe, Visibility, Reach are the default-visible pills (before "More Filters" collapses the
+  // rest) — everything else still appears once there's room, or via "More Filters" when there isn't.
   const facets: Facet[] = [
-    ...COLUMN_FILTER_FIELDS.map((field): Facet => {
-      const cond = colFilters[field]
-      const active = Boolean(cond?.value.trim())
-      const displayValue = cond?.value.includes(RANGE_SEPARATOR) ? cond.value.split(RANGE_SEPARATOR).join(' - ') : cond?.value
-      return {
-        key: field,
-        icon: <SlidersHorizontal size={13} />,
-        label: `${FIELD_DEFS[field].label}${active ? `: ${displayValue}` : ''}`,
-        show: Boolean(colFilterMenus[field]),
-        setShow: (v: boolean) => setColFilterMenus((prev) => ({ ...prev, [field]: v })),
-        content: colFilterContent(field),
-        panelWidth: 180,
-      }
-    }),
-    {
-      key: 'channels', icon: <AtSign size={13} />,
-      label: `Channels${filterChannels.size > 0 ? `: ${filterChannels.size}` : `: ${channels.length}`}`,
-      show: showChannelsMenu, setShow: setShowChannelsMenu, content: channelsMenuContent, panelWidth: 220,
-    },
+    columnFacet('priority'),
     {
       key: 'timerange', icon: <Calendar size={13} />,
       label: timeRange === 'all' ? 'Timeframe' : `Timeframe: ${TIME_RANGE_LABELS[timeRange]}`,
@@ -883,6 +882,15 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     {
       key: 'visibility', icon: <Eye size={13} />, label: 'Visibility: All',
       show: false, setShow: () => {}, content: visibilityContent, panelWidth: 200,
+    },
+    columnFacet('reach'),
+    columnFacet('customerName'),
+    columnFacet('ticketNumber'),
+    columnFacet('replies'),
+    {
+      key: 'channels', icon: <AtSign size={13} />,
+      label: `Channels${filterChannels.size > 0 ? `: ${filterChannels.size}` : `: ${channels.length}`}`,
+      show: showChannelsMenu, setShow: setShowChannelsMenu, content: channelsMenuContent, panelWidth: 220,
     },
     {
       key: 'status', icon: <SlidersHorizontal size={13} />,
