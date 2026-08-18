@@ -521,6 +521,15 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     })
   }
 
+  function toggleGroupSelected(items: Message[]) {
+    const allSelected = items.length > 0 && items.every((m) => selected.has(m.id))
+    setSelected((prev) => {
+      const next = new Set(prev)
+      items.forEach((m) => (allSelected ? next.delete(m.id) : next.add(m.id)))
+      return next
+    })
+  }
+
   function toggleGroupCollapsed(key: string) {
     setCollapsedGroups((prev) => {
       const next = new Set(prev)
@@ -531,20 +540,23 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
   /** The oldest message in a "Group by Thread" section, rendered as an uncarded header post — shared by both
    * the cards and list views so a thread's origin post always looks the same regardless of display mode. */
-  function renderThreadInitialPost(initialPost: Message) {
+  /** Also serves as the whole group's header for "Group by Thread" — carries the group-select checkbox and
+   * collapse control so the customer's name doesn't have to be shown again in a separate header bar above it. */
+  function renderThreadInitialPost(initialPost: Message, groupItems: Message[], collapsed: boolean, onToggleCollapsed: () => void) {
     const initialCustomer = customers.find((c) => c.id === initialPost.customerId)
+    const groupSelected = groupItems.length > 0 && groupItems.every((m) => selected.has(m.id))
     return (
       <div
         style={{
           display: 'flex', gap: 10, padding: '14px 20px 16px', cursor: 'pointer',
-          borderBottom: '1px solid #e5e7eb',
+          borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 1,
           background: initialPost.id === messageId ? '#eff6ff' : '#fff',
         }}
       >
         <input
           type="checkbox"
-          checked={selected.has(initialPost.id)}
-          onChange={(e) => { e.stopPropagation(); toggleSelect(initialPost.id) }}
+          checked={groupSelected}
+          onChange={(e) => { e.stopPropagation(); toggleGroupSelected(groupItems) }}
           onClick={(e) => e.stopPropagation()}
           style={{ width: 15, height: 15, marginTop: 3, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
         />
@@ -565,6 +577,16 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
             <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', background: '#f3f4f6', padding: '2px 9px', borderRadius: 99, flexShrink: 0 }}>
               Original post
             </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleCollapsed() }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0,
+                border: 'none', background: '#f3f4f6', borderRadius: 99, padding: '2px 8px', cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#6b7280' }}>{groupItems.length}</span>
+              <ChevronDown size={13} style={{ color: '#9ca3af', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.1s' }} />
+            </button>
           </div>
           <p style={{ fontSize: 14, color: '#111827', lineHeight: 1.6, margin: '0 0 8px', whiteSpace: 'pre-wrap' }}>
             {initialPost.preview}
@@ -1505,35 +1527,42 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
               groupedSections.map((section) => {
                 const isThread = groupBy === 'thread'
                 const collapsed = collapsedGroups.has(section.key)
-                const firstCustomer = customers.find((c) => c.id === section.items[0]?.customerId)
                 const initialPost = isThread ? section.items[0] : undefined
                 const replies = isThread ? section.items.slice(1) : section.items
                 return (
                   <div key={section.key}>
-                    <button
-                      onClick={() => toggleGroupCollapsed(section.key)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                        padding: '8px 20px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
-                        border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                        position: 'sticky', top: 0, zIndex: 1,
-                      }}
-                    >
-                      <ChevronDown size={14} style={{ color: '#9ca3af', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.1s', flexShrink: 0 }} />
-                      {isThread && (
-                        <img
-                          src={firstCustomer?.avatar}
-                          style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', background: '#e5e7eb', flexShrink: 0 }}
+                    {!isThread && (
+                      <div
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                          padding: '8px 20px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
+                          position: 'sticky', top: 0, zIndex: 1,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={section.items.length > 0 && section.items.every((m) => selected.has(m.id))}
+                          onChange={() => toggleGroupSelected(section.items)}
+                          style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
                         />
-                      )}
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>
-                        {section.key}
-                      </span>
-                      <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, background: '#f3f4f6', padding: '1px 7px', borderRadius: 99 }}>
-                        {section.items.length}
-                      </span>
-                    </button>
-                    {initialPost && renderThreadInitialPost(initialPost)}
+                        <button
+                          onClick={() => toggleGroupCollapsed(section.key)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, padding: 0,
+                            border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                          }}
+                        >
+                          <ChevronDown size={14} style={{ color: '#9ca3af', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.1s', flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>
+                            {section.key}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, background: '#f3f4f6', padding: '1px 7px', borderRadius: 99 }}>
+                            {section.items.length}
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                    {initialPost && renderThreadInitialPost(initialPost, section.items, collapsed, () => toggleGroupCollapsed(section.key))}
                     {!collapsed && (
                       <div style={{ position: 'relative' }}>
                         {isThread && replies.length > 1 && (
@@ -1572,35 +1601,42 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
               groupedSections.map((section) => {
                 const isThread = groupBy === 'thread'
                 const collapsed = collapsedGroups.has(section.key)
-                const firstCustomer = customers.find((c) => c.id === section.items[0]?.customerId)
                 const initialPost = isThread ? section.items[0] : undefined
                 const rows = isThread ? section.items.slice(1) : section.items
                 return (
                   <div key={section.key}>
-                    <button
-                      onClick={() => toggleGroupCollapsed(section.key)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                        padding: '8px 20px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
-                        border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                        position: 'sticky', top: 0, zIndex: 1,
-                      }}
-                    >
-                      <ChevronDown size={14} style={{ color: '#9ca3af', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.1s', flexShrink: 0 }} />
-                      {isThread && (
-                        <img
-                          src={firstCustomer?.avatar}
-                          style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', background: '#e5e7eb', flexShrink: 0 }}
+                    {!isThread && (
+                      <div
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8, width: '100%',
+                          padding: '8px 20px', background: '#f9fafb', borderBottom: '1px solid #f3f4f6',
+                          position: 'sticky', top: 0, zIndex: 1,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={section.items.length > 0 && section.items.every((m) => selected.has(m.id))}
+                          onChange={() => toggleGroupSelected(section.items)}
+                          style={{ width: 15, height: 15, cursor: 'pointer', accentColor: '#22c55e', flexShrink: 0 }}
                         />
-                      )}
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>
-                        {section.key}
-                      </span>
-                      <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, background: '#f3f4f6', padding: '1px 7px', borderRadius: 99 }}>
-                        {section.items.length}
-                      </span>
-                    </button>
-                    {initialPost && renderThreadInitialPost(initialPost)}
+                        <button
+                          onClick={() => toggleGroupCollapsed(section.key)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, padding: 0,
+                            border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                          }}
+                        >
+                          <ChevronDown size={14} style={{ color: '#9ca3af', transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.1s', flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>
+                            {section.key}
+                          </span>
+                          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, background: '#f3f4f6', padding: '1px 7px', borderRadius: 99 }}>
+                            {section.items.length}
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                    {initialPost && renderThreadInitialPost(initialPost, section.items, collapsed, () => toggleGroupCollapsed(section.key))}
                     {!collapsed && rows.map((msg) => (
                       <TicketRow
                         key={msg.id}
