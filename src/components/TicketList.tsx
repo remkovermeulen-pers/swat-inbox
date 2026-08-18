@@ -496,6 +496,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       if (!buckets.has(key)) { buckets.set(key, []); order.push(key) }
       buckets.get(key)!.push(msg)
     }
+    if (groupBy === 'thread') {
+      for (const items of buckets.values()) {
+        items.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      }
+    }
     return order.map((key) => ({ key, items: buckets.get(key)! }))
   })()
 
@@ -1418,6 +1423,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                 const isThread = groupBy === 'thread'
                 const collapsed = collapsedGroups.has(section.key)
                 const firstCustomer = customers.find((c) => c.id === section.items[0]?.customerId)
+                const initialPost = isThread ? section.items[0] : undefined
+                const replies = isThread ? section.items.slice(1) : section.items
                 return (
                   <div key={section.key}>
                     <button
@@ -1443,12 +1450,23 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                         {section.items.length}
                       </span>
                     </button>
+                    {initialPost && (
+                      <CommentCard
+                        key={initialPost.id}
+                        msg={initialPost}
+                        customer={customers.find((c) => c.id === initialPost.customerId)}
+                        selected={selected.has(initialPost.id)}
+                        onSelect={() => toggleSelect(initialPost.id)}
+                        active={initialPost.id === messageId}
+                        onClick={() => navigate(`/inbox/${initialPost.brandId}/${initialPost.id}`)}
+                      />
+                    )}
                     {!collapsed && (
                       <div style={{ position: 'relative' }}>
-                        {isThread && section.items.length > 1 && (
+                        {isThread && replies.length > 1 && (
                           <div style={{ position: 'absolute', left: 32, top: 24, bottom: 24, width: 2, background: '#e5e7eb' }} />
                         )}
-                        {section.items.map((msg, i) => (
+                        {replies.map((msg, i) => (
                           <CommentCard
                             key={msg.id}
                             msg={msg}
