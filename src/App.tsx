@@ -11,6 +11,7 @@ import {
   loadPinnedItems, savePinnedItems,
   loadViewOrder, saveViewOrder,
   samePinnedItem, insertPinnedItemAt,
+  markViewsVersionSeen,
 } from './lib/inboxScale'
 
 const BASE_VIEW_FILTERS: InboxFilter[] = ['new', 'assigned_me']
@@ -152,6 +153,8 @@ export default function App() {
   useEffect(() => { saveCustomViews(customViews) }, [customViews])
   useEffect(() => { savePinnedItems(pinnedItems) }, [pinnedItems])
   useEffect(() => { saveViewOrder(viewOrder) }, [viewOrder])
+  // Runs after the loaders above have already read (and reset) any stale pre-existing layout for this load.
+  useEffect(() => { markViewsVersionSeen() }, [])
 
   // Any base filter or custom view not yet recorded (e.g. a just-created view) is appended at the end.
   useEffect(() => {

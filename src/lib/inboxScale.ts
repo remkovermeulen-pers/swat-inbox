@@ -255,7 +255,30 @@ export function priorityTier(score: number): { label: string; color: string } {
 
 const VIEWS_KEY = 'inbox-custom-views'
 
+/** Bump this whenever the seeded default views/pills change, so browsers with an older saved
+ * layout get reset to the new defaults once instead of keeping whatever they saved years ago. */
+const VIEWS_VERSION_KEY = 'inbox-views-version'
+const CURRENT_VIEWS_VERSION = '2026-08-19-complaints-critical'
+
+function isStaleViewsVersion(): boolean {
+  try {
+    return localStorage.getItem(VIEWS_VERSION_KEY) !== CURRENT_VIEWS_VERSION
+  } catch {
+    return false
+  }
+}
+
+/** Call once per app load, after the loaders above have had a chance to see the old version. */
+export function markViewsVersionSeen() {
+  try {
+    localStorage.setItem(VIEWS_VERSION_KEY, CURRENT_VIEWS_VERSION)
+  } catch {
+    // ignore
+  }
+}
+
 export function loadCustomViews(): CustomView[] {
+  if (isStaleViewsVersion()) return DEFAULT_CUSTOM_VIEWS
   try {
     const raw = localStorage.getItem(VIEWS_KEY)
     if (!raw) return DEFAULT_CUSTOM_VIEWS
@@ -282,6 +305,7 @@ export function samePinnedItem(a: PinnedItem, b: PinnedItem): boolean {
 const PINNED_ITEMS_KEY = 'inbox-pinned-items'
 
 export function loadPinnedItems(): PinnedItem[] {
+  if (isStaleViewsVersion()) return []
   try {
     const raw = localStorage.getItem(PINNED_ITEMS_KEY)
     if (!raw) return []
@@ -307,6 +331,7 @@ const VIEW_ORDER_KEY = 'inbox-view-order'
 
 /** The display order of the view pills atop the Inbox/Comments list. Returns null when nothing has been saved yet. */
 export function loadViewOrder(): PinnedItem[] | null {
+  if (isStaleViewsVersion()) return null
   try {
     const raw = localStorage.getItem(VIEW_ORDER_KEY)
     if (!raw) return null
