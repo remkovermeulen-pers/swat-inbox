@@ -38,7 +38,16 @@ import {
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
-const SENTIMENTS: Sentiment[] = ['negative', 'neutral', 'positive']
+
+type SentimentFilterValue = Sentiment | 'none'
+
+const SENTIMENT_FILTER_OPTIONS: { value: SentimentFilterValue | null; label: string }[] = [
+  { value: null, label: 'All sentiments' },
+  { value: 'positive', label: 'Positive' },
+  { value: 'negative', label: 'Negative' },
+  { value: 'neutral', label: 'Neutral' },
+  { value: 'none', label: 'No sentiment' },
+]
 
 // Matches the colors priorityTier() uses for each label, so the Priority filter's pills look like the column badges.
 const PRIORITY_TIER_COLORS: Record<string, string> = {
@@ -203,7 +212,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [showColumnMenu, setShowColumnMenu] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [filterTags, setFilterTags] = useState<Set<string>>(new Set())
-  const [filterSentiments, setFilterSentiments] = useState<Set<Sentiment>>(new Set())
+  const [sentimentFilter, setSentimentFilter] = useState<SentimentFilterValue | null>(null)
   const [filterPlatforms, setFilterPlatforms] = useState<Set<Platform>>(new Set())
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
@@ -254,7 +263,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
   const activeColFilterCount = Object.values(colFilters).filter((c) => c && c.value.trim()).length
 
-  const activeFilterCount = filterTags.size + filterSentiments.size + filterPlatforms.size + filterChannels.size + filterStatuses.size + activeColFilterCount
+  const activeFilterCount = filterTags.size + (sentimentFilter !== null ? 1 : 0) + filterPlatforms.size + filterChannels.size + filterStatuses.size + activeColFilterCount
 
   useEffect(() => {
     localStorage.setItem(VISIBLE_COLS_KEY, JSON.stringify(Array.from(visibleCols)))
@@ -272,9 +281,9 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       // ~115px per pill on average, minus space reserved for the always-present
       // search box + Group by (More Filters + actions only appear once needed).
       const fit = Math.max(0, Math.floor((w - 490) / 115))
-      // Priority, Timeframe, Visibility, Reach are the intended default set — cap at 4 even when there's
-      // room for more, so the rest always live under "More Filters" rather than auto-filling the row.
-      setVisibleFilterSlots(Math.min(4, fit))
+      // Priority, Timeframe, Visibility, Reach, Sentiment are the intended default set — cap at 5 even when
+      // there's room for more, so the rest always live under "More Filters" rather than auto-filling the row.
+      setVisibleFilterSlots(Math.min(5, fit))
     }
     measure()
     const ro = new ResizeObserver(measure)
@@ -440,7 +449,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       if (activeFilterCount === 0) return true
       const cust = customers.find((c) => c.id === m.customerId)
       if (filterTags.size > 0 && !m.tags.some((t) => filterTags.has(t.label))) return false
-      if (filterSentiments.size > 0 && (!cust || !filterSentiments.has(cust.sentiment))) return false
+      if (sentimentFilter === 'none' && cust) return false
+      if (sentimentFilter && sentimentFilter !== 'none' && cust?.sentiment !== sentimentFilter) return false
       if (filterPlatforms.size > 0 && !filterPlatforms.has(m.platform)) return false
       if (filterChannels.size > 0) {
         const matchesChannel = channels.some((ch) => filterChannels.has(ch.id) && ch.name === m.channel && ch.platform === m.platform)
@@ -640,7 +650,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     const statuses = filterStatuses.size > 0 ? Array.from(filterStatuses) : undefined
     const conditions: FilterCondition[] = []
     if (filterTags.size > 0) conditions.push({ field: 'tag', operator: 'is', value: Array.from(filterTags) })
-    if (filterSentiments.size > 0) conditions.push({ field: 'sentiment', operator: 'is', value: Array.from(filterSentiments) })
+    if (sentimentFilter) conditions.push({ field: 'sentiment', operator: 'is', value: [sentimentFilter] })
     if (filterPlatforms.size > 0) conditions.push({ field: 'platform', operator: 'is', value: Array.from(filterPlatforms) })
     for (const field of COLUMN_FILTER_FIELDS) {
       const cond = colFilters[field]
@@ -661,7 +671,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   }
 
   const hasUnsavedFilterChanges = Boolean(
-    activeView && (filterTags.size > 0 || filterSentiments.size > 0 || filterPlatforms.size > 0 || filterStatuses.size > 0 || activeColFilterCount > 0)
+    activeView && (filterTags.size > 0 || sentimentFilter !== null || filterPlatforms.size > 0 || filterStatuses.size > 0 || activeColFilterCount > 0)
   )
 
   const headerLabel = brandId
@@ -766,19 +776,20 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   )
 
   const sentimentContent = (
-    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-      {SENTIMENTS.map((s) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      {SENTIMENT_FILTER_OPTIONS.map((opt) => (
         <button
-          key={s}
-          onClick={() => toggleSetValue(setFilterSentiments, s)}
+          key={opt.label}
+          onClick={() => { setSentimentFilter(opt.value); setShowSentimentMenu(false) }}
           style={{
-            padding: '3px 9px', borderRadius: 99, fontSize: 11, cursor: 'pointer', textTransform: 'capitalize', fontFamily: 'inherit',
-            border: `1px solid ${filterSentiments.has(s) ? '#5e6ad2' : '#e5e7eb'}`,
-            background: filterSentiments.has(s) ? '#eef2ff' : '#fff',
-            color: filterSentiments.has(s) ? '#4338ca' : '#6b7280',
+            width: '100%', textAlign: 'left', padding: '7px 9px', borderRadius: 6,
+            border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
+            background: sentimentFilter === opt.value ? '#eef2ff' : 'none',
+            color: sentimentFilter === opt.value ? '#4338ca' : '#374151',
+            fontWeight: sentimentFilter === opt.value ? 600 : 400,
           }}
         >
-          {s}
+          {opt.label}
         </button>
       ))}
     </div>
@@ -927,8 +938,12 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     }
   }
 
-  // Priority, Timeframe, Visibility, Reach are the default-visible pills (before "More Filters" collapses the
-  // rest) — everything else still appears once there's room, or via "More Filters" when there isn't.
+  const sentimentFacetLabel = sentimentFilter
+    ? SENTIMENT_FILTER_OPTIONS.find((opt) => opt.value === sentimentFilter)?.label
+    : undefined
+
+  // Priority, Timeframe, Visibility, Reach, Sentiment are the default-visible pills (before "More Filters"
+  // collapses the rest) — everything else still appears once there's room, or via "More Filters" when there isn't.
   const facets: Facet[] = [
     columnFacet('priority'),
     {
@@ -941,6 +956,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       show: false, setShow: () => {}, content: visibilityContent, panelWidth: 200,
     },
     columnFacet('reach'),
+    {
+      key: 'sentiment', icon: <SlidersHorizontal size={13} />,
+      label: sentimentFacetLabel ? `Sentiment: ${sentimentFacetLabel}` : 'Sentiment',
+      show: showSentimentMenu, setShow: setShowSentimentMenu, content: sentimentContent, panelWidth: 180,
+    },
     columnFacet('customerName'),
     columnFacet('ticketNumber'),
     columnFacet('replies'),
@@ -953,11 +973,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
       key: 'status', icon: <SlidersHorizontal size={13} />,
       label: `Status${filterStatuses.size > 0 ? `: ${filterStatuses.size}` : ''}`,
       show: showStatusMenu, setShow: setShowStatusMenu, content: statusContent, panelWidth: 200,
-    },
-    {
-      key: 'sentiment', icon: <SlidersHorizontal size={13} />,
-      label: `Sentiment${filterSentiments.size > 0 ? `: ${filterSentiments.size}` : ''}`,
-      show: showSentimentMenu, setShow: setShowSentimentMenu, content: sentimentContent, panelWidth: 180,
     },
     {
       key: 'platform', icon: <SlidersHorizontal size={13} />,
