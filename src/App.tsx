@@ -15,10 +15,18 @@ import {
 
 const BASE_VIEW_FILTERS: InboxFilter[] = ['new', 'assigned_me', 'starred']
 
+// Pinned right after the "New" filter by default, ahead of the rest of the custom views.
+const LEAD_VIEW_IDS = ['view-threads', 'view-comments']
+
 function defaultViewOrder(customViews: CustomView[]): PinnedItem[] {
+  const [firstFilter, ...restFilters] = BASE_VIEW_FILTERS
+  const leadViews = LEAD_VIEW_IDS.filter((id) => customViews.some((v) => v.id === id))
+  const restViews = customViews.filter((v) => !LEAD_VIEW_IDS.includes(v.id))
   return [
-    ...BASE_VIEW_FILTERS.map((key): PinnedItem => ({ kind: 'filter', key })),
-    ...customViews.map((v): PinnedItem => ({ kind: 'view', id: v.id })),
+    { kind: 'filter', key: firstFilter },
+    ...leadViews.map((id): PinnedItem => ({ kind: 'view', id })),
+    ...restFilters.map((key): PinnedItem => ({ kind: 'filter', key })),
+    ...restViews.map((v): PinnedItem => ({ kind: 'view', id: v.id })),
   ]
 }
 

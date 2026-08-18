@@ -7,9 +7,9 @@ import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
 import { CommentCard } from './CommentCard'
 import {
-  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem,
+  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem, GROUP_LABELS,
   FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition, RANGE_SEPARATOR,
-  type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir, type PinnedItem,
+  type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir, type PinnedItem, type GroupField,
 } from '../lib/inboxScale'
 import {
   Search,
@@ -86,12 +86,6 @@ type TimeRangePreset = 'all' | 'today' | '7d' | '30d' | 'custom'
 
 const TIME_RANGE_LABELS: Record<TimeRangePreset, string> = {
   all: 'All time', today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', custom: 'Custom range',
-}
-
-type GroupField = 'platform' | 'status' | 'sentiment' | 'channel' | 'thread'
-
-const GROUP_LABELS: Record<GroupField, string> = {
-  platform: 'Platform', status: 'Status', sentiment: 'Sentiment', channel: 'Channel', thread: 'Thread',
 }
 
 type ColKey = 'tags' | 'priority' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
@@ -392,6 +386,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     if (v?.sortCol) { setSortCol(v.sortCol); setSortDir(v.sortDir ?? 'desc') }
     else { setSortCol('priority'); setSortDir('desc') }
     setFilterStatuses(new Set(v?.statuses ?? []))
+    setViewMode(v?.viewMode ?? 'list')
+    setGroupBy(v?.groupBy ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeViewId])
 
