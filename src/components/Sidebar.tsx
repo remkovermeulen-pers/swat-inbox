@@ -19,6 +19,8 @@ import {
   UserCheck,
   Star,
   X,
+  Plug,
+  Zap,
 } from 'lucide-react'
 
 // Comments reuses the same mock message data as Inbox in this prototype, so both counts are identical for now.
@@ -368,6 +370,13 @@ export function Sidebar({
           )
         })}
         {dropIndex === navRows.length && <DropIndicator />}
+      </div>
+
+      {/* Settings-area shortcuts */}
+      <div style={{ borderTop: '1px solid #f3f4f6', padding: '8px 8px' }}>
+        <NavItem icon={<Plug size={16} />} label="Integrations" active={false} onClick={() => {}} />
+        <NavItem icon={<Zap size={16} />} label="Automations & Agents" active={false} onClick={() => {}} />
+        <NavItem icon={<Settings size={16} />} label="Settings" active={false} onClick={() => {}} />
       </div>
 
       {/* Bottom */}

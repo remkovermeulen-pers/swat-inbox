@@ -4,7 +4,8 @@ import { Sidebar } from './components/Sidebar'
 import { TicketList } from './components/TicketList'
 import { BrandSettings } from './pages/BrandSettings'
 import { Publisher } from './pages/Publisher'
-import type { InboxFilter } from './data/mockData'
+import type { InboxFilter, Automation, AgentJob } from './data/mockData'
+import { AUTOMATIONS, AGENT_JOBS } from './data/mockData'
 import type { CustomView, PinnedItem } from './lib/inboxScale'
 import {
   loadCustomViews, saveCustomViews,
@@ -44,6 +45,10 @@ function InboxShell({
   onUpdateView,
   viewOrder,
   onReorderView,
+  automations,
+  onChangeAutomations,
+  agentJobs,
+  onChangeAgentJobs,
   mode = 'inbox',
 }: {
   brandId: string | null
@@ -58,6 +63,10 @@ function InboxShell({
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
   viewOrder: PinnedItem[]
   onReorderView: (item: PinnedItem, atIndex: number) => void
+  automations: Automation[]
+  onChangeAutomations: (next: Automation[]) => void
+  agentJobs: AgentJob[]
+  onChangeAgentJobs: (next: AgentJob[]) => void
   mode?: 'inbox' | 'comments'
 }) {
   return (
@@ -77,6 +86,10 @@ function InboxShell({
           onUpdateView={onUpdateView}
           viewOrder={viewOrder}
           onReorderView={onReorderView}
+          automations={automations}
+          onChangeAutomations={onChangeAutomations}
+          agentJobs={agentJobs}
+          onChangeAgentJobs={onChangeAgentJobs}
           mode={mode}
         />
       </div>
@@ -97,6 +110,10 @@ function InboxRoutes({
   onUpdateView,
   viewOrder,
   onReorderView,
+  automations,
+  onChangeAutomations,
+  agentJobs,
+  onChangeAgentJobs,
 }: {
   brandId: string | null
   channelId: string | null
@@ -110,6 +127,10 @@ function InboxRoutes({
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
   viewOrder: PinnedItem[]
   onReorderView: (item: PinnedItem, atIndex: number) => void
+  automations: Automation[]
+  onChangeAutomations: (next: Automation[]) => void
+  agentJobs: AgentJob[]
+  onChangeAgentJobs: (next: AgentJob[]) => void
 }) {
   const shell = (
     <InboxShell
@@ -125,6 +146,10 @@ function InboxRoutes({
       onUpdateView={onUpdateView}
       viewOrder={viewOrder}
       onReorderView={onReorderView}
+      automations={automations}
+      onChangeAutomations={onChangeAutomations}
+      agentJobs={agentJobs}
+      onChangeAgentJobs={onChangeAgentJobs}
     />
   )
   const commentsShell = (
@@ -141,6 +166,10 @@ function InboxRoutes({
       onUpdateView={onUpdateView}
       viewOrder={viewOrder}
       onReorderView={onReorderView}
+      automations={automations}
+      onChangeAutomations={onChangeAutomations}
+      agentJobs={agentJobs}
+      onChangeAgentJobs={onChangeAgentJobs}
       mode="comments"
     />
   )
@@ -169,6 +198,8 @@ export default function App() {
     const loaded = loadViewOrder()
     return loaded ?? defaultViewOrder(customViews)
   })
+  const [automations, setAutomations] = useState<Automation[]>(AUTOMATIONS)
+  const [agentJobs, setAgentJobs] = useState<AgentJob[]>(AGENT_JOBS)
 
   useEffect(() => { saveCustomViews(customViews) }, [customViews])
   useEffect(() => { savePinnedItems(pinnedItems) }, [pinnedItems])
@@ -259,6 +290,10 @@ export default function App() {
             onUpdateView={updateCustomView}
             viewOrder={viewOrder}
             onReorderView={reorderView}
+            automations={automations}
+            onChangeAutomations={setAutomations}
+            agentJobs={agentJobs}
+            onChangeAgentJobs={setAgentJobs}
           />
         </main>
       </div>

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { messages, customers, brands, channels, AUTOMATIONS, AGENT_JOBS } from '../data/mockData'
-import type { Message, InboxFilter, Tag, Sentiment, Platform, MessageStatus } from '../data/mockData'
+import { messages, customers, brands, channels } from '../data/mockData'
+import type { Message, InboxFilter, Tag, Sentiment, Platform, MessageStatus, Automation, AgentJob } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
 import { AutomationsModal } from './AutomationsModal'
@@ -95,6 +95,10 @@ interface Props {
   onUpdateView: (id: string, patch: Partial<CustomView>) => void
   viewOrder: PinnedItem[]
   onReorderView: (item: PinnedItem, atIndex: number) => void
+  automations: Automation[]
+  onChangeAutomations: (next: Automation[]) => void
+  agentJobs: AgentJob[]
+  onChangeAgentJobs: (next: AgentJob[]) => void
   mode?: 'inbox' | 'comments'
 }
 
@@ -222,7 +226,7 @@ function customViewCount(view: CustomView): number {
   return messages.filter((m) => !m.archived && messageMatchesView(m, customers.find((c) => c.id === m.customerId), view)).length
 }
 
-export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, viewOrder, onReorderView, mode = 'inbox' }: Props) {
+export function TicketList({ brandId, channelId, filter, onFilterChange, customViews, activeViewId, onAddView, onViewChange, onDeleteView, onUpdateView, viewOrder, onReorderView, automations, onChangeAutomations, agentJobs, onChangeAgentJobs, mode = 'inbox' }: Props) {
   const navigate = useNavigate()
   const { messageId } = useParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -783,8 +787,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   }
 
   const automationUnit = mode === 'comments' ? 'comments' : 'tickets'
-  const automationCount = AUTOMATIONS.filter((a) => a.enabled && a.appliesTo.includes(automationUnit)).length
-    + AGENT_JOBS.filter((j) => j.enabled && j.appliesTo.includes(automationUnit)).length
+  const automationCount = automations.filter((a) => a.enabled && a.appliesTo.includes(automationUnit)).length
+    + agentJobs.filter((j) => j.enabled && j.appliesTo.includes(automationUnit)).length
 
   const channelsMenuContent = (
     <>
@@ -1157,12 +1161,6 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
-            title="Download"
-            style={{ display: 'flex', alignItems: 'center', padding: '5px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
-          >
-            <Download size={18} />
-          </button>
-          <button
             title="Automations & Agents"
             onClick={() => setShowAutomationsModal(true)}
             style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '5px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
@@ -1180,11 +1178,24 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
               </span>
             )}
           </button>
+          <button
+            title="Download"
+            style={{ display: 'flex', alignItems: 'center', padding: '5px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
+          >
+            <Download size={18} />
+          </button>
         </div>
       </div>
 
       {showAutomationsModal && (
-        <AutomationsModal unit={automationUnit} onClose={() => setShowAutomationsModal(false)} />
+        <AutomationsModal
+          unit={automationUnit}
+          automations={automations}
+          onChangeAutomations={onChangeAutomations}
+          agentJobs={agentJobs}
+          onChangeAgentJobs={onChangeAgentJobs}
+          onClose={() => setShowAutomationsModal(false)}
+        />
       )}
 
       {/* Row 2: one unified list of views — All, New, Assigned to me, Starred, custom views, + Add view. Draggable onto the
