@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
-import { messages, customers, brands, channels } from '../data/mockData'
+import { messages, customers, brands, channels, AUTOMATIONS, AGENT_JOBS } from '../data/mockData'
 import type { Message, InboxFilter, Tag, Sentiment, Platform, MessageStatus } from '../data/mockData'
 import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
+import { AutomationsModal } from './AutomationsModal'
 import { CommentCard } from './CommentCard'
 import {
   AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem, GROUP_LABELS, messageVisibility,
@@ -41,6 +42,7 @@ import {
   ThumbsUp,
   Pin,
   Smile,
+  Zap,
 } from 'lucide-react'
 
 const PLATFORMS: Platform[] = ['twitter', 'instagram', 'facebook', 'linkedin', 'tiktok', 'youtube']
@@ -243,6 +245,7 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
   const [filterChannels, setFilterChannels] = useState<Set<string>>(new Set())
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [showCreateView, setShowCreateView] = useState(false)
+  const [showAutomationsModal, setShowAutomationsModal] = useState(false)
   const [viewMode, setViewMode] = useState<'list' | 'cards'>(mode === 'comments' ? 'cards' : 'list')
   const [showChannelsMenu, setShowChannelsMenu] = useState(false)
   const [showStatusMenu, setShowStatusMenu] = useState(false)
@@ -779,6 +782,10 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     return mode === 'comments' ? `/comments/${msg.id}` : `/inbox/${msg.brandId}/${msg.id}`
   }
 
+  const automationUnit = mode === 'comments' ? 'comments' : 'tickets'
+  const automationCount = AUTOMATIONS.filter((a) => a.enabled && a.appliesTo.includes(automationUnit)).length
+    + AGENT_JOBS.filter((j) => j.enabled && j.appliesTo.includes(automationUnit)).length
+
   const channelsMenuContent = (
     <>
       {channels.map((ch) => (
@@ -1155,8 +1162,30 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
           >
             <Download size={18} />
           </button>
+          <button
+            title="Automations & Agents"
+            onClick={() => setShowAutomationsModal(true)}
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '5px', borderRadius: 6, border: 'none', background: 'none', cursor: 'pointer', color: '#6b7280' }}
+          >
+            <Zap size={18} />
+            {automationCount > 0 && (
+              <span
+                style={{
+                  position: 'absolute', top: -2, right: -2, minWidth: 15, height: 15, padding: '0 3px',
+                  borderRadius: 99, background: '#5e6ad2', color: '#fff', fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                }}
+              >
+                {automationCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
+
+      {showAutomationsModal && (
+        <AutomationsModal unit={automationUnit} onClose={() => setShowAutomationsModal(false)} />
+      )}
 
       {/* Row 2: one unified list of views — All, New, Assigned to me, Starred, custom views, + Add view. Draggable onto the
           sidebar (except All), and draggable left/right within this row to reorder. */}
