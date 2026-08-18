@@ -7,9 +7,9 @@ import { PlatformIcon } from './PlatformIcon'
 import { CreateViewModal } from './CreateViewModal'
 import { CommentCard } from './CommentCard'
 import {
-  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem,
+  AGENTS, KNOWN_TAGS, getPriorityScore, messageMatchesView, priorityTier, samePinnedItem, GROUP_LABELS,
   FIELD_DEFS, operatorsForField, defaultOperatorForField, evaluateCondition, RANGE_SEPARATOR,
-  type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir, type PinnedItem,
+  type CustomView, type FilterCondition, type FilterField, type SortCol, type SortDir, type PinnedItem, type GroupField,
 } from '../lib/inboxScale'
 import {
   Search,
@@ -86,12 +86,6 @@ type TimeRangePreset = 'all' | 'today' | '7d' | '30d' | 'custom'
 
 const TIME_RANGE_LABELS: Record<TimeRangePreset, string> = {
   all: 'All time', today: 'Today', '7d': 'Last 7 days', '30d': 'Last 30 days', custom: 'Custom range',
-}
-
-type GroupField = 'platform' | 'status' | 'sentiment' | 'channel' | 'thread'
-
-const GROUP_LABELS: Record<GroupField, string> = {
-  platform: 'Platform', status: 'Status', sentiment: 'Sentiment', channel: 'Channel', thread: 'Thread',
 }
 
 type ColKey = 'tags' | 'priority' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time'
@@ -392,6 +386,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
     if (v?.sortCol) { setSortCol(v.sortCol); setSortDir(v.sortDir ?? 'desc') }
     else { setSortCol('priority'); setSortDir('desc') }
     setFilterStatuses(new Set(v?.statuses ?? []))
+    setViewMode(v?.viewMode ?? 'list')
+    setGroupBy(v?.groupBy ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeViewId])
 
@@ -495,6 +491,11 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
         : msg.channel
       if (!buckets.has(key)) { buckets.set(key, []); order.push(key) }
       buckets.get(key)!.push(msg)
+    }
+    if (groupBy === 'thread') {
+      for (const items of buckets.values()) {
+        items.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      }
     }
     return order.map((key) => ({ key, items: buckets.get(key)! }))
   })()
@@ -1418,6 +1419,8 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                 const isThread = groupBy === 'thread'
                 const collapsed = collapsedGroups.has(section.key)
                 const firstCustomer = customers.find((c) => c.id === section.items[0]?.customerId)
+                const initialPost = isThread ? section.items[0] : undefined
+                const replies = isThread ? section.items.slice(1) : section.items
                 return (
                   <div key={section.key}>
                     <button
@@ -1443,12 +1446,23 @@ export function TicketList({ brandId, channelId, filter, onFilterChange, customV
                         {section.items.length}
                       </span>
                     </button>
+                    {initialPost && (
+                      <CommentCard
+                        key={initialPost.id}
+                        msg={initialPost}
+                        customer={customers.find((c) => c.id === initialPost.customerId)}
+                        selected={selected.has(initialPost.id)}
+                        onSelect={() => toggleSelect(initialPost.id)}
+                        active={initialPost.id === messageId}
+                        onClick={() => navigate(`/inbox/${initialPost.brandId}/${initialPost.id}`)}
+                      />
+                    )}
                     {!collapsed && (
                       <div style={{ position: 'relative' }}>
-                        {isThread && section.items.length > 1 && (
+                        {isThread && replies.length > 1 && (
                           <div style={{ position: 'absolute', left: 32, top: 24, bottom: 24, width: 2, background: '#e5e7eb' }} />
                         )}
-                        {section.items.map((msg, i) => (
+                        {replies.map((msg, i) => (
                           <CommentCard
                             key={msg.id}
                             msg={msg}

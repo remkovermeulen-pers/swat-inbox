@@ -3,6 +3,12 @@ import type { Customer, InboxFilter, Message, MessageStatus, Sentiment } from '.
 export type SortCol = 'name' | 'ticket' | 'replies' | 'reach' | 'channel' | 'time' | 'priority'
 export type SortDir = 'asc' | 'desc'
 
+export type GroupField = 'platform' | 'status' | 'sentiment' | 'channel' | 'thread'
+
+export const GROUP_LABELS: Record<GroupField, string> = {
+  platform: 'Platform', status: 'Status', sentiment: 'Sentiment', channel: 'Channel', thread: 'Thread',
+}
+
 export const AGENTS = ['Remko', 'Emma', 'Jonas', 'Mei']
 
 export const KNOWN_TAGS = [
@@ -175,9 +181,28 @@ export interface CustomView {
   /** Ordering to apply automatically when this view is selected */
   sortCol?: SortCol
   sortDir?: SortDir
+  /** List/cards display to switch to automatically when this view is selected */
+  viewMode?: 'list' | 'cards'
+  /** Grouping to apply automatically when this view is selected (cards view only) */
+  groupBy?: GroupField
 }
 
 export const DEFAULT_CUSTOM_VIEWS: CustomView[] = [
+  {
+    id: 'view-threads',
+    name: 'Threads',
+    icon: '🧵',
+    color: '#6366f1',
+    viewMode: 'cards',
+    groupBy: 'thread',
+  },
+  {
+    id: 'view-comments',
+    name: 'Comments',
+    icon: '💬',
+    color: '#0ea5e9',
+    viewMode: 'cards',
+  },
   {
     id: 'view-crisis',
     name: 'Crisis Watch',
